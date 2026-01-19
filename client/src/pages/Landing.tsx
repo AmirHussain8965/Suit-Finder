@@ -23,7 +23,7 @@ export default function Landing() {
           </div>
           
           <h1 className="text-5xl md:text-7xl font-serif font-bold text-foreground leading-tight">
-            Find Your <span className="text-accent italic">Sartorial</span> Circle
+            Find Your <span className="text-accent italic">Formal</span> Findings
           </h1>
           
           <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed font-light">
@@ -76,7 +76,7 @@ export default function Landing() {
 
       {/* Footer */}
       <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
-        <p>© 2024 SARTORIAL. Elegance is not standing out, but being remembered.</p>
+        <p>© 2024 FORMAL FINDINGS. Elegance is not standing out, but being remembered.</p>
       </footer>
     </div>
   );
