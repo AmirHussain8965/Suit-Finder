@@ -108,5 +108,49 @@ export async function registerRoutes(
     res.json(enrichedProfiles);
   });
 
+  // === Favorites ===
+
+  app.get(api.favorites.list.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const userFavorites = await storage.getFavorites(userId);
+    
+    const enrichedFavorites = await Promise.all(userFavorites.map(async (f) => {
+      const user = await authStorage.getUser(f.targetUserId);
+      const profile = await storage.getProfile(f.targetUserId);
+      return {
+        userId: f.targetUserId,
+        displayName: profile?.displayName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : "Unknown"),
+        profileImageUrl: user?.profileImageUrl || null,
+      };
+    }));
+
+    res.json(enrichedFavorites);
+  });
+
+  app.post(api.favorites.add.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const targetUserId = req.params.targetUserId;
+    
+    await storage.addFavorite(userId, targetUserId);
+    res.json({ message: "Added to favorites" });
+  });
+
+  app.delete(api.favorites.remove.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const targetUserId = req.params.targetUserId;
+    
+    await storage.removeFavorite(userId, targetUserId);
+    res.json({ message: "Removed from favorites" });
+  });
+
   return httpServer;
 }

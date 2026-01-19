@@ -51,6 +51,34 @@ export type InsertProfile = z.infer<typeof insertProfileSchema>;
 export type CreateProfileRequest = InsertProfile;
 export type UpdateProfileRequest = Partial<InsertProfile>;
 
+export const favorites = pgTable("favorites", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => authUsers.id),
+  targetUserId: text("target_user_id").notNull().references(() => authUsers.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const favoritesRelations = relations(favorites, ({ one }) => ({
+  user: one(authUsers, {
+    fields: [favorites.userId],
+    references: [authUsers.id],
+    relationName: "user_favorites",
+  }),
+  targetUser: one(authUsers, {
+    fields: [favorites.targetUserId],
+    references: [authUsers.id],
+    relationName: "favorite_target",
+  }),
+}));
+
+export const insertFavoriteSchema = createInsertSchema(favorites).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type Favorite = typeof favorites.$inferSelect;
+export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
+
 // Combined User + Profile for the frontend
 export type UserWithProfile = {
   user: typeof authUsers.$inferSelect;

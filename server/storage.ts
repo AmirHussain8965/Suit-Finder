@@ -1,11 +1,13 @@
 import { db } from "./db";
 import {
   profiles,
+  favorites,
   type Profile,
   type InsertProfile,
   type UpdateProfileRequest,
+  type Favorite,
 } from "@shared/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 
 export interface IStorage {
   // Profiles
@@ -14,6 +16,12 @@ export interface IStorage {
   updateProfile(userId: string, updates: UpdateProfileRequest): Promise<Profile>;
   updateLocation(userId: string, lat: number, lng: number): Promise<Profile>;
   getNearbyProfiles(lat?: number, lng?: number, radiusKm?: number): Promise<Profile[]>;
+  
+  // Favorites
+  getFavorites(userId: string): Promise<Favorite[]>;
+  addFavorite(userId: string, targetUserId: string): Promise<void>;
+  removeFavorite(userId: string, targetUserId: string): Promise<void>;
+  isFavorite(userId: string, targetUserId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -85,6 +93,44 @@ export class DatabaseStorage implements IStorage {
       .where(
         sql`${profiles.isVisible} = true AND ${profiles.latitude} IS NOT NULL AND ${profiles.longitude} IS NOT NULL`
       );
+  }
+
+  async getFavorites(userId: string): Promise<Favorite[]> {
+    return await db
+      .select()
+      .from(favorites)
+      .where(eq(favorites.userId, userId));
+  }
+
+  async addFavorite(userId: string, targetUserId: string): Promise<void> {
+    const existing = await this.isFavorite(userId, targetUserId);
+    if (!existing) {
+      await db.insert(favorites).values({ userId, targetUserId });
+    }
+  }
+
+  async removeFavorite(userId: string, targetUserId: string): Promise<void> {
+    await db
+      .delete(favorites)
+      .where(
+        and(
+          eq(favorites.userId, userId),
+          eq(favorites.targetUserId, targetUserId)
+        )
+      );
+  }
+
+  async isFavorite(userId: string, targetUserId: string): Promise<boolean> {
+    const [existing] = await db
+      .select()
+      .from(favorites)
+      .where(
+        and(
+          eq(favorites.userId, userId),
+          eq(favorites.targetUserId, targetUserId)
+        )
+      );
+    return !!existing;
   }
 }
 

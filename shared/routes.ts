@@ -66,7 +66,36 @@ export const api = {
           profileImageUrl: string | null;
         }>()),
       },
-    }
+    },
+    favorites: {
+      list: {
+        method: 'GET' as const,
+        path: '/api/favorites',
+        responses: {
+          200: z.array(z.custom<{
+            userId: string;
+            displayName: string | null;
+            profileImageUrl: string | null;
+          }>()),
+        },
+      },
+      add: {
+        method: 'POST' as const,
+        path: '/api/favorites/:targetUserId',
+        responses: {
+          200: z.object({ message: z.string() }),
+          400: errorSchemas.validation,
+        },
+      },
+      remove: {
+        method: 'DELETE' as const,
+        path: '/api/favorites/:targetUserId',
+        responses: {
+          200: z.object({ message: z.string() }),
+          404: errorSchemas.notFound,
+        },
+      },
+    },
   },
 };
 
