@@ -23,7 +23,7 @@ export default function Landing() {
           </div>
           
           <h1 className="text-5xl md:text-7xl font-serif font-bold text-foreground leading-tight">
-            Find Your <span className="text-accent italic">Formal</span> Findings
+            Formal Findings <span className="text-accent italic">Search</span>
           </h1>
           
           <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed font-light">
