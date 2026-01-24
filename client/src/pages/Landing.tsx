@@ -22,9 +22,14 @@ export default function Landing() {
             <span className="text-accent text-sm tracking-widest uppercase font-medium">The Private Network</span>
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-serif font-bold text-foreground leading-tight">
-            Formal Findings <span className="text-accent italic">Search</span>
-          </h1>
+          <div className="space-y-4">
+            <h1 className="text-5xl md:text-7xl font-serif font-bold text-foreground leading-tight">
+              Formal Findings <span className="text-accent italic">Search</span>
+            </h1>
+            <p className="text-2xl md:text-3xl font-serif text-accent italic tracking-wide">
+              for men
+            </p>
+          </div>
           
           <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed font-light">
             Connect with fellow gentlemen who appreciate the art of fine dressing. 
