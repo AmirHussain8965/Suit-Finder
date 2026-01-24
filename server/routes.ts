@@ -498,5 +498,133 @@ export async function registerRoutes(
     res.json({ message: "Marked as read" });
   });
 
+  // === Events ===
+
+  // Get all upcoming events
+  app.get(api.events.list.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const events = await storage.getEvents(userId);
+    res.json(events);
+  });
+
+  // Get a single event
+  app.get(api.events.get.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const eventId = parseInt(req.params.eventId);
+    
+    const event = await storage.getEvent(eventId, userId);
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+    res.json(event);
+  });
+
+  // Get events by host
+  app.get(api.events.hostEvents.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const hostId = req.params.userId;
+    
+    const events = await storage.getHostEvents(hostId, userId);
+    res.json(events);
+  });
+
+  // Create an event
+  app.post(api.events.create.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    
+    try {
+      const input = api.events.create.input.parse(req.body);
+      const event = await storage.createEvent(userId, {
+        ...input,
+        eventDate: new Date(input.eventDate as any),
+      });
+      res.json(event);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  // Join an event
+  app.post(api.events.join.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const eventId = parseInt(req.params.eventId);
+    
+    const attendee = await storage.joinEvent(eventId, userId);
+    res.json(attendee);
+  });
+
+  // Leave an event
+  app.delete(api.events.leave.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const eventId = parseInt(req.params.eventId);
+    
+    await storage.leaveEvent(eventId, userId);
+    res.json({ message: "Left event" });
+  });
+
+  // Update attendee status (host only)
+  app.patch(api.events.updateAttendee.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const hostId = (req.user as any).claims.sub;
+    const eventId = parseInt(req.params.eventId);
+    const targetUserId = req.params.userId;
+    
+    try {
+      const input = api.events.updateAttendee.input.parse(req.body);
+      const attendee = await storage.updateAttendeeStatus(eventId, hostId, targetUserId, input.status);
+      res.json(attendee);
+    } catch (err) {
+      if (err instanceof Error && err.message === "Not authorized") {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+      throw err;
+    }
+  });
+
+  // Delete an event (host only)
+  app.delete(api.events.delete.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const eventId = parseInt(req.params.eventId);
+    
+    try {
+      await storage.deleteEvent(eventId, userId);
+      res.json({ message: "Event deleted" });
+    } catch (err) {
+      if (err instanceof Error && err.message === "Not authorized") {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+      throw err;
+    }
+  });
+
   return httpServer;
 }

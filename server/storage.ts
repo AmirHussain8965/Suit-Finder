@@ -669,20 +669,20 @@ export class DatabaseStorage implements IStorage {
       .where(inArray(eventAttendees.eventId, eventIds));
 
     // Get host profiles
-    const hostIds = [...new Set(eventList.map(e => e.hostId))];
+    const hostIds = Array.from(new Set(eventList.map(e => e.hostId)));
     const hostProfiles = await db
       .select()
       .from(profiles)
       .where(inArray(profiles.userId, hostIds));
 
     // Get attendee profiles
-    const attendeeUserIds = [...new Set(attendees.map(a => a.userId))];
+    const attendeeUserIds = Array.from(new Set(attendees.map(a => a.userId)));
     const attendeeProfiles = attendeeUserIds.length > 0 
       ? await db.select().from(profiles).where(inArray(profiles.userId, attendeeUserIds))
       : [];
 
     // Get profile photos for hosts and attendees
-    const allUserIds = [...new Set([...hostIds, ...attendeeUserIds])];
+    const allUserIds = Array.from(new Set(hostIds.concat(attendeeUserIds)));
     const profilePhotos = allUserIds.length > 0
       ? await db.select().from(photos).where(and(inArray(photos.userId, allUserIds), eq(photos.isProfilePhoto, true)))
       : [];

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertProfileSchema, insertPhotoSchema, insertMessageSchema, profiles, photos, conversations, messages } from './schema';
+import { insertProfileSchema, insertPhotoSchema, insertMessageSchema, insertEventSchema, profiles, photos, conversations, messages, events, eventCategories } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -231,6 +231,74 @@ export const api = {
       path: '/api/conversations/:conversationId/read',
       responses: {
         200: z.object({ message: z.string() }),
+      },
+    },
+  },
+  events: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/events',
+      responses: {
+        200: z.array(z.any()),
+      },
+    },
+    get: {
+      method: 'GET' as const,
+      path: '/api/events/:eventId',
+      responses: {
+        200: z.any(),
+        404: errorSchemas.notFound,
+      },
+    },
+    hostEvents: {
+      method: 'GET' as const,
+      path: '/api/profiles/:userId/events',
+      responses: {
+        200: z.array(z.any()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/events',
+      input: insertEventSchema.extend({
+        category: z.enum(eventCategories),
+      }),
+      responses: {
+        200: z.custom<typeof events.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    join: {
+      method: 'POST' as const,
+      path: '/api/events/:eventId/join',
+      responses: {
+        200: z.any(),
+      },
+    },
+    leave: {
+      method: 'DELETE' as const,
+      path: '/api/events/:eventId/leave',
+      responses: {
+        200: z.object({ message: z.string() }),
+      },
+    },
+    updateAttendee: {
+      method: 'PATCH' as const,
+      path: '/api/events/:eventId/attendees/:userId',
+      input: z.object({
+        status: z.enum(['pending', 'approved', 'declined']),
+      }),
+      responses: {
+        200: z.any(),
+        403: errorSchemas.unauthorized,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/events/:eventId',
+      responses: {
+        200: z.object({ message: z.string() }),
+        403: errorSchemas.unauthorized,
       },
     },
   },
