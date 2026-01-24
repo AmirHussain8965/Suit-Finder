@@ -32,6 +32,7 @@ export default function ProfilePage() {
       displayName: "",
       bio: "",
       styleInterests: "",
+      role: "",
       isVisible: true,
     },
   });
@@ -43,6 +44,7 @@ export default function ProfilePage() {
         displayName: profile.displayName || user?.firstName || "",
         bio: profile.bio || "",
         styleInterests: profile.styleInterests || "",
+        role: profile.role || "",
         isVisible: profile.isVisible ?? true,
       });
     }
@@ -145,6 +147,16 @@ export default function ProfilePage() {
                     {...form.register("styleInterests")} 
                     className="bg-background border-input focus:border-accent"
                     placeholder="Black Tie, Morning Dress, Velvet Jackets..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="role">Role (Submissive, Dominant, Vers)</Label>
+                  <Input 
+                    id="role" 
+                    {...form.register("role")} 
+                    className="bg-background border-input focus:border-accent"
+                    placeholder="E.g. Dominant"
                   />
                 </div>
 

@@ -102,6 +102,7 @@ export async function registerRoutes(
         bio: p.bio,
         profileImageUrl: user?.profileImageUrl || null,
         styleInterests: p.styleInterests,
+        role: p.role,
       };
     }));
 
