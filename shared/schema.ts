@@ -26,6 +26,7 @@ export const profiles = pgTable("profiles", {
   longitude: doublePrecision("longitude"),
   locationUpdatedAt: timestamp("location_updated_at"),
   isVisible: boolean("is_visible").default(true),
+  isTraveling: boolean("is_traveling").default(false),
   // Style preferences
   styleInterests: text("style_interests"), // e.g. "Tuxedos, Vintage, Modern"
   role: text("role"), // "submissive", "dominant", "vers"

@@ -1,6 +1,7 @@
 import { Marker, Popup } from "react-leaflet";
 import { Icon } from "leaflet";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Plane } from "lucide-react";
 
 // Custom marker icons
 const userIcon = new Icon({
@@ -27,6 +28,7 @@ interface MapMarkerProps {
     longitude: number | null;
     bio: string | null;
     profileImageUrl: string | null;
+    isTraveling?: boolean;
   };
   isSelf?: boolean;
 }
@@ -47,9 +49,14 @@ export function MapMarker({ user, isSelf = false }: MapMarkerProps) {
           </Avatar>
           
           <div className="text-center">
-            <h3 className="font-serif font-bold text-lg text-foreground">
-              {isSelf ? "You" : user.displayName || "Unknown User"}
-            </h3>
+            <div className="flex items-center justify-center gap-1">
+              <h3 className="font-serif font-bold text-lg text-foreground">
+                {isSelf ? "You" : user.displayName || "Unknown User"}
+              </h3>
+              {user.isTraveling && (
+                <Plane className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+              )}
+            </div>
             {user.bio && (
               <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                 "{user.bio}"

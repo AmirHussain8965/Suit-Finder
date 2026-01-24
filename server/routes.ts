@@ -105,6 +105,7 @@ export async function registerRoutes(
         role: p.role,
         interestType: p.interestType,
         categories: p.categories,
+        isTraveling: p.isTraveling,
       };
     }));
 

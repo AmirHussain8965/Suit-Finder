@@ -101,7 +101,7 @@ export default function MapPage() {
           {/* Render Others */}
           {nearbyUsers?.map((user) => (
             user.userId !== profile.userId && (
-              <MapMarker key={user.userId} user={user} />
+              <MapMarker key={user.userId} user={{ ...user, isTraveling: user.isTraveling }} />
             )
           ))}
         </MapContainer>
