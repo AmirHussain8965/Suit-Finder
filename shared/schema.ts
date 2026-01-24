@@ -236,3 +236,86 @@ export type ConversationWithParticipants = Conversation & {
 export type MessageWithSender = Message & {
   sender: { displayName: string | null; profileImageUrl: string | null };
 };
+
+// Event categories
+export const eventCategories = [
+  "drinks_only",
+  "orgy", 
+  "social_dinner",
+  "pump_and_dump",
+  "bukkake",
+  "side_event",
+  "messy_meetup"
+] as const;
+
+export type EventCategory = typeof eventCategories[number];
+
+// Events table
+export const events = pgTable("events", {
+  id: serial("id").primaryKey(),
+  hostId: text("host_id").notNull().references(() => authUsers.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  category: text("category").notNull(), // One of eventCategories
+  eventDate: timestamp("event_date").notNull(),
+  location: text("location"), // General location description (not exact)
+  latitude: doublePrecision("latitude"),
+  longitude: doublePrecision("longitude"),
+  maxAttendees: integer("max_attendees"),
+  isPublic: boolean("is_public").default(true), // If false, invite-only
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const eventsRelations = relations(events, ({ one, many }) => ({
+  host: one(authUsers, {
+    fields: [events.hostId],
+    references: [authUsers.id],
+  }),
+  attendees: many(eventAttendees),
+}));
+
+// Event attendees table
+export const eventAttendees = pgTable("event_attendees", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id").notNull().references(() => events.id),
+  userId: text("user_id").notNull().references(() => authUsers.id),
+  status: text("status").notNull().default("pending"), // pending, approved, declined
+  joinedAt: timestamp("joined_at").defaultNow(),
+});
+
+export const eventAttendeesRelations = relations(eventAttendees, ({ one }) => ({
+  event: one(events, {
+    fields: [eventAttendees.eventId],
+    references: [events.id],
+  }),
+  user: one(authUsers, {
+    fields: [eventAttendees.userId],
+    references: [authUsers.id],
+  }),
+}));
+
+export const insertEventSchema = createInsertSchema(events).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  hostId: true,
+});
+
+export const insertEventAttendeeSchema = createInsertSchema(eventAttendees).omit({
+  id: true,
+  joinedAt: true,
+});
+
+export type Event = typeof events.$inferSelect;
+export type InsertEvent = z.infer<typeof insertEventSchema>;
+export type EventAttendee = typeof eventAttendees.$inferSelect;
+export type InsertEventAttendee = z.infer<typeof insertEventAttendeeSchema>;
+
+// Extended types for frontend
+export type EventWithDetails = Event & {
+  host: { userId: string; displayName: string | null; profileImageUrl: string | null };
+  attendeeCount: number;
+  isAttending: boolean;
+  attendees?: { userId: string; displayName: string | null; profileImageUrl: string | null; status: string }[];
+};
