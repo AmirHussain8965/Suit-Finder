@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, MapPin, Shield, Users } from "lucide-react";
 import { useLocation } from "wouter";
+import heroImage from "../assets/images/hero-gentlemen.png";
 
 export default function Landing() {
   const [, setLocation] = useLocation();
@@ -10,13 +11,12 @@ export default function Landing() {
       {/* Hero Section */}
       <header className="flex-1 flex flex-col justify-center items-center text-center p-6 relative overflow-hidden">
         {/* Background Overlay */}
-        <div className="absolute inset-0 z-0 opacity-20">
+        <div className="absolute inset-0 z-0 opacity-30">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/20 via-transparent to-background" />
-          {/* unsplash: man adjusting tie in suit */}
           <img 
-            src="https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=1920&q=80" 
-            alt="Gentleman in suit"
-            className="w-full h-full object-cover grayscale"
+            src={heroImage} 
+            alt="Two gentlemen in three-piece suits"
+            className="w-full h-full object-cover"
           />
         </div>
 
