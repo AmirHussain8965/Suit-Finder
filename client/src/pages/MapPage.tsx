@@ -73,11 +73,11 @@ export default function MapPage() {
 
   return (
     <Layout>
-      <div className="relative h-full w-full bg-background z-0 flex-1">
+      <div className="relative flex-1 w-full bg-background min-h-0">
         <MapContainer
           center={center}
           zoom={zoom}
-          style={{ height: "100%", width: "100%", zIndex: 0 }}
+          style={{ height: "100%", width: "100%" }}
           zoomControl={false}
         >
           {/* Dark themed tiles */}
