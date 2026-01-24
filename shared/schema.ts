@@ -79,6 +79,8 @@ export const insertPhotoSchema = createInsertSchema(photos).omit({
   id: true,
   userId: true,
   createdAt: true,
+}).extend({
+  url: z.string().url("Must be a valid URL").max(2000, "URL too long"),
 });
 
 export type Photo = typeof photos.$inferSelect;
