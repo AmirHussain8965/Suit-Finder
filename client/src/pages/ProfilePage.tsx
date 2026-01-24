@@ -62,6 +62,8 @@ export default function ProfilePage() {
     "butler"
   ];
 
+  const mainSuitTypes = ["Tuxedo", "Suit and Tie"];
+
   const onSubmit = (data: ProfileFormValues) => {
     updateProfile(data, {
       onSuccess: () => {
@@ -173,13 +175,48 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="interestType">Interest Type (Styling or Fetish)</Label>
-                  <Input 
-                    id="interestType" 
-                    {...form.register("interestType")} 
-                    className="bg-background border-input focus:border-accent"
-                    placeholder="E.g. Styling"
-                  />
+                  <Label htmlFor="interestType">Interest (Styling only or Fetish)</Label>
+                  <div className="flex gap-4">
+                    {["Styling only", "Fetish"].map((type) => (
+                      <label key={type} className="flex items-center gap-2 cursor-pointer p-2 rounded-md border border-border bg-background/50 flex-1 justify-center hover-elevate">
+                        <input
+                          type="radio"
+                          value={type}
+                          checked={form.watch("interestType") === type}
+                          onChange={() => form.setValue("interestType", type)}
+                          className="h-4 w-4 text-accent border-gray-300 focus:ring-accent"
+                        />
+                        <span className="text-sm font-medium">{type}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Primary Focus</Label>
+                  <div className="flex gap-4">
+                    {mainSuitTypes.map((type) => {
+                      const currentInterests = form.watch("styleInterests")?.split(", ").filter(Boolean) || [];
+                      const isChecked = currentInterests.includes(type);
+                      
+                      return (
+                        <label key={type} className="flex items-center gap-2 cursor-pointer p-2 rounded-md border border-border bg-background/50 flex-1 justify-center hover-elevate">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              const newInterests = e.target.checked 
+                                ? [...currentInterests, type]
+                                : currentInterests.filter(i => i !== type);
+                              form.setValue("styleInterests", newInterests.join(", "));
+                            }}
+                            className="h-4 w-4 rounded border-gray-300 text-accent focus:ring-accent"
+                          />
+                          <span className="text-sm font-medium">{type}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="space-y-3">
