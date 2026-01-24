@@ -6,6 +6,8 @@ import {
   conversations,
   conversationParticipants,
   messages,
+  events,
+  eventAttendees,
   type Profile,
   type InsertProfile,
   type UpdateProfileRequest,
@@ -18,8 +20,12 @@ import {
   type InsertMessage,
   type ConversationWithParticipants,
   type MessageWithSender,
+  type Event,
+  type InsertEvent,
+  type EventAttendee,
+  type EventWithDetails,
 } from "@shared/schema";
-import { eq, sql, and, desc, inArray } from "drizzle-orm";
+import { eq, sql, and, desc, inArray, gte, or } from "drizzle-orm";
 
 // Fuzz location within approximately half a mile (~0.8km) for privacy
 // Uses haversine-based destination point formula for accuracy
@@ -90,6 +96,17 @@ export interface IStorage {
   getMessages(conversationId: number, userId: string, limit?: number, offset?: number): Promise<MessageWithSender[]>;
   sendMessage(conversationId: number, senderId: string, content?: string, imageUrl?: string): Promise<Message>;
   markConversationRead(conversationId: number, userId: string): Promise<void>;
+  
+  // Events
+  createEvent(hostId: string, data: InsertEvent): Promise<Event>;
+  getEvents(userId: string): Promise<EventWithDetails[]>;
+  getEvent(eventId: number, userId: string): Promise<EventWithDetails | undefined>;
+  getHostEvents(hostId: string, userId: string): Promise<EventWithDetails[]>;
+  joinEvent(eventId: number, userId: string): Promise<EventAttendee>;
+  leaveEvent(eventId: number, userId: string): Promise<void>;
+  updateAttendeeStatus(eventId: number, hostId: string, userId: string, status: string): Promise<EventAttendee>;
+  deleteEvent(eventId: number, hostId: string): Promise<void>;
+  isEventParticipant(eventId: number, userId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -583,6 +600,201 @@ export class DatabaseStorage implements IStorage {
           eq(conversationParticipants.userId, userId)
         )
       );
+  }
+
+  // Event methods
+  async createEvent(hostId: string, data: InsertEvent): Promise<Event> {
+    const [event] = await db
+      .insert(events)
+      .values({
+        ...data,
+        hostId,
+      })
+      .returning();
+    
+    // Host automatically attends their own event
+    await db
+      .insert(eventAttendees)
+      .values({
+        eventId: event.id,
+        userId: hostId,
+        status: "approved",
+      });
+    
+    return event;
+  }
+
+  async getEvents(userId: string): Promise<EventWithDetails[]> {
+    // Get all public events and events user is attending
+    const allEvents = await db
+      .select()
+      .from(events)
+      .where(gte(events.eventDate, new Date()))
+      .orderBy(events.eventDate);
+
+    return this.enrichEvents(allEvents, userId);
+  }
+
+  async getEvent(eventId: number, userId: string): Promise<EventWithDetails | undefined> {
+    const [event] = await db
+      .select()
+      .from(events)
+      .where(eq(events.id, eventId));
+    
+    if (!event) return undefined;
+    
+    const enriched = await this.enrichEvents([event], userId);
+    return enriched[0];
+  }
+
+  async getHostEvents(hostId: string, userId: string): Promise<EventWithDetails[]> {
+    const hostEvents = await db
+      .select()
+      .from(events)
+      .where(eq(events.hostId, hostId))
+      .orderBy(desc(events.eventDate));
+    
+    return this.enrichEvents(hostEvents, userId);
+  }
+
+  private async enrichEvents(eventList: Event[], userId: string): Promise<EventWithDetails[]> {
+    if (eventList.length === 0) return [];
+
+    const eventIds = eventList.map(e => e.id);
+    
+    // Get all attendees for these events
+    const attendees = await db
+      .select()
+      .from(eventAttendees)
+      .where(inArray(eventAttendees.eventId, eventIds));
+
+    // Get host profiles
+    const hostIds = [...new Set(eventList.map(e => e.hostId))];
+    const hostProfiles = await db
+      .select()
+      .from(profiles)
+      .where(inArray(profiles.userId, hostIds));
+
+    // Get attendee profiles
+    const attendeeUserIds = [...new Set(attendees.map(a => a.userId))];
+    const attendeeProfiles = attendeeUserIds.length > 0 
+      ? await db.select().from(profiles).where(inArray(profiles.userId, attendeeUserIds))
+      : [];
+
+    // Get profile photos for hosts and attendees
+    const allUserIds = [...new Set([...hostIds, ...attendeeUserIds])];
+    const profilePhotos = allUserIds.length > 0
+      ? await db.select().from(photos).where(and(inArray(photos.userId, allUserIds), eq(photos.isProfilePhoto, true)))
+      : [];
+
+    return eventList.map(event => {
+      const eventAttendeesList = attendees.filter(a => a.eventId === event.id);
+      const hostProfile = hostProfiles.find(p => p.userId === event.hostId);
+      const hostPhoto = profilePhotos.find(p => p.userId === event.hostId);
+      const isAttending = eventAttendeesList.some(a => a.userId === userId);
+      const isHost = event.hostId === userId;
+
+      return {
+        ...event,
+        host: {
+          userId: event.hostId,
+          displayName: hostProfile?.displayName || null,
+          profileImageUrl: hostPhoto?.url || null,
+        },
+        attendeeCount: eventAttendeesList.filter(a => a.status === "approved").length,
+        isAttending: isAttending || isHost,
+        attendees: (isAttending || isHost) ? eventAttendeesList.map(a => {
+          const profile = attendeeProfiles.find(p => p.userId === a.userId);
+          const photo = profilePhotos.find(p => p.userId === a.userId);
+          return {
+            userId: a.userId,
+            displayName: profile?.displayName || null,
+            profileImageUrl: photo?.url || null,
+            status: a.status,
+          };
+        }) : undefined,
+      };
+    });
+  }
+
+  async joinEvent(eventId: number, userId: string): Promise<EventAttendee> {
+    // Check if already attending
+    const [existing] = await db
+      .select()
+      .from(eventAttendees)
+      .where(and(eq(eventAttendees.eventId, eventId), eq(eventAttendees.userId, userId)));
+    
+    if (existing) return existing;
+
+    const [attendee] = await db
+      .insert(eventAttendees)
+      .values({
+        eventId,
+        userId,
+        status: "pending",
+      })
+      .returning();
+    
+    return attendee;
+  }
+
+  async leaveEvent(eventId: number, userId: string): Promise<void> {
+    await db
+      .delete(eventAttendees)
+      .where(and(eq(eventAttendees.eventId, eventId), eq(eventAttendees.userId, userId)));
+  }
+
+  async updateAttendeeStatus(eventId: number, hostId: string, userId: string, status: string): Promise<EventAttendee> {
+    // Verify requester is the host
+    const [event] = await db
+      .select()
+      .from(events)
+      .where(eq(events.id, eventId));
+    
+    if (!event || event.hostId !== hostId) {
+      throw new Error("Not authorized");
+    }
+
+    const [attendee] = await db
+      .update(eventAttendees)
+      .set({ status })
+      .where(and(eq(eventAttendees.eventId, eventId), eq(eventAttendees.userId, userId)))
+      .returning();
+    
+    return attendee;
+  }
+
+  async deleteEvent(eventId: number, hostId: string): Promise<void> {
+    // Verify requester is the host
+    const [event] = await db
+      .select()
+      .from(events)
+      .where(eq(events.id, eventId));
+    
+    if (!event || event.hostId !== hostId) {
+      throw new Error("Not authorized");
+    }
+
+    // Delete attendees first
+    await db.delete(eventAttendees).where(eq(eventAttendees.eventId, eventId));
+    await db.delete(events).where(eq(events.id, eventId));
+  }
+
+  async isEventParticipant(eventId: number, userId: string): Promise<boolean> {
+    const [event] = await db
+      .select()
+      .from(events)
+      .where(eq(events.id, eventId));
+    
+    if (!event) return false;
+    if (event.hostId === userId) return true;
+    
+    const [attendee] = await db
+      .select()
+      .from(eventAttendees)
+      .where(and(eq(eventAttendees.eventId, eventId), eq(eventAttendees.userId, userId)));
+    
+    return !!attendee;
   }
 }
 
