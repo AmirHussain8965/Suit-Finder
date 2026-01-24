@@ -32,9 +32,24 @@ Preferred communication style: Simple, everyday language.
 - **Key Tables**:
   - `users` - Authentication user records (managed by Replit Auth)
   - `sessions` - Session storage for authentication
-  - `profiles` - Extended user profile data (bio, location, style preferences)
+  - `profiles` - Extended user profile data including:
+    - Basic info (displayName, bio, contactInfo)
+    - Location (latitude, longitude, physicalLatitude, physicalLongitude, isTraveling)
+    - Age verification (birthDate, ageVerified) - users must be 21+
+    - Style preferences (styleInterests, role, interestType, categories)
+    - Physical description (hairColor, eyeColor, build, ethnicity, height, weight, bodyHair)
+    - Health info (hivStatus, onPrep, lastStdScreening)
   - `photos` - User photo gallery with public/private visibility
   - `favorites` - User-to-user favorites relationship
+
+### Legal Compliance
+- **Age Verification**: Mandatory 21+ age gate with server-side validation
+- **Legal Disclaimers**: Comprehensive disclaimers on age verification page including:
+  - Assumption of risk acknowledgment
+  - User responsibility for verifying other users
+  - "As is" service disclaimer
+  - Indemnification clause
+  - Health information disclaimer (self-reported, not verified)
 
 ### Authentication
 - **Provider**: Replit OpenID Connect (OIDC) authentication

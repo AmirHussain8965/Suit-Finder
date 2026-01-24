@@ -37,6 +37,16 @@ export default function ProfilePage() {
       categories: [],
       isVisible: true,
       isTraveling: false,
+      hairColor: "",
+      eyeColor: "",
+      build: "",
+      ethnicity: "",
+      height: "",
+      weight: "",
+      bodyHair: "",
+      hivStatus: "",
+      onPrep: false,
+      lastStdScreening: null,
     },
   });
 
@@ -52,6 +62,16 @@ export default function ProfilePage() {
         categories: profile.categories || [],
         isVisible: profile.isVisible ?? true,
         isTraveling: profile.isTraveling ?? false,
+        hairColor: profile.hairColor || "",
+        eyeColor: profile.eyeColor || "",
+        build: profile.build || "",
+        ethnicity: profile.ethnicity || "",
+        height: profile.height || "",
+        weight: profile.weight || "",
+        bodyHair: profile.bodyHair || "",
+        hivStatus: profile.hivStatus || "",
+        onPrep: profile.onPrep ?? false,
+        lastStdScreening: profile.lastStdScreening || null,
       });
     }
   }, [profile, user, form]);
@@ -144,6 +164,29 @@ export default function ProfilePage() {
                     className="bg-background border-input focus:border-accent min-h-[100px]"
                     placeholder="E.g. Vintage tuxedo collector, black tie enthusiast..."
                   />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="height">Height</Label>
+                    <Input 
+                      id="height" 
+                      {...form.register("height")} 
+                      className="bg-background border-input focus:border-accent"
+                      placeholder="5'10&quot; or 178cm"
+                      data-testid="input-height"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="weight">Weight</Label>
+                    <Input 
+                      id="weight" 
+                      {...form.register("weight")} 
+                      className="bg-background border-input focus:border-accent"
+                      placeholder="180lbs or 82kg"
+                      data-testid="input-weight"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -289,6 +332,174 @@ export default function ProfilePage() {
                   />
                 </div>
 
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Physical Description & Health */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Physical Description */}
+            <Card className="bg-card border-border shadow-lg">
+              <CardHeader>
+                <CardTitle className="font-serif text-accent">Physical Description</CardTitle>
+                <CardDescription>Your appearance details.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="hairColor">Hair Color</Label>
+                    <select
+                      id="hairColor"
+                      value={form.watch("hairColor") || ""}
+                      onChange={(e) => form.setValue("hairColor", e.target.value)}
+                      className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      data-testid="select-hair-color"
+                    >
+                      <option value="">Select...</option>
+                      <option value="Black">Black</option>
+                      <option value="Brown">Brown</option>
+                      <option value="Blonde">Blonde</option>
+                      <option value="Red">Red</option>
+                      <option value="Gray">Gray</option>
+                      <option value="White">White</option>
+                      <option value="Bald">Bald</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="eyeColor">Eye Color</Label>
+                    <select
+                      id="eyeColor"
+                      value={form.watch("eyeColor") || ""}
+                      onChange={(e) => form.setValue("eyeColor", e.target.value)}
+                      className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      data-testid="select-eye-color"
+                    >
+                      <option value="">Select...</option>
+                      <option value="Brown">Brown</option>
+                      <option value="Blue">Blue</option>
+                      <option value="Green">Green</option>
+                      <option value="Hazel">Hazel</option>
+                      <option value="Gray">Gray</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="build">Build</Label>
+                    <select
+                      id="build"
+                      value={form.watch("build") || ""}
+                      onChange={(e) => form.setValue("build", e.target.value)}
+                      className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      data-testid="select-build"
+                    >
+                      <option value="">Select...</option>
+                      <option value="Slim">Slim</option>
+                      <option value="Regular">Regular</option>
+                      <option value="Athletic">Athletic</option>
+                      <option value="Muscular">Muscular</option>
+                      <option value="Large">Large</option>
+                      <option value="Stocky">Stocky</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bodyHair">Body Hair</Label>
+                    <select
+                      id="bodyHair"
+                      value={form.watch("bodyHair") || ""}
+                      onChange={(e) => form.setValue("bodyHair", e.target.value)}
+                      className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      data-testid="select-body-hair"
+                    >
+                      <option value="">Select...</option>
+                      <option value="Smooth">Smooth</option>
+                      <option value="Trimmed">Trimmed</option>
+                      <option value="Hairy">Hairy</option>
+                      <option value="Very Hairy">Very Hairy</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="ethnicity">Ethnicity</Label>
+                  <select
+                    id="ethnicity"
+                    value={form.watch("ethnicity") || ""}
+                    onChange={(e) => form.setValue("ethnicity", e.target.value)}
+                    className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    data-testid="select-ethnicity"
+                  >
+                    <option value="">Select...</option>
+                    <option value="Asian">Asian</option>
+                    <option value="Black">Black</option>
+                    <option value="Latino">Latino</option>
+                    <option value="Middle Eastern">Middle Eastern</option>
+                    <option value="Mixed">Mixed</option>
+                    <option value="Native American">Native American</option>
+                    <option value="Pacific Islander">Pacific Islander</option>
+                    <option value="South Asian">South Asian</option>
+                    <option value="White">White</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Health Info */}
+            <Card className="bg-card border-border shadow-lg">
+              <CardHeader>
+                <CardTitle className="font-serif text-accent">Health Information</CardTitle>
+                <CardDescription>Optional health details for safer connections.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="hivStatus">HIV Status</Label>
+                  <select
+                    id="hivStatus"
+                    value={form.watch("hivStatus") || ""}
+                    onChange={(e) => form.setValue("hivStatus", e.target.value)}
+                    className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    data-testid="select-hiv-status"
+                  >
+                    <option value="">Prefer not to say</option>
+                    <option value="Negative">Negative</option>
+                    <option value="Positive">Positive</option>
+                    <option value="Undetectable">Undetectable</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-lg bg-background border border-border">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">On PrEP</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Currently taking pre-exposure prophylaxis
+                    </p>
+                  </div>
+                  <Switch 
+                    checked={form.watch("onPrep") ?? false}
+                    onCheckedChange={(checked) => form.setValue("onPrep", checked)}
+                    className="data-[state=checked]:bg-accent"
+                    data-testid="switch-on-prep"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="lastStdScreening">Last STD Screening</Label>
+                  <Input 
+                    id="lastStdScreening" 
+                    type="date"
+                    value={form.watch("lastStdScreening") ? new Date(form.watch("lastStdScreening") as any).toISOString().split('T')[0] : ""}
+                    onChange={(e) => form.setValue("lastStdScreening", e.target.value ? new Date(e.target.value) : null)}
+                    className="bg-background border-input focus:border-accent"
+                    data-testid="input-last-std-screening"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    When was your most recent STD test?
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </div>

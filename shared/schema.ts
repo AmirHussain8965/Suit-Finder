@@ -38,6 +38,18 @@ export const profiles = pgTable("profiles", {
   interestType: text("interest_type"), // "styling", "fetish"
   categories: jsonb("categories"), // Array of { name: string, mode: 'give' | 'receive' | 'both' }
   contactInfo: text("contact_info"), // Optional contact method
+  // Physical description
+  hairColor: text("hair_color"),
+  eyeColor: text("eye_color"),
+  build: text("build"), // athletic, large, slim, regular
+  ethnicity: text("ethnicity"),
+  height: text("height"), // stored as string like "5'10" or "178cm"
+  weight: text("weight"), // stored as string like "180lbs" or "82kg"
+  bodyHair: text("body_hair"), // smooth, hairy, trimmed
+  // Health info
+  hivStatus: text("hiv_status"), // negative, positive, undetectable, prefer not to say
+  onPrep: boolean("on_prep"),
+  lastStdScreening: timestamp("last_std_screening"),
 });
 
 export const profilesRelations = relations(profiles, ({ one }) => ({

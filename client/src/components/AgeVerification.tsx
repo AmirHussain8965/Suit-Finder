@@ -172,9 +172,30 @@ export function AgeVerification() {
             )}
           </Button>
 
-          <p className="text-xs text-center text-muted-foreground">
-            By continuing, you confirm that you are 21 years of age or older and agree to our terms of service.
-          </p>
+          <div className="space-y-3 text-xs text-muted-foreground border-t border-border pt-4">
+            <p className="font-semibold text-foreground">Legal Notice & Disclaimer</p>
+            <p>
+              By clicking "Verify Age & Continue," you certify under penalty of perjury that you are at least 21 years of age and legally permitted to access adult-oriented content in your jurisdiction.
+            </p>
+            <p>
+              <strong>Assumption of Risk:</strong> You acknowledge that this platform facilitates connections between consenting adults. All interactions, meetups, and activities arranged through this service are undertaken at your own risk. The operator assumes no liability for any injury, harm, loss, or damage arising from user interactions.
+            </p>
+            <p>
+              <strong>User Responsibility:</strong> You are solely responsible for verifying the identity, age, health status, and intentions of other users. The operator does not conduct background checks or verify user-provided information.
+            </p>
+            <p>
+              <strong>No Warranty:</strong> This service is provided "as is" without warranties of any kind. The operator disclaims all liability for user-generated content, accuracy of profiles, or outcomes of user interactions.
+            </p>
+            <p>
+              <strong>Indemnification:</strong> You agree to indemnify and hold harmless the operator from any claims, damages, or expenses arising from your use of this platform or violation of these terms.
+            </p>
+            <p>
+              <strong>Health Disclaimer:</strong> Health information shared by users (including HIV status, PrEP usage, and STD screening dates) is self-reported and not verified. Always practice safe interactions and consult healthcare professionals for medical advice.
+            </p>
+            <p className="pt-2">
+              By proceeding, you acknowledge that you have read, understood, and agree to be bound by these terms and our full Terms of Service and Privacy Policy.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
