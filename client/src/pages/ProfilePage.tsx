@@ -182,28 +182,56 @@ export default function ProfilePage() {
 
                 <div className="space-y-3">
                   <Label>Suit Desire Categories</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {suitCategories.map((category) => (
-                      <div key={category} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id={`cat-${category}`}
-                          checked={form.watch("categories")?.includes(category)}
-                          onChange={(e) => {
-                            const current = form.getValues("categories") || [];
-                            if (e.target.checked) {
-                              form.setValue("categories", [...current, category]);
-                            } else {
-                              form.setValue("categories", current.filter(c => c !== category));
-                            }
-                          }}
-                          className="h-4 w-4 rounded border-gray-300 text-accent focus:ring-accent"
-                        />
-                        <Label htmlFor={`cat-${category}`} className="text-sm font-normal capitalize">
-                          {category}
-                        </Label>
-                      </div>
-                    ))}
+                  <div className="space-y-4">
+                    {suitCategories.map((category) => {
+                      const currentCategories = form.watch("categories") || [];
+                      const categoryEntry = currentCategories.find((c: any) => c.name === category);
+                      const isChecked = !!categoryEntry;
+
+                      return (
+                        <div key={category} className="space-y-2 p-3 rounded-lg border border-border bg-background/50">
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={`cat-${category}`}
+                              checked={isChecked}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  form.setValue("categories", [...currentCategories, { name: category, mode: 'both' }]);
+                                } else {
+                                  form.setValue("categories", currentCategories.filter((c: any) => c.name !== category));
+                                }
+                              }}
+                              className="h-4 w-4 rounded border-gray-300 text-accent focus:ring-accent"
+                            />
+                            <Label htmlFor={`cat-${category}`} className="text-sm font-bold capitalize">
+                              {category}
+                            </Label>
+                          </div>
+                          
+                          {isChecked && (
+                            <div className="flex gap-4 ml-6 pt-1">
+                              {['give', 'receive', 'both'].map((mode) => (
+                                <label key={mode} className="flex items-center gap-1.5 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name={`mode-${category}`}
+                                    checked={categoryEntry.mode === mode}
+                                    onChange={() => {
+                                      form.setValue("categories", currentCategories.map((c: any) => 
+                                        c.name === category ? { ...c, mode } : c
+                                      ));
+                                    }}
+                                    className="h-3 w-3 text-accent border-gray-300 focus:ring-accent"
+                                  />
+                                  <span className="text-xs capitalize text-muted-foreground">{mode}</span>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 

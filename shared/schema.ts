@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, doublePrecision, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { users as authUsers } from "./models/auth";
@@ -30,7 +30,7 @@ export const profiles = pgTable("profiles", {
   styleInterests: text("style_interests"), // e.g. "Tuxedos, Vintage, Modern"
   role: text("role"), // "submissive", "dominant", "vers"
   interestType: text("interest_type"), // "styling", "fetish"
-  categories: text("categories").array(), // wet, gunging, ripping, touching, shoe worship, fully clothed sex, watersports, bukkake, simple meet and greet, butler
+  categories: jsonb("categories"), // Array of { name: string, mode: 'give' | 'receive' | 'both' }
   contactInfo: text("contact_info"), // Optional contact method
 });
 
