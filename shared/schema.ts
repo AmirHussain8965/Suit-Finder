@@ -21,6 +21,9 @@ export const profiles = pgTable("profiles", {
   userId: text("user_id").notNull().references(() => authUsers.id),
   displayName: text("display_name"),
   bio: text("bio"),
+  // Age verification
+  birthDate: timestamp("birth_date"),
+  ageVerified: boolean("age_verified").default(false),
   // Location data
   latitude: doublePrecision("latitude"),
   longitude: doublePrecision("longitude"),

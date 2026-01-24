@@ -19,6 +19,7 @@ export interface IStorage {
   updateProfile(userId: string, updates: UpdateProfileRequest): Promise<Profile>;
   updateLocation(userId: string, lat: number, lng: number): Promise<Profile>;
   getNearbyProfiles(lat?: number, lng?: number, radiusKm?: number): Promise<Profile[]>;
+  verifyAge(userId: string, birthDate: Date): Promise<Profile>;
   
   // Favorites
   getFavorites(userId: string): Promise<Favorite[]>;
@@ -121,6 +122,29 @@ export class DatabaseStorage implements IStorage {
       .where(
         sql`${profiles.isVisible} = true AND ${profiles.latitude} IS NOT NULL AND ${profiles.longitude} IS NOT NULL`
       );
+  }
+
+  async verifyAge(userId: string, birthDate: Date): Promise<Profile> {
+    const existing = await this.getProfile(userId);
+    
+    if (!existing) {
+      return this.createProfile({
+        userId,
+        birthDate,
+        ageVerified: true,
+        isVisible: true,
+      } as any);
+    }
+
+    const [updated] = await db
+      .update(profiles)
+      .set({
+        birthDate,
+        ageVerified: true,
+      })
+      .where(eq(profiles.userId, userId))
+      .returning();
+    return updated;
   }
 
   async getFavorites(userId: string): Promise<Favorite[]> {

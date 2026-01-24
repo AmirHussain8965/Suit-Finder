@@ -67,6 +67,17 @@ export const api = {
         }>()),
       },
     },
+    verifyAge: {
+      method: 'POST' as const,
+      path: '/api/profiles/verify-age',
+      input: z.object({
+        birthDate: z.string(),
+      }),
+      responses: {
+        200: z.custom<typeof profiles.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
   },
   favorites: {
     list: {

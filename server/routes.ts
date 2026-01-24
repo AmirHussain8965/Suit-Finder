@@ -81,6 +81,74 @@ export async function registerRoutes(
     }
   });
 
+  // Verify age
+  app.post(api.profiles.verifyAge.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+
+    try {
+      const input = api.profiles.verifyAge.input.parse(req.body);
+      const birthDate = new Date(input.birthDate);
+      
+      // Validate the date is valid
+      if (isNaN(birthDate.getTime())) {
+        return res.status(400).json({ 
+          message: "Invalid date format." 
+        });
+      }
+
+      const today = new Date();
+      
+      // Ensure birth date is not in the future
+      if (birthDate > today) {
+        return res.status(400).json({ 
+          message: "Birth date cannot be in the future." 
+        });
+      }
+
+      // Ensure birth date is within reasonable range (not more than 120 years ago)
+      const minDate = new Date(today.getFullYear() - 120, 0, 1);
+      if (birthDate < minDate) {
+        return res.status(400).json({ 
+          message: "Invalid birth date." 
+        });
+      }
+      
+      // Calculate age
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+
+      // Ensure age is a valid number
+      if (!Number.isFinite(age) || age < 0) {
+        return res.status(400).json({ 
+          message: "Invalid birth date." 
+        });
+      }
+
+      if (age < 21) {
+        return res.status(400).json({ 
+          message: "You must be 21 years or older to use this application." 
+        });
+      }
+
+      const profile = await storage.verifyAge(userId, birthDate);
+      res.json(profile);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
   // Get nearby profiles
   app.get(api.profiles.nearby.path, async (req, res) => {
     // Optional: require auth to see others? Yes, for privacy.
