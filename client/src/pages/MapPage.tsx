@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import { MapMarker } from "@/components/MapMarker";
 import { Button } from "@/components/ui/button";
 import { Crosshair, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import "leaflet/dist/leaflet.css";
 
 // Helper to recenter map
@@ -19,6 +20,8 @@ function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
 export default function MapPage() {
   const { data: profile, isLoading: isProfileLoading } = useProfile();
   const { mutate: updateLocation, isPending: isUpdatingLocation } = useUpdateLocation();
+  const { toast } = useToast();
+  const [isLocating, setIsLocating] = useState(false);
   
   // Local state for user's viewport center (defaults to profile location or a default)
   const [center, setCenter] = useState<[number, number]>([51.505, -0.09]); // London default
@@ -38,24 +41,63 @@ export default function MapPage() {
   }, [profile?.latitude, profile?.longitude]);
 
   const handleLocateMe = () => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setCenter([latitude, longitude]);
-          updateLocation({ 
-            latitude, 
-            longitude,
-            // Pass physical location to backend for travel detection
-            physicalLatitude: latitude,
-            physicalLongitude: longitude
-          } as any);
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-        }
-      );
+    if (!("geolocation" in navigator)) {
+      toast({
+        title: "Location not supported",
+        description: "Your browser doesn't support location services.",
+        variant: "destructive",
+      });
+      return;
     }
+
+    setIsLocating(true);
+    toast({
+      title: "Finding your location...",
+      description: "Please allow location access if prompted.",
+    });
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setCenter([latitude, longitude]);
+        updateLocation({ 
+          latitude, 
+          longitude,
+          physicalLatitude: latitude,
+          physicalLongitude: longitude
+        } as any, {
+          onSuccess: () => {
+            setIsLocating(false);
+            toast({
+              title: "Location updated!",
+              description: "Your pin has been moved to your current location.",
+            });
+          },
+          onError: () => {
+            setIsLocating(false);
+            toast({
+              title: "Update failed",
+              description: "Could not save your location. Please try again.",
+              variant: "destructive",
+            });
+          }
+        });
+      },
+      (error) => {
+        setIsLocating(false);
+        let message = "Could not get your location.";
+        if (error.code === 1) message = "Location permission denied. Please allow access in your browser settings.";
+        if (error.code === 2) message = "Location unavailable. Please try again.";
+        if (error.code === 3) message = "Location request timed out. Please try again.";
+        
+        toast({
+          title: "Location error",
+          description: message,
+          variant: "destructive",
+        });
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
   if (isProfileLoading) {
@@ -116,11 +158,11 @@ export default function MapPage() {
           <Button
             size="icon"
             onClick={handleLocateMe}
-            disabled={isUpdatingLocation}
+            disabled={isUpdatingLocation || isLocating}
             className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-xl rounded-full h-14 w-14 border-2 border-white"
             data-testid="button-locate-me"
           >
-            {isUpdatingLocation ? (
+            {(isUpdatingLocation || isLocating) ? (
               <Loader2 className="h-6 w-6 animate-spin" />
             ) : (
               <Crosshair className="h-6 w-6" />
