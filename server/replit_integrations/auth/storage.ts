@@ -10,6 +10,7 @@ export interface IAuthStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   registerUser(email: string, password: string): Promise<User>;
+  setPassword(userId: string, password: string): Promise<User | undefined>;
   validatePassword(email: string, password: string): Promise<User | null>;
   updateUserStripeInfo(userId: string, stripeInfo: {
     stripeCustomerId?: string;
@@ -55,6 +56,19 @@ class AuthStorage implements IAuthStorage {
         email,
         password: hashedPassword,
       })
+      .returning();
+    return user;
+  }
+
+  async setPassword(userId: string, password: string): Promise<User | undefined> {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const [user] = await db
+      .update(users)
+      .set({
+        password: hashedPassword,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
       .returning();
     return user;
   }

@@ -50,6 +50,30 @@ export function registerAuthRoutes(app: Express): void {
       // Check if email already exists
       const existingUser = await authStorage.getUserByEmail(input.email);
       if (existingUser) {
+        // If user exists but has no password (from Replit Auth), allow setting password
+        if (!existingUser.password) {
+          const user = await authStorage.setPassword(existingUser.id, input.password);
+          if (!user) {
+            return res.status(500).json({ message: "Failed to set password" });
+          }
+          
+          // Log them in
+          const sessionUser = {
+            userId: user.id,
+            email: user.email,
+            claims: { sub: user.id },
+            expires_at: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60),
+          };
+          
+          return req.login(sessionUser, (err: any) => {
+            if (err) {
+              console.error("Session error:", err);
+              return res.status(500).json({ message: "Failed to create session" });
+            }
+            const { password, ...safeUser } = user;
+            res.json(safeUser);
+          });
+        }
         return res.status(400).json({ message: "Email already registered" });
       }
       
