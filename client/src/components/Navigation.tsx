@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Map, User, Settings, LogOut } from "lucide-react";
+import { Map, User, Image, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 
@@ -11,6 +11,7 @@ export function Navigation() {
 
   const navItems = [
     { href: "/map", icon: Map, label: "Explore" },
+    { href: "/gallery", icon: Image, label: "Gallery" },
     { href: "/profile", icon: User, label: "Profile" },
   ];
 

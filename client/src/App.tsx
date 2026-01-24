@@ -8,6 +8,7 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import MapPage from "@/pages/MapPage";
 import ProfilePage from "@/pages/ProfilePage";
+import GalleryPage from "@/pages/GalleryPage";
 import { Loader2 } from "lucide-react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -49,6 +50,10 @@ function Router() {
         <ProtectedRoute component={MapPage} />
       </Route>
       
+      <Route path="/gallery">
+        <ProtectedRoute component={GalleryPage} />
+      </Route>
+
       <Route path="/profile">
         <ProtectedRoute component={ProfilePage} />
       </Route>

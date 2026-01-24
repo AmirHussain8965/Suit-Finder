@@ -94,7 +94,8 @@ export default function ProfilePage() {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto p-6 md:p-12 space-y-8 animate-in fade-in duration-500">
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-4xl mx-auto p-6 md:p-12 space-y-8 animate-in fade-in duration-500">
         
         {/* Header */}
         <div className="flex flex-col md:flex-row gap-6 items-center md:items-start border-b border-border pb-8">
@@ -313,6 +314,7 @@ export default function ProfilePage() {
             </Button>
           </div>
         </form>
+        </div>
       </div>
     </Layout>
   );
