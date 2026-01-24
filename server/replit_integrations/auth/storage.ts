@@ -16,6 +16,7 @@ export interface IAuthStorage {
     stripeSubscriptionId?: string;
     subscriptionStatus?: string;
     subscriptionPlan?: string;
+    subscriptionTier?: string;
     subscriptionEndDate?: Date | null;
   }): Promise<User | undefined>;
 }
@@ -72,6 +73,7 @@ class AuthStorage implements IAuthStorage {
     stripeSubscriptionId?: string;
     subscriptionStatus?: string;
     subscriptionPlan?: string;
+    subscriptionTier?: string;
     subscriptionEndDate?: Date | null;
   }): Promise<User | undefined> {
     const [user] = await db

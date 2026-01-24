@@ -19,12 +19,13 @@ export class WebhookHandlers {
     await sync.processWebhook(payload, signature);
   }
 
-  static async handleSubscriptionChange(customerId: string, subscriptionId: string | null, status: string, plan: string | null, endDate: Date | null) {
+  static async handleSubscriptionChange(customerId: string, subscriptionId: string | null, status: string, plan: string | null, tier: string | null, endDate: Date | null) {
     await db.update(users)
       .set({
         stripeSubscriptionId: subscriptionId,
         subscriptionStatus: status,
         subscriptionPlan: plan,
+        subscriptionTier: tier,
         subscriptionEndDate: endDate,
         updatedAt: new Date(),
       })

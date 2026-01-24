@@ -653,11 +653,16 @@ export async function registerRoutes(
       return res.status(404).json({ message: "User not found" });
     }
 
-    const isPremium = user.subscriptionStatus === 'active' || 
-                      user.subscriptionStatus === 'trialing';
+    const hasActiveSubscription = user.subscriptionStatus === 'active' || 
+                                  user.subscriptionStatus === 'trialing';
+    const tier = hasActiveSubscription ? (user.subscriptionTier || 'premium') : 'free';
+    const isPremium = hasActiveSubscription;
+    const isPlatinum = hasActiveSubscription && user.subscriptionTier === 'platinum';
 
     res.json({
       isPremium,
+      isPlatinum,
+      tier,
       status: user.subscriptionStatus,
       plan: user.subscriptionPlan,
       endDate: user.subscriptionEndDate,

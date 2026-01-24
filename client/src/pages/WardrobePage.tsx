@@ -15,8 +15,8 @@ import { Loader2, Plus, Heart, Trash2, Pencil, Shirt, X, Upload, Briefcase, Watc
 import type { WardrobeItem } from "@shared/schema";
 import { wardrobeCategories } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
-import { usePremiumFeature } from "@/hooks/use-subscription";
-import { PremiumGate } from "@/components/PremiumGate";
+import { usePlatinumFeature } from "@/hooks/use-subscription";
+import { PlatinumGate } from "@/components/PremiumGate";
 import type { LucideIcon } from "lucide-react";
 
 const categoryLabels: Record<string, string> = {
@@ -60,7 +60,7 @@ const getCategoryIcon = (category: string): LucideIcon => {
 
 export default function WardrobePage() {
   const { user } = useAuth();
-  const { isPremium, isLoading: isPremiumLoading } = usePremiumFeature();
+  const { isPlatinum, isLoading: isPlatinumLoading } = usePlatinumFeature();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [editingItem, setEditingItem] = useState<WardrobeItem | null>(null);
@@ -227,7 +227,7 @@ export default function WardrobePage() {
     return counts;
   };
 
-  if (isLoading || isPremiumLoading) {
+  if (isLoading || isPlatinumLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-[60vh]">
@@ -237,12 +237,12 @@ export default function WardrobePage() {
     );
   }
 
-  if (!isPremium) {
+  if (!isPlatinum) {
     return (
       <Layout>
-        <PremiumGate featureName="virtual wardrobe">
+        <PlatinumGate featureName="Virtual Wardrobe">
           <div />
-        </PremiumGate>
+        </PlatinumGate>
       </Layout>
     );
   }

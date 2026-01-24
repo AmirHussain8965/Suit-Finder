@@ -372,3 +372,89 @@ export const insertWardrobeItemSchema = createInsertSchema(wardrobeItems).omit({
 
 export type WardrobeItem = typeof wardrobeItems.$inferSelect;
 export type InsertWardrobeItem = z.infer<typeof insertWardrobeItemSchema>;
+
+// Auction statuses
+export const auctionStatuses = ["active", "ended", "cancelled"] as const;
+export type AuctionStatus = typeof auctionStatuses[number];
+
+// Auctions table
+export const auctions = pgTable("auctions", {
+  id: serial("id").primaryKey(),
+  sellerId: text("seller_id").notNull().references(() => authUsers.id),
+  wardrobeItemId: integer("wardrobe_item_id").references(() => wardrobeItems.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  imageUrl: text("image_url"),
+  category: text("category").notNull(),
+  startingPrice: integer("starting_price").notNull(), // In cents
+  currentPrice: integer("current_price").notNull(), // In cents
+  buyNowPrice: integer("buy_now_price"), // Optional buy now price in cents
+  status: text("status").notNull().default("active"),
+  endDate: timestamp("end_date").notNull(),
+  winnerId: text("winner_id").references(() => authUsers.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const auctionsRelations = relations(auctions, ({ one, many }) => ({
+  seller: one(authUsers, {
+    fields: [auctions.sellerId],
+    references: [authUsers.id],
+  }),
+  winner: one(authUsers, {
+    fields: [auctions.winnerId],
+    references: [authUsers.id],
+  }),
+  wardrobeItem: one(wardrobeItems, {
+    fields: [auctions.wardrobeItemId],
+    references: [wardrobeItems.id],
+  }),
+  bids: many(bids),
+}));
+
+// Bids table
+export const bids = pgTable("bids", {
+  id: serial("id").primaryKey(),
+  auctionId: integer("auction_id").notNull().references(() => auctions.id),
+  bidderId: text("bidder_id").notNull().references(() => authUsers.id),
+  amount: integer("amount").notNull(), // In cents
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const bidsRelations = relations(bids, ({ one }) => ({
+  auction: one(auctions, {
+    fields: [bids.auctionId],
+    references: [auctions.id],
+  }),
+  bidder: one(authUsers, {
+    fields: [bids.bidderId],
+    references: [authUsers.id],
+  }),
+}));
+
+export const insertAuctionSchema = createInsertSchema(auctions).omit({
+  id: true,
+  sellerId: true,
+  currentPrice: true,
+  status: true,
+  winnerId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertBidSchema = createInsertSchema(bids).omit({
+  id: true,
+  bidderId: true,
+  createdAt: true,
+});
+
+export type Auction = typeof auctions.$inferSelect;
+export type InsertAuction = z.infer<typeof insertAuctionSchema>;
+export type Bid = typeof bids.$inferSelect;
+export type InsertBid = z.infer<typeof insertBidSchema>;
+
+export type AuctionWithDetails = Auction & {
+  seller: { displayName: string | null };
+  bidCount: number;
+  highestBidder?: { displayName: string | null };
+};
