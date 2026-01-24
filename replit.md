@@ -41,6 +41,15 @@ Preferred communication style: Simple, everyday language.
     - Health info (hivStatus, onPrep, lastStdScreening)
   - `photos` - User photo gallery with public/private visibility
   - `favorites` - User-to-user favorites relationship
+  - `conversations` - Chat conversations (direct and group)
+  - `conversation_participants` - Tracks members of each conversation
+  - `messages` - Individual messages with sender info and read tracking
+
+### Messaging System
+- **Direct Messages**: 1-on-1 private chats between users
+- **Group Chats**: Multi-user conversations with custom names
+- **Security**: Route-level membership verification on all message endpoints
+- **Screenshot Prevention**: CSS-based deterrent (user-select: none, print media hiding)
 
 ### Legal Compliance
 - **Age Verification**: Mandatory 21+ age gate with server-side validation
