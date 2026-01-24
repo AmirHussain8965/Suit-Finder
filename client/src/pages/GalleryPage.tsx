@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Layout } from "@/components/Layout";
 import { useMyPhotos, useAddPhoto, useDeletePhoto, useSetProfilePhoto, useUpdatePhoto } from "@/hooks/use-photos";
 import { Button } from "@/components/ui/button";
@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Plus, Trash2, Star, Lock, Globe, Image as ImageIcon } from "lucide-react";
+import { Loader2, Plus, Trash2, Star, Lock, Globe, Image as ImageIcon, Upload, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Photo } from "@shared/schema";
+import { useUpload } from "@/hooks/use-upload";
 
 export default function GalleryPage() {
   const { data: photos, isLoading } = useMyPhotos();
@@ -18,8 +19,11 @@ export default function GalleryPage() {
   const { mutate: setProfilePhoto, isPending: isSettingProfile } = useSetProfilePhoto();
   const { mutate: updatePhoto } = useUpdatePhoto();
   const { toast } = useToast();
+  const { uploadFile, isUploading, progress } = useUpload();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [newPhotoUrl, setNewPhotoUrl] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [newPhotoCaption, setNewPhotoCaption] = useState("");
   const [newPhotoIsPublic, setNewPhotoIsPublic] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -28,24 +32,47 @@ export default function GalleryPage() {
   const privatePhotos = photos?.filter((p: Photo) => !p.isPublic) || [];
   const profilePhoto = photos?.find((p: Photo) => p.isProfilePhoto);
 
-  const handleAddPhoto = () => {
-    if (!newPhotoUrl.trim()) {
-      toast({ title: "Error", description: "Please enter a photo URL", variant: "destructive" });
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        toast({ title: "Error", description: "Please select an image file", variant: "destructive" });
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        toast({ title: "Error", description: "File size must be under 10MB", variant: "destructive" });
+        return;
+      }
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const handleAddPhoto = async () => {
+    if (!selectedFile) {
+      toast({ title: "Error", description: "Please select a photo to upload", variant: "destructive" });
+      return;
+    }
+
+    const uploadResponse = await uploadFile(selectedFile);
+    if (!uploadResponse) {
+      toast({ title: "Error", description: "Failed to upload photo", variant: "destructive" });
       return;
     }
 
     addPhoto(
-      { url: newPhotoUrl, caption: newPhotoCaption, isPublic: newPhotoIsPublic, isProfilePhoto: false },
+      { url: uploadResponse.objectPath, caption: newPhotoCaption, isPublic: newPhotoIsPublic, isProfilePhoto: false },
       {
         onSuccess: () => {
           toast({ title: "Photo Added", description: "Your photo has been added to your gallery." });
-          setNewPhotoUrl("");
+          setSelectedFile(null);
+          setPreviewUrl(null);
           setNewPhotoCaption("");
           setNewPhotoIsPublic(true);
           setDialogOpen(false);
         },
         onError: () => {
-          toast({ title: "Error", description: "Failed to add photo", variant: "destructive" });
+          toast({ title: "Error", description: "Failed to save photo", variant: "destructive" });
         },
       }
     );
@@ -183,14 +210,53 @@ export default function GalleryPage() {
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="photoUrl">Photo URL</Label>
-                    <Input 
-                      id="photoUrl"
-                      placeholder="https://example.com/photo.jpg"
-                      value={newPhotoUrl}
-                      onChange={(e) => setNewPhotoUrl(e.target.value)}
-                      data-testid="input-photo-url"
+                    <Label>Select Photo</Label>
+                    <input 
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      data-testid="input-photo-file"
                     />
+                    {previewUrl ? (
+                      <div className="relative">
+                        <img 
+                          src={previewUrl} 
+                          alt="Preview" 
+                          className="w-full h-48 object-cover rounded-lg border border-border"
+                        />
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="absolute top-2 right-2"
+                          onClick={() => {
+                            setSelectedFile(null);
+                            setPreviewUrl(null);
+                            if (fileInputRef.current) fileInputRef.current.value = "";
+                          }}
+                          data-testid="button-remove-preview"
+                        >
+                          Change
+                        </Button>
+                      </div>
+                    ) : (
+                      <div 
+                        className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-accent/50 transition-colors"
+                        onClick={() => fileInputRef.current?.click()}
+                        data-testid="button-select-photo"
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="flex gap-2">
+                            <Camera className="h-8 w-8 text-muted-foreground" />
+                            <Upload className="h-8 w-8 text-muted-foreground" />
+                          </div>
+                          <p className="text-sm font-medium text-foreground">Tap to take photo or choose from library</p>
+                          <p className="text-xs text-muted-foreground">Max 10MB, JPEG or PNG</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="photoCaption">Caption (optional)</Label>
@@ -213,6 +279,20 @@ export default function GalleryPage() {
                       data-testid="switch-photo-public"
                     />
                   </div>
+                  {isUploading && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Uploading... {progress}%</span>
+                      </div>
+                      <div className="w-full bg-border rounded-full h-2">
+                        <div 
+                          className="bg-accent h-2 rounded-full transition-all" 
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <DialogFooter>
                   <DialogClose asChild>
@@ -220,11 +300,11 @@ export default function GalleryPage() {
                   </DialogClose>
                   <Button 
                     onClick={handleAddPhoto} 
-                    disabled={isAdding}
+                    disabled={isAdding || isUploading || !selectedFile}
                     className="bg-accent text-accent-foreground"
                     data-testid="button-submit-photo"
                   >
-                    {isAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add Photo"}
+                    {(isAdding || isUploading) ? <Loader2 className="h-4 w-4 animate-spin" /> : "Upload Photo"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
