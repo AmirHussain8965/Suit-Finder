@@ -56,7 +56,7 @@ export function Navigation() {
               : "text-accent hover:bg-accent/10"}
           `}>
             <Crown size={20} />
-            <span className="font-medium">{isPremium ? "Premium" : "Upgrade"}</span>
+            <span className="font-medium">{isPremium ? "Member" : "Upgrade"}</span>
           </Link>
           <Button 
             variant="ghost" 

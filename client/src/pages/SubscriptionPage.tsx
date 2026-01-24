@@ -82,10 +82,10 @@ export default function SubscriptionPage() {
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-serif font-bold text-foreground flex items-center justify-center gap-2">
             <Crown className="h-8 w-8 text-accent" />
-            Premium Membership
+            Membership Tiers
           </h1>
           <p className="text-muted-foreground">
-            Unlock all features and connect with the community
+            Choose your level of access to the gentleman's community
           </p>
         </div>
 
@@ -96,7 +96,7 @@ export default function SubscriptionPage() {
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Crown className="h-5 w-5 text-accent" />
-                    Premium Member
+                    {subscription.plan === "platinum" ? "The Krug Society" : "The Tailored Circle"}
                   </CardTitle>
                   <CardDescription>
                     You have full access to all features
@@ -129,11 +129,38 @@ export default function SubscriptionPage() {
           </Card>
         ) : (
           <>
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* Free Tier */}
               <Card className="relative">
                 <CardHeader>
-                  <CardTitle>Monthly</CardTitle>
-                  <CardDescription>Flexible monthly billing</CardDescription>
+                  <CardTitle>The Gentleman's Pass</CardTitle>
+                  <CardDescription>Free basic access</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="text-3xl font-bold">
+                    Free
+                  </div>
+                  <ul className="text-sm text-muted-foreground space-y-2">
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Browse profiles</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> View map</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Create profile</li>
+                  </ul>
+                  <Button 
+                    variant="outline"
+                    className="w-full"
+                    disabled
+                    data-testid="button-current-plan"
+                  >
+                    Current Plan
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Tailored Circle */}
+              <Card className="relative">
+                <CardHeader>
+                  <CardTitle>The Tailored Circle</CardTitle>
+                  <CardDescription>Full messaging and events</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-3xl font-bold">
@@ -146,26 +173,24 @@ export default function SubscriptionPage() {
                     data-testid="button-subscribe-monthly"
                   >
                     {isCheckingOut === "monthly" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                    Subscribe Monthly
+                    Join The Tailored Circle
                   </Button>
                 </CardContent>
               </Card>
 
+              {/* Krug Society */}
               <Card className="relative border-accent">
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <Badge className="bg-accent text-accent-foreground">Best Value</Badge>
                 </div>
                 <CardHeader>
-                  <CardTitle>Annual</CardTitle>
-                  <CardDescription>Save $20 with yearly billing</CardDescription>
+                  <CardTitle>The Krug Society</CardTitle>
+                  <CardDescription>All features plus wardrobe and auctions</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-3xl font-bold">
-                    $99<span className="text-base font-normal text-muted-foreground">/year</span>
+                    $12.99<span className="text-base font-normal text-muted-foreground">/month</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    That's only $8.25/month!
-                  </p>
                   <Button 
                     className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
                     onClick={() => handleSubscribe(YEARLY_PRICE_ID, "yearly")}
@@ -173,7 +198,7 @@ export default function SubscriptionPage() {
                     data-testid="button-subscribe-yearly"
                   >
                     {isCheckingOut === "yearly" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                    Subscribe Yearly
+                    Join The Krug Society
                   </Button>
                 </CardContent>
               </Card>
@@ -181,8 +206,8 @@ export default function SubscriptionPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Premium Features</CardTitle>
-                <CardDescription>Everything included in your membership</CardDescription>
+                <CardTitle>Membership Benefits</CardTitle>
+                <CardDescription>Everything included in paid tiers</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid md:grid-cols-2 gap-4">

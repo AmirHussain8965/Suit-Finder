@@ -29,7 +29,7 @@ export function PremiumGate({ feature, featureName, description, requiredTier = 
 
   const isPlatinumRequired = requiredTier === 'platinum';
   const Icon = isPlatinumRequired ? Gem : Lock;
-  const tierLabel = isPlatinumRequired ? 'Platinum' : 'Premium';
+  const tierLabel = isPlatinumRequired ? 'The Krug Society' : 'The Tailored Circle';
   const price = isPlatinumRequired ? '$12.99/month' : '$9.99/month';
 
   return (
@@ -81,7 +81,7 @@ export function PremiumBadge() {
     return (
       <div className="flex items-center gap-1 text-accent text-xs">
         <Gem className="h-3 w-3" />
-        Platinum
+        Krug Society
       </div>
     );
   }
@@ -90,7 +90,7 @@ export function PremiumBadge() {
     return (
       <div className="flex items-center gap-1 text-accent text-xs">
         <Crown className="h-3 w-3" />
-        Premium
+        Tailored Circle
       </div>
     );
   }
