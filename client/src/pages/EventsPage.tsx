@@ -31,13 +31,13 @@ const categoryLabels: Record<string, string> = {
 };
 
 const categoryColors: Record<string, string> = {
-  drinks_only: "bg-blue-500/10 text-blue-500 border-blue-500/30",
-  orgy: "bg-red-500/10 text-red-500 border-red-500/30",
-  social_dinner: "bg-green-500/10 text-green-500 border-green-500/30",
-  pump_and_dump: "bg-orange-500/10 text-orange-500 border-orange-500/30",
-  bukkake: "bg-purple-500/10 text-purple-500 border-purple-500/30",
-  side_event: "bg-yellow-500/10 text-yellow-500 border-yellow-500/30",
-  messy_meetup: "bg-pink-500/10 text-pink-500 border-pink-500/30",
+  drinks_only: "bg-blue-600 text-white border-blue-700",
+  orgy: "bg-red-600 text-white border-red-700",
+  social_dinner: "bg-green-600 text-white border-green-700",
+  pump_and_dump: "bg-orange-500 text-white border-orange-600",
+  bukkake: "bg-purple-600 text-white border-purple-700",
+  side_event: "bg-yellow-500 text-black border-yellow-600",
+  messy_meetup: "bg-pink-500 text-white border-pink-600",
 };
 
 export default function EventsPage() {
