@@ -61,7 +61,7 @@ Preferred communication style: Simple, everyday language.
 - **Screenshot Prevention**: CSS-based deterrent (user-select: none, print media hiding)
 
 ### Privacy Features
-- **Location Fuzzing**: User locations are randomized within 0.5 miles (~800m) using geodesic calculation
+- **Location Fuzzing**: User locations are randomized within ~500 feet (~150m) using geodesic calculation
 - **Photo Upload**: Direct file uploads via presigned URLs to object storage
 
 ### Legal Compliance

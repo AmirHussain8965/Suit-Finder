@@ -27,18 +27,18 @@ import {
 } from "@shared/schema";
 import { eq, sql, and, desc, inArray, gte, or } from "drizzle-orm";
 
-// Fuzz location within approximately half a mile (~0.8km) for privacy
+// Fuzz location within approximately 500 feet (~150m) for privacy
 // Uses haversine-based destination point formula for accuracy
 function fuzzLocation(lat: number, lng: number): { lat: number; lng: number } {
-  // Half mile in meters = 804.672 meters
-  const halfMileMeters = 804.672;
+  // 500 feet in meters = 152.4 meters
+  const fuzzDistanceMeters = 152.4;
   
   // Earth's radius in meters
   const R = 6371000;
   
   // Random bearing (0-360 degrees) and distance (uniform within circle)
   const bearing = Math.random() * 2 * Math.PI;
-  const distance = Math.sqrt(Math.random()) * halfMileMeters;
+  const distance = Math.sqrt(Math.random()) * fuzzDistanceMeters;
   
   // Convert to radians
   const lat1 = lat * Math.PI / 180;
