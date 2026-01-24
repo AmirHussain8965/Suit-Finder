@@ -2,7 +2,7 @@
 
 ## Overview
 
-Formal Findings is a location-based social networking application for men interested in formal attire and gentleman's fashion. Users can discover nearby members on an interactive map, manage photo galleries, and create style-focused profiles. The application features a dark "gentleman's lounge" aesthetic with navy and gold accents.
+Formal Findings is a location-based social networking application for men interested in formal attire, gentleman's fashion, and suit fetish. Users can discover nearby members on an interactive map, manage photo galleries, and create style-focused profiles. The application serves as both a social network and a fetish search platform for men who share these interests. The application features a dark "gentleman's lounge" aesthetic with navy and gold accents.
 
 ## User Preferences
 
