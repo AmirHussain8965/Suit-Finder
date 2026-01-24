@@ -67,3 +67,34 @@
 .leaflet-popup-tip {
   background: hsl(var(--card));
 }
+
+/* Screenshot Prevention - discourages copying content */
+.no-screenshot {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.no-screenshot img {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+  pointer-events: none;
+}
+
+/* Hide content during print/screenshot attempts */
+@media print {
+  .no-screenshot {
+    visibility: hidden !important;
+    display: none !important;
+  }
+  
+  .no-screenshot * {
+    visibility: hidden !important;
+    display: none !important;
+  }
+}

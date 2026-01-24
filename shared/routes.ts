@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertProfileSchema, insertPhotoSchema, profiles, photos } from './schema';
+import { insertProfileSchema, insertPhotoSchema, insertMessageSchema, profiles, photos, conversations, messages } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -155,6 +155,82 @@ export const api = {
       responses: {
         200: z.custom<typeof photos.$inferSelect>(),
         404: errorSchemas.notFound,
+      },
+    },
+  },
+  conversations: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/conversations',
+      responses: {
+        200: z.array(z.any()),
+      },
+    },
+    get: {
+      method: 'GET' as const,
+      path: '/api/conversations/:conversationId',
+      responses: {
+        200: z.any(),
+        404: errorSchemas.notFound,
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/conversations',
+      input: z.object({
+        participantIds: z.array(z.string()),
+        name: z.string().optional(),
+        isGroup: z.boolean().optional(),
+      }),
+      responses: {
+        200: z.custom<typeof conversations.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    startDirect: {
+      method: 'POST' as const,
+      path: '/api/conversations/direct/:userId',
+      responses: {
+        200: z.custom<typeof conversations.$inferSelect>(),
+      },
+    },
+    addParticipants: {
+      method: 'POST' as const,
+      path: '/api/conversations/:conversationId/participants',
+      input: z.object({
+        userIds: z.array(z.string()),
+      }),
+      responses: {
+        200: z.object({ message: z.string() }),
+        400: errorSchemas.validation,
+      },
+    },
+  },
+  messages: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/conversations/:conversationId/messages',
+      responses: {
+        200: z.array(z.any()),
+      },
+    },
+    send: {
+      method: 'POST' as const,
+      path: '/api/conversations/:conversationId/messages',
+      input: z.object({
+        content: z.string().optional(),
+        imageUrl: z.string().optional(),
+      }),
+      responses: {
+        200: z.custom<typeof messages.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    markRead: {
+      method: 'POST' as const,
+      path: '/api/conversations/:conversationId/read',
+      responses: {
+        200: z.object({ message: z.string() }),
       },
     },
   },

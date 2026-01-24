@@ -1,0 +1,373 @@
+import { useState, useEffect, useRef } from "react";
+import { Layout } from "@/components/Layout";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { buildUrl } from "@shared/routes";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Loader2, Send, Users, Plus, ArrowLeft, MessageSquare } from "lucide-react";
+import type { ConversationWithParticipants, MessageWithSender } from "@shared/schema";
+import { useAuth } from "@/hooks/use-auth";
+import { useNearbyProfiles } from "@/hooks/use-profiles";
+
+export default function MessagesPage() {
+  const { user } = useAuth();
+  const currentUserId = user?.id;
+  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
+  const [newMessage, setNewMessage] = useState("");
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const [groupName, setGroupName] = useState("");
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const { data: conversations, isLoading: isLoadingConversations } = useQuery<ConversationWithParticipants[]>({
+    queryKey: ["/api/conversations"],
+  });
+
+  const { data: messages, isLoading: isLoadingMessages } = useQuery<MessageWithSender[]>({
+    queryKey: [`/api/conversations/${selectedConversationId}/messages`],
+    enabled: !!selectedConversationId,
+    refetchInterval: 5000,
+  });
+
+  const { data: nearbyUsers } = useNearbyProfiles(0, 0, 1000);
+
+  const sendMessageMutation = useMutation({
+    mutationFn: async (content: string) => {
+      return apiRequest("POST", `/api/conversations/${selectedConversationId}/messages`, { content });
+    },
+    onSuccess: () => {
+      setNewMessage("");
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations", selectedConversationId, "messages"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+    },
+  });
+
+  const createGroupMutation = useMutation({
+    mutationFn: async (data: { participantIds: string[]; name: string; isGroup: boolean }) => {
+      const res = await apiRequest("POST", "/api/conversations", data);
+      return res.json();
+    },
+    onSuccess: (data: { id: number }) => {
+      setIsCreatingGroup(false);
+      setGroupName("");
+      setSelectedParticipants([]);
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      if (data?.id) {
+        setSelectedConversationId(data.id);
+      }
+    },
+  });
+
+  const startDirectMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await apiRequest("POST", buildUrl("/api/conversations/direct/:userId", { userId }));
+      return res.json();
+    },
+    onSuccess: (data: { id: number }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      if (data?.id) {
+        setSelectedConversationId(data.id);
+      }
+    },
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: async (conversationId: number) => {
+      return apiRequest("POST", `/api/conversations/${conversationId}/read`);
+    },
+  });
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  useEffect(() => {
+    if (selectedConversationId) {
+      markReadMutation.mutate(selectedConversationId);
+    }
+  }, [selectedConversationId]);
+
+  const handleSendMessage = () => {
+    if (newMessage.trim() && selectedConversationId) {
+      sendMessageMutation.mutate(newMessage.trim());
+    }
+  };
+
+  const handleCreateGroup = () => {
+    if (selectedParticipants.length > 0 && groupName.trim()) {
+      createGroupMutation.mutate({
+        participantIds: selectedParticipants,
+        name: groupName.trim(),
+        isGroup: true,
+      });
+    }
+  };
+
+  const getConversationName = (conversation: ConversationWithParticipants) => {
+    if (conversation.name) return conversation.name;
+    const otherParticipants = conversation.participants.filter(p => p.userId !== currentUserId);
+    if (otherParticipants.length === 0) return "Just You";
+    return otherParticipants.map(p => p.displayName || "Unknown").join(", ");
+  };
+
+  const getInitials = (name: string | null) => {
+    if (!name) return "?";
+    return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  };
+
+  const selectedConversation = conversations?.find(c => c.id === selectedConversationId);
+
+  if (isLoadingConversations) {
+    return (
+      <Layout>
+        <div className="flex h-full items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-accent" />
+        </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <div className="flex h-full w-full no-screenshot">
+        {/* Conversation List - hide on mobile when conversation selected */}
+        <div className={`w-full md:w-80 border-r border-border flex flex-col bg-card ${selectedConversationId ? 'hidden md:flex' : 'flex'}`}>
+          <div className="p-4 border-b border-border flex items-center justify-between">
+            <h2 className="text-lg font-serif font-semibold text-accent">Messages</h2>
+            <Dialog open={isCreatingGroup} onOpenChange={setIsCreatingGroup}>
+              <DialogTrigger asChild>
+                <Button size="icon" variant="ghost" data-testid="button-new-group">
+                  <Plus className="h-5 w-5" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="no-screenshot">
+                <DialogHeader>
+                  <DialogTitle>Create Group Chat</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <Input
+                    placeholder="Group name"
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                    data-testid="input-group-name"
+                  />
+                  <div className="text-sm text-muted-foreground">Select participants:</div>
+                  <ScrollArea className="h-48 border rounded-md p-2">
+                    {nearbyUsers?.map((user) => (
+                      <div
+                        key={user.userId}
+                        className={`flex items-center gap-2 p-2 rounded cursor-pointer hover-elevate ${
+                          selectedParticipants.includes(user.userId) ? "bg-accent/20" : ""
+                        }`}
+                        onClick={() => {
+                          setSelectedParticipants(prev =>
+                            prev.includes(user.userId)
+                              ? prev.filter(id => id !== user.userId)
+                              : [...prev, user.userId]
+                          );
+                        }}
+                        data-testid={`participant-${user.userId}`}
+                      >
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="bg-primary/20 text-accent text-xs">
+                            {getInitials(user.displayName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm">{user.displayName || "Unknown"}</span>
+                      </div>
+                    ))}
+                  </ScrollArea>
+                  <Button
+                    className="w-full"
+                    onClick={handleCreateGroup}
+                    disabled={selectedParticipants.length === 0 || !groupName.trim() || createGroupMutation.isPending}
+                    data-testid="button-create-group"
+                  >
+                    {createGroupMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Users className="h-4 w-4 mr-2" />
+                    )}
+                    Create Group ({selectedParticipants.length} selected)
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <ScrollArea className="flex-1">
+            {conversations && conversations.length > 0 ? (
+              conversations.map((conversation) => (
+                <div
+                  key={conversation.id}
+                  className={`p-4 cursor-pointer border-b border-border hover-elevate ${
+                    selectedConversationId === conversation.id ? "bg-accent/10" : ""
+                  }`}
+                  onClick={() => setSelectedConversationId(conversation.id)}
+                  data-testid={`conversation-${conversation.id}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback className="bg-primary/20 text-accent">
+                        {conversation.isGroup ? <Users className="h-5 w-5" /> : getInitials(getConversationName(conversation))}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium truncate">{getConversationName(conversation)}</span>
+                        {(conversation.unreadCount ?? 0) > 0 && (
+                          <span className="bg-accent text-accent-foreground text-xs px-2 py-0.5 rounded-full">
+                            {conversation.unreadCount}
+                          </span>
+                        )}
+                      </div>
+                      {conversation.lastMessage && (
+                        <p className="text-sm text-muted-foreground truncate">
+                          {conversation.lastMessage.content || "[Photo]"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-8 text-center text-muted-foreground">
+                <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-sm">No conversations yet</p>
+                <p className="text-xs mt-2">Start a chat from someone's profile</p>
+              </div>
+            )}
+          </ScrollArea>
+        </div>
+
+        {/* Message View */}
+        <div className={`flex-1 flex flex-col bg-background ${!selectedConversationId ? 'hidden md:flex' : 'flex'}`}>
+          {selectedConversation ? (
+            <>
+              {/* Header */}
+              <div className="p-4 border-b border-border flex items-center gap-3 bg-card">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="md:hidden"
+                  onClick={() => setSelectedConversationId(null)}
+                  data-testid="button-back"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback className="bg-primary/20 text-accent">
+                    {selectedConversation.isGroup ? <Users className="h-5 w-5" /> : getInitials(getConversationName(selectedConversation))}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="font-medium">{getConversationName(selectedConversation)}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedConversation.participants.length} participant{selectedConversation.participants.length !== 1 ? "s" : ""}
+                  </p>
+                </div>
+              </div>
+
+              {/* Messages */}
+              <ScrollArea className="flex-1 p-4 no-screenshot">
+                {isLoadingMessages ? (
+                  <div className="flex items-center justify-center h-full">
+                    <Loader2 className="h-6 w-6 animate-spin text-accent" />
+                  </div>
+                ) : messages && messages.length > 0 ? (
+                  <div className="space-y-4">
+                    {messages.map((message) => {
+                      const isOwn = message.senderId === currentUserId;
+                      return (
+                        <div
+                          key={message.id}
+                          className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
+                          data-testid={`message-${message.id}`}
+                        >
+                          <div className={`max-w-[70%] ${isOwn ? "order-2" : ""}`}>
+                            {!isOwn && (
+                              <p className="text-xs text-muted-foreground mb-1">
+                                {message.sender?.displayName || "Unknown"}
+                              </p>
+                            )}
+                            <div
+                              className={`p-3 rounded-lg ${
+                                isOwn
+                                  ? "bg-accent text-accent-foreground"
+                                  : "bg-card border border-border"
+                              }`}
+                            >
+                              {message.imageUrl && (
+                                <img
+                                  src={message.imageUrl}
+                                  alt="Shared"
+                                  className="max-w-full rounded mb-2 no-screenshot"
+                                  style={{ pointerEvents: "none" }}
+                                />
+                              )}
+                              {message.content && <p className="text-sm">{message.content}</p>}
+                            </div>
+                            <p className="text-[10px] text-muted-foreground mt-1">
+                              {message.createdAt && new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div ref={messagesEndRef} />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    <p>No messages yet. Say hi!</p>
+                  </div>
+                )}
+              </ScrollArea>
+
+              {/* Input */}
+              <div className="p-4 border-t border-border bg-card">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Type a message..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    disabled={sendMessageMutation.isPending}
+                    data-testid="input-message"
+                  />
+                  <Button
+                    size="icon"
+                    onClick={handleSendMessage}
+                    disabled={!newMessage.trim() || sendMessageMutation.isPending}
+                    data-testid="button-send"
+                  >
+                    {sendMessageMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <MessageSquare className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                <p>Select a conversation to start messaging</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </Layout>
+  );
+}

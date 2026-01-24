@@ -324,5 +324,175 @@ export async function registerRoutes(
     res.json(photo);
   });
 
+  // === Conversations ===
+
+  // List all conversations
+  app.get(api.conversations.list.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const conversations = await storage.getConversations(userId);
+    res.json(conversations);
+  });
+
+  // Get a single conversation
+  app.get(api.conversations.get.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const conversationId = parseInt(req.params.conversationId);
+    
+    const conversation = await storage.getConversation(conversationId, userId);
+    if (!conversation) {
+      return res.status(404).json({ message: "Conversation not found" });
+    }
+    res.json(conversation);
+  });
+
+  // Create a new conversation (for group chats)
+  app.post(api.conversations.create.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    
+    try {
+      const input = api.conversations.create.input.parse(req.body);
+      const conversation = await storage.createConversation(
+        userId, 
+        input.participantIds,
+        input.name,
+        input.isGroup
+      );
+      res.json(conversation);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  // Start or get a direct (1-on-1) conversation
+  app.post(api.conversations.startDirect.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const otherUserId = req.params.userId;
+    
+    const conversation = await storage.getOrCreateDirectConversation(userId, otherUserId);
+    res.json(conversation);
+  });
+
+  // Add participants to a group conversation
+  app.post(api.conversations.addParticipants.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const conversationId = parseInt(req.params.conversationId);
+    
+    // Verify user is a participant before allowing them to add others
+    const conversation = await storage.getConversation(conversationId, userId);
+    if (!conversation) {
+      return res.status(403).json({ message: "You are not a member of this conversation" });
+    }
+    
+    try {
+      const input = api.conversations.addParticipants.input.parse(req.body);
+      await storage.addParticipantsToConversation(conversationId, input.userIds);
+      res.json({ message: "Participants added" });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  // === Messages ===
+
+  // Get messages in a conversation
+  app.get(api.messages.list.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const conversationId = parseInt(req.params.conversationId);
+    
+    // Verify user is a member of this conversation
+    const conversation = await storage.getConversation(conversationId, userId);
+    if (!conversation) {
+      return res.status(403).json({ message: "You are not a member of this conversation" });
+    }
+    
+    const limit = parseInt(req.query.limit as string) || 50;
+    const offset = parseInt(req.query.offset as string) || 0;
+    
+    const messages = await storage.getMessages(conversationId, userId, limit, offset);
+    res.json(messages);
+  });
+
+  // Send a message
+  app.post(api.messages.send.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const conversationId = parseInt(req.params.conversationId);
+    
+    // Verify user is a member of this conversation
+    const conversation = await storage.getConversation(conversationId, userId);
+    if (!conversation) {
+      return res.status(403).json({ message: "You are not a member of this conversation" });
+    }
+    
+    try {
+      const input = api.messages.send.input.parse(req.body);
+      
+      if (!input.content && !input.imageUrl) {
+        return res.status(400).json({ message: "Message must have content or an image" });
+      }
+      
+      const message = await storage.sendMessage(conversationId, userId, input.content, input.imageUrl);
+      res.json(message);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  // Mark a conversation as read
+  app.post(api.messages.markRead.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const conversationId = parseInt(req.params.conversationId);
+    
+    // Verify user is a member of this conversation
+    const conversation = await storage.getConversation(conversationId, userId);
+    if (!conversation) {
+      return res.status(403).json({ message: "You are not a member of this conversation" });
+    }
+    
+    await storage.markConversationRead(conversationId, userId);
+    res.json({ message: "Marked as read" });
+  });
+
   return httpServer;
 }
