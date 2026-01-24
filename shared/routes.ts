@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertProfileSchema, profiles } from './schema';
+import { insertProfileSchema, insertPhotoSchema, profiles, photos } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -93,6 +93,56 @@ export const api = {
       path: '/api/favorites/:targetUserId',
       responses: {
         200: z.object({ message: z.string() }),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  photos: {
+    myPhotos: {
+      method: 'GET' as const,
+      path: '/api/photos/me',
+      responses: {
+        200: z.array(z.custom<typeof photos.$inferSelect>()),
+      },
+    },
+    userPhotos: {
+      method: 'GET' as const,
+      path: '/api/photos/:userId',
+      responses: {
+        200: z.array(z.custom<typeof photos.$inferSelect>()),
+      },
+    },
+    add: {
+      method: 'POST' as const,
+      path: '/api/photos',
+      input: insertPhotoSchema,
+      responses: {
+        200: z.custom<typeof photos.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/photos/:photoId',
+      input: insertPhotoSchema.partial(),
+      responses: {
+        200: z.custom<typeof photos.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/photos/:photoId',
+      responses: {
+        200: z.object({ message: z.string() }),
+        404: errorSchemas.notFound,
+      },
+    },
+    setProfilePhoto: {
+      method: 'POST' as const,
+      path: '/api/photos/:photoId/set-profile',
+      responses: {
+        200: z.custom<typeof photos.$inferSelect>(),
         404: errorSchemas.notFound,
       },
     },

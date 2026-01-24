@@ -57,6 +57,33 @@ export type InsertProfile = z.infer<typeof insertProfileSchema>;
 export type CreateProfileRequest = InsertProfile;
 export type UpdateProfileRequest = Partial<InsertProfile>;
 
+// Photos table for user galleries
+export const photos = pgTable("photos", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => authUsers.id),
+  url: text("url").notNull(),
+  isPublic: boolean("is_public").default(true),
+  isProfilePhoto: boolean("is_profile_photo").default(false),
+  caption: text("caption"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const photosRelations = relations(photos, ({ one }) => ({
+  user: one(authUsers, {
+    fields: [photos.userId],
+    references: [authUsers.id],
+  }),
+}));
+
+export const insertPhotoSchema = createInsertSchema(photos).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+});
+
+export type Photo = typeof photos.$inferSelect;
+export type InsertPhoto = z.infer<typeof insertPhotoSchema>;
+
 export const favorites = pgTable("favorites", {
   id: serial("id").primaryKey(),
   userId: text("user_id").notNull().references(() => authUsers.id),

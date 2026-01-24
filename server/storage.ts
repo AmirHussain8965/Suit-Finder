@@ -2,12 +2,15 @@ import { db } from "./db";
 import {
   profiles,
   favorites,
+  photos,
   type Profile,
   type InsertProfile,
   type UpdateProfileRequest,
   type Favorite,
+  type Photo,
+  type InsertPhoto,
 } from "@shared/schema";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Profiles
@@ -22,6 +25,14 @@ export interface IStorage {
   addFavorite(userId: string, targetUserId: string): Promise<void>;
   removeFavorite(userId: string, targetUserId: string): Promise<void>;
   isFavorite(userId: string, targetUserId: string): Promise<boolean>;
+  
+  // Photos
+  getPhotos(userId: string, includePrivate?: boolean): Promise<Photo[]>;
+  getProfilePhoto(userId: string): Promise<Photo | undefined>;
+  addPhoto(userId: string, data: InsertPhoto): Promise<Photo>;
+  updatePhoto(userId: string, photoId: number, updates: Partial<InsertPhoto>): Promise<Photo>;
+  deletePhoto(userId: string, photoId: number): Promise<void>;
+  setProfilePhoto(userId: string, photoId: number): Promise<Photo>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -148,6 +159,69 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return !!existing;
+  }
+
+  // Photo methods
+  async getPhotos(userId: string, includePrivate: boolean = false): Promise<Photo[]> {
+    if (includePrivate) {
+      return await db
+        .select()
+        .from(photos)
+        .where(eq(photos.userId, userId))
+        .orderBy(desc(photos.createdAt));
+    }
+    return await db
+      .select()
+      .from(photos)
+      .where(and(eq(photos.userId, userId), eq(photos.isPublic, true)))
+      .orderBy(desc(photos.createdAt));
+  }
+
+  async getProfilePhoto(userId: string): Promise<Photo | undefined> {
+    const [photo] = await db
+      .select()
+      .from(photos)
+      .where(and(eq(photos.userId, userId), eq(photos.isProfilePhoto, true)));
+    return photo;
+  }
+
+  async addPhoto(userId: string, data: InsertPhoto): Promise<Photo> {
+    const [photo] = await db
+      .insert(photos)
+      .values({ ...data, userId })
+      .returning();
+    return photo;
+  }
+
+  async updatePhoto(userId: string, photoId: number, updates: Partial<InsertPhoto>): Promise<Photo> {
+    const [updated] = await db
+      .update(photos)
+      .set(updates)
+      .where(and(eq(photos.id, photoId), eq(photos.userId, userId)))
+      .returning();
+    return updated;
+  }
+
+  async deletePhoto(userId: string, photoId: number): Promise<void> {
+    await db
+      .delete(photos)
+      .where(and(eq(photos.id, photoId), eq(photos.userId, userId)));
+  }
+
+  async setProfilePhoto(userId: string, photoId: number): Promise<Photo> {
+    // First, unset any existing profile photo
+    await db
+      .update(photos)
+      .set({ isProfilePhoto: false })
+      .where(and(eq(photos.userId, userId), eq(photos.isProfilePhoto, true)));
+    
+    // Then set the new one
+    const [updated] = await db
+      .update(photos)
+      .set({ isProfilePhoto: true })
+      .where(and(eq(photos.id, photoId), eq(photos.userId, userId)))
+      .returning();
+    return updated;
   }
 }
 
