@@ -104,6 +104,7 @@ export async function registerRoutes(
         styleInterests: p.styleInterests,
         role: p.role,
         interestType: p.interestType,
+        categories: p.categories,
       };
     }));
 

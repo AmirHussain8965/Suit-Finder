@@ -34,6 +34,7 @@ export default function ProfilePage() {
       styleInterests: "",
       role: "",
       interestType: "",
+      categories: [],
       isVisible: true,
     },
   });
@@ -47,10 +48,16 @@ export default function ProfilePage() {
         styleInterests: profile.styleInterests || "",
         role: profile.role || "",
         interestType: profile.interestType || "",
+        categories: profile.categories || [],
         isVisible: profile.isVisible ?? true,
       });
     }
   }, [profile, user, form]);
+
+  const suitCategories = [
+    "wet", "gunging", "ripping", "touching", "shoe worship", 
+    "fully clothed sex", "watersports", "bukkake", "simple meet and greet"
+  ];
 
   const onSubmit = (data: ProfileFormValues) => {
     updateProfile(data, {
@@ -170,6 +177,33 @@ export default function ProfilePage() {
                     className="bg-background border-input focus:border-accent"
                     placeholder="E.g. Styling"
                   />
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Suit Desire Categories</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {suitCategories.map((category) => (
+                      <div key={category} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`cat-${category}`}
+                          checked={form.watch("categories")?.includes(category)}
+                          onChange={(e) => {
+                            const current = form.getValues("categories") || [];
+                            if (e.target.checked) {
+                              form.setValue("categories", [...current, category]);
+                            } else {
+                              form.setValue("categories", current.filter(c => c !== category));
+                            }
+                          }}
+                          className="h-4 w-4 rounded border-gray-300 text-accent focus:ring-accent"
+                        />
+                        <Label htmlFor={`cat-${category}`} className="text-sm font-normal capitalize">
+                          {category}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between p-4 rounded-lg bg-background border border-border">
