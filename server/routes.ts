@@ -6,6 +6,8 @@ import { z } from "zod";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 import { authStorage } from "./replit_integrations/auth/storage";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import { stripeService } from "./stripeService";
+import { getStripePublishableKey } from "./stripeClient";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -623,6 +625,239 @@ export async function registerRoutes(
         return res.status(403).json({ message: "Not authorized" });
       }
       throw err;
+    }
+  });
+
+  // === Subscription/Payment Routes ===
+
+  // Get Stripe publishable key
+  app.get("/api/stripe/config", async (req, res) => {
+    try {
+      const publishableKey = await getStripePublishableKey();
+      res.json({ publishableKey });
+    } catch (err) {
+      console.error("Error getting Stripe config:", err);
+      res.status(500).json({ error: "Payment system unavailable" });
+    }
+  });
+
+  // Get subscription status
+  app.get("/api/subscription", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    
+    const user = await authStorage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isPremium = user.subscriptionStatus === 'active' || 
+                      user.subscriptionStatus === 'trialing';
+
+    res.json({
+      isPremium,
+      status: user.subscriptionStatus,
+      plan: user.subscriptionPlan,
+      endDate: user.subscriptionEndDate,
+    });
+  });
+
+  // Get available prices
+  app.get("/api/prices", async (req, res) => {
+    try {
+      const prices = await stripeService.listPrices();
+      res.json({ prices });
+    } catch (err) {
+      console.error("Error fetching prices:", err);
+      res.status(500).json({ error: "Could not fetch prices" });
+    }
+  });
+
+  // Create checkout session
+  app.post("/api/checkout", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const { priceId } = req.body;
+
+    if (!priceId) {
+      return res.status(400).json({ error: "Price ID required" });
+    }
+
+    try {
+      const user = await authStorage.getUser(userId);
+      if (!user || !user.email) {
+        return res.status(400).json({ error: "User email required for payment" });
+      }
+
+      let customerId = user.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripeService.createCustomer(user.email, userId);
+        await authStorage.updateUserStripeInfo(userId, { stripeCustomerId: customer.id });
+        customerId = customer.id;
+      }
+
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const session = await stripeService.createCheckoutSession(
+        customerId,
+        priceId,
+        `${baseUrl}/subscription/success`,
+        `${baseUrl}/subscription/cancel`
+      );
+
+      res.json({ url: session.url });
+    } catch (err) {
+      console.error("Error creating checkout:", err);
+      res.status(500).json({ error: "Could not create checkout session" });
+    }
+  });
+
+  // Create customer portal session (for managing subscription)
+  app.post("/api/customer-portal", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+
+    try {
+      const user = await authStorage.getUser(userId);
+      if (!user?.stripeCustomerId) {
+        return res.status(400).json({ error: "No subscription found" });
+      }
+
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const session = await stripeService.createCustomerPortalSession(
+        user.stripeCustomerId,
+        `${baseUrl}/profile`
+      );
+
+      res.json({ url: session.url });
+    } catch (err) {
+      console.error("Error creating portal session:", err);
+      res.status(500).json({ error: "Could not access subscription management" });
+    }
+  });
+
+  // === Wardrobe ===
+
+  // List wardrobe items
+  app.get(api.wardrobe.list.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const category = req.query.category as string | undefined;
+    
+    try {
+      const items = await storage.getWardrobeItems(userId, category);
+      res.json(items);
+    } catch (err) {
+      console.error("Error fetching wardrobe items:", err);
+      res.status(500).json({ message: "Failed to fetch wardrobe items" });
+    }
+  });
+
+  // Get single wardrobe item
+  app.get("/api/wardrobe/:itemId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const itemId = parseInt(req.params.itemId);
+    
+    try {
+      const item = await storage.getWardrobeItem(userId, itemId);
+      if (!item) {
+        return res.status(404).json({ message: "Wardrobe item not found" });
+      }
+      res.json(item);
+    } catch (err) {
+      console.error("Error fetching wardrobe item:", err);
+      res.status(500).json({ message: "Failed to fetch wardrobe item" });
+    }
+  });
+
+  // Create wardrobe item
+  app.post(api.wardrobe.create.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    
+    try {
+      const input = api.wardrobe.create.input.parse(req.body);
+      const item = await storage.createWardrobeItem(userId, input);
+      res.status(201).json(item);
+    } catch (err) {
+      console.error("Error creating wardrobe item:", err);
+      res.status(400).json({ message: "Failed to create wardrobe item" });
+    }
+  });
+
+  // Update wardrobe item
+  app.patch("/api/wardrobe/:itemId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const itemId = parseInt(req.params.itemId);
+    
+    try {
+      const existing = await storage.getWardrobeItem(userId, itemId);
+      if (!existing) {
+        return res.status(404).json({ message: "Wardrobe item not found" });
+      }
+      const input = api.wardrobe.update.input.parse(req.body);
+      const item = await storage.updateWardrobeItem(userId, itemId, input);
+      res.json(item);
+    } catch (err) {
+      console.error("Error updating wardrobe item:", err);
+      res.status(400).json({ message: "Failed to update wardrobe item" });
+    }
+  });
+
+  // Delete wardrobe item
+  app.delete("/api/wardrobe/:itemId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const itemId = parseInt(req.params.itemId);
+    
+    try {
+      const existing = await storage.getWardrobeItem(userId, itemId);
+      if (!existing) {
+        return res.status(404).json({ message: "Wardrobe item not found" });
+      }
+      await storage.deleteWardrobeItem(userId, itemId);
+      res.json({ message: "Wardrobe item deleted" });
+    } catch (err) {
+      console.error("Error deleting wardrobe item:", err);
+      res.status(400).json({ message: "Failed to delete wardrobe item" });
+    }
+  });
+
+  // Toggle wardrobe item favorite
+  app.post("/api/wardrobe/:itemId/favorite", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const itemId = parseInt(req.params.itemId);
+    
+    try {
+      const existing = await storage.getWardrobeItem(userId, itemId);
+      if (!existing) {
+        return res.status(404).json({ message: "Wardrobe item not found" });
+      }
+      const item = await storage.toggleWardrobeFavorite(userId, itemId);
+      res.json(item);
+    } catch (err) {
+      console.error("Error toggling favorite:", err);
+      res.status(400).json({ message: "Failed to toggle favorite" });
     }
   });
 

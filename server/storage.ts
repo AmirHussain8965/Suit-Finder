@@ -8,6 +8,7 @@ import {
   messages,
   events,
   eventAttendees,
+  wardrobeItems,
   type Profile,
   type InsertProfile,
   type UpdateProfileRequest,
@@ -24,6 +25,8 @@ import {
   type InsertEvent,
   type EventAttendee,
   type EventWithDetails,
+  type WardrobeItem,
+  type InsertWardrobeItem,
 } from "@shared/schema";
 import { eq, sql, and, desc, inArray, gte, or } from "drizzle-orm";
 
@@ -107,6 +110,14 @@ export interface IStorage {
   updateAttendeeStatus(eventId: number, hostId: string, userId: string, status: string): Promise<EventAttendee>;
   deleteEvent(eventId: number, hostId: string): Promise<void>;
   isEventParticipant(eventId: number, userId: string): Promise<boolean>;
+  
+  // Wardrobe
+  getWardrobeItems(userId: string, category?: string): Promise<WardrobeItem[]>;
+  getWardrobeItem(userId: string, itemId: number): Promise<WardrobeItem | undefined>;
+  createWardrobeItem(userId: string, data: InsertWardrobeItem): Promise<WardrobeItem>;
+  updateWardrobeItem(userId: string, itemId: number, updates: Partial<InsertWardrobeItem>): Promise<WardrobeItem>;
+  deleteWardrobeItem(userId: string, itemId: number): Promise<void>;
+  toggleWardrobeFavorite(userId: string, itemId: number): Promise<WardrobeItem>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -801,6 +812,66 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(eventAttendees.eventId, eventId), eq(eventAttendees.userId, userId)));
     
     return !!attendee;
+  }
+
+  // Wardrobe methods
+  async getWardrobeItems(userId: string, category?: string): Promise<WardrobeItem[]> {
+    if (category) {
+      return await db
+        .select()
+        .from(wardrobeItems)
+        .where(and(eq(wardrobeItems.userId, userId), eq(wardrobeItems.category, category)))
+        .orderBy(desc(wardrobeItems.createdAt));
+    }
+    return await db
+      .select()
+      .from(wardrobeItems)
+      .where(eq(wardrobeItems.userId, userId))
+      .orderBy(desc(wardrobeItems.createdAt));
+  }
+
+  async getWardrobeItem(userId: string, itemId: number): Promise<WardrobeItem | undefined> {
+    const [item] = await db
+      .select()
+      .from(wardrobeItems)
+      .where(and(eq(wardrobeItems.id, itemId), eq(wardrobeItems.userId, userId)));
+    return item;
+  }
+
+  async createWardrobeItem(userId: string, data: InsertWardrobeItem): Promise<WardrobeItem> {
+    const [item] = await db
+      .insert(wardrobeItems)
+      .values({ ...data, userId })
+      .returning();
+    return item;
+  }
+
+  async updateWardrobeItem(userId: string, itemId: number, updates: Partial<InsertWardrobeItem>): Promise<WardrobeItem> {
+    const [item] = await db
+      .update(wardrobeItems)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(and(eq(wardrobeItems.id, itemId), eq(wardrobeItems.userId, userId)))
+      .returning();
+    if (!item) throw new Error("Wardrobe item not found");
+    return item;
+  }
+
+  async deleteWardrobeItem(userId: string, itemId: number): Promise<void> {
+    await db
+      .delete(wardrobeItems)
+      .where(and(eq(wardrobeItems.id, itemId), eq(wardrobeItems.userId, userId)));
+  }
+
+  async toggleWardrobeFavorite(userId: string, itemId: number): Promise<WardrobeItem> {
+    const existing = await this.getWardrobeItem(userId, itemId);
+    if (!existing) throw new Error("Wardrobe item not found");
+    
+    const [item] = await db
+      .update(wardrobeItems)
+      .set({ isFavorite: !existing.isFavorite, updatedAt: new Date() })
+      .where(and(eq(wardrobeItems.id, itemId), eq(wardrobeItems.userId, userId)))
+      .returning();
+    return item;
   }
 }
 

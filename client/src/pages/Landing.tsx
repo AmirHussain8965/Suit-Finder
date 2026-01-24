@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, MapPin, Shield, Users } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function Landing() {
+  const [, setLocation] = useLocation();
+  
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Hero Section */}
@@ -40,7 +43,8 @@ export default function Landing() {
             <Button 
               size="lg" 
               className="bg-accent text-accent-foreground hover:bg-accent/90 text-lg px-8 py-6 rounded-none font-serif tracking-wide"
-              onClick={() => window.location.href = "/api/login"}
+              onClick={() => setLocation("/auth")}
+              data-testid="button-enter-lounge"
             >
               Enter the Lounge <ArrowRight className="ml-2 w-5 h-5" />
             </Button>

@@ -46,6 +46,17 @@ Preferred communication style: Simple, everyday language.
   - `messages` - Individual messages with sender info and read tracking
   - `events` - User-created events for formal gatherings and social meetups
   - `event_attendees` - Tracks event attendance with approval status
+  - `wardrobe_items` - Virtual wardrobe items with:
+    - Basic info (name, description, brand, color)
+    - Category (suits, jackets, shirts, ties, shoes, watches, etc.)
+    - Image URL (photos stored via object storage)
+    - Favorite flag for quick access
+
+### Virtual Wardrobe System
+- **Categories**: suits, jackets, shirts, ties, pocket_squares, shoes, belts, watches, cufflinks, accessories, pants, vests, overcoats, other
+- **Image Upload**: Uses presigned URL flow via object storage integration
+- **CRUD Operations**: Full create, read, update, delete functionality
+- **Favorites**: Users can mark items as favorites for quick access
 
 ### Events System
 - **Event Creation**: Users can create events with title, description, date/time, location, category

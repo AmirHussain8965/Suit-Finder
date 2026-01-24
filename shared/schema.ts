@@ -319,3 +319,55 @@ export type EventWithDetails = Event & {
   isAttending: boolean;
   attendees?: { userId: string; displayName: string | null; profileImageUrl: string | null; status: string }[];
 };
+
+// Wardrobe categories
+export const wardrobeCategories = [
+  "suits",
+  "jackets",
+  "shirts",
+  "ties",
+  "pocket_squares",
+  "shoes",
+  "belts",
+  "watches",
+  "cufflinks",
+  "accessories",
+  "pants",
+  "vests",
+  "overcoats",
+  "other"
+] as const;
+
+export type WardrobeCategory = typeof wardrobeCategories[number];
+
+// Wardrobe items table
+export const wardrobeItems = pgTable("wardrobe_items", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => authUsers.id),
+  name: text("name").notNull(),
+  category: text("category").notNull(), // One of wardrobeCategories
+  description: text("description"),
+  brand: text("brand"),
+  color: text("color"),
+  imageUrl: text("image_url"),
+  isFavorite: boolean("is_favorite").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const wardrobeItemsRelations = relations(wardrobeItems, ({ one }) => ({
+  user: one(authUsers, {
+    fields: [wardrobeItems.userId],
+    references: [authUsers.id],
+  }),
+}));
+
+export const insertWardrobeItemSchema = createInsertSchema(wardrobeItems).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type WardrobeItem = typeof wardrobeItems.$inferSelect;
+export type InsertWardrobeItem = z.infer<typeof insertWardrobeItemSchema>;

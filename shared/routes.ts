@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertProfileSchema, insertPhotoSchema, insertMessageSchema, insertEventSchema, profiles, photos, conversations, messages, events, eventCategories } from './schema';
+import { insertProfileSchema, insertPhotoSchema, insertMessageSchema, insertEventSchema, insertWardrobeItemSchema, profiles, photos, conversations, messages, events, eventCategories, wardrobeItems, wardrobeCategories } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -299,6 +299,60 @@ export const api = {
       responses: {
         200: z.object({ message: z.string() }),
         403: errorSchemas.unauthorized,
+      },
+    },
+  },
+  wardrobe: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/wardrobe',
+      input: z.object({
+        category: z.string().optional(),
+      }).optional(),
+      responses: {
+        200: z.array(z.custom<typeof wardrobeItems.$inferSelect>()),
+      },
+    },
+    get: {
+      method: 'GET' as const,
+      path: '/api/wardrobe/:itemId',
+      responses: {
+        200: z.custom<typeof wardrobeItems.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/wardrobe',
+      input: insertWardrobeItemSchema,
+      responses: {
+        201: z.custom<typeof wardrobeItems.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/wardrobe/:itemId',
+      input: insertWardrobeItemSchema.partial(),
+      responses: {
+        200: z.custom<typeof wardrobeItems.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/wardrobe/:itemId',
+      responses: {
+        200: z.object({ message: z.string() }),
+        404: errorSchemas.notFound,
+      },
+    },
+    toggleFavorite: {
+      method: 'POST' as const,
+      path: '/api/wardrobe/:itemId/favorite',
+      responses: {
+        200: z.custom<typeof wardrobeItems.$inferSelect>(),
+        404: errorSchemas.notFound,
       },
     },
   },

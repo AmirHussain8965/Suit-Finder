@@ -19,6 +19,8 @@ import type { EventWithDetails } from "@shared/schema";
 import { eventCategories } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { format } from "date-fns";
+import { usePremiumFeature } from "@/hooks/use-subscription";
+import { PremiumGate } from "@/components/PremiumGate";
 
 const categoryLabels: Record<string, string> = {
   drinks_only: "Drinks Only",
@@ -43,6 +45,7 @@ const categoryColors: Record<string, string> = {
 export default function EventsPage() {
   const { user } = useAuth();
   const currentUserId = user?.id;
+  const { isPremium, isLoading: isPremiumLoading } = usePremiumFeature();
   const [selectedEvent, setSelectedEvent] = useState<EventWithDetails | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   
@@ -154,12 +157,22 @@ export default function EventsPage() {
 
   const isHost = (event: EventWithDetails) => event.hostId === currentUserId;
 
-  if (isLoading) {
+  if (isLoading || isPremiumLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-[60vh]">
           <Loader2 className="h-10 w-10 animate-spin text-accent" />
         </div>
+      </Layout>
+    );
+  }
+
+  if (!isPremium) {
+    return (
+      <Layout>
+        <PremiumGate featureName="events">
+          <div />
+        </PremiumGate>
       </Layout>
     );
   }

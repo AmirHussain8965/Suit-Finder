@@ -1,11 +1,13 @@
 import { Link, useLocation } from "wouter";
-import { Map, User, Image, LogOut, MessageSquare, Calendar } from "lucide-react";
+import { Map, User, Image, LogOut, MessageSquare, Calendar, Crown, Shirt } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { usePremiumFeature } from "@/hooks/use-subscription";
 
 export function Navigation() {
   const [location] = useLocation();
   const { logout } = useAuth();
+  const { isPremium } = usePremiumFeature();
 
   const isActive = (path: string) => location === path;
 
@@ -13,6 +15,7 @@ export function Navigation() {
     { href: "/map", icon: Map, label: "Explore" },
     { href: "/messages", icon: MessageSquare, label: "Messages" },
     { href: "/events", icon: Calendar, label: "Events" },
+    { href: "/wardrobe", icon: Shirt, label: "Wardrobe" },
     { href: "/gallery", icon: Image, label: "Gallery" },
     { href: "/profile", icon: User, label: "Profile" },
   ];
@@ -44,7 +47,16 @@ export function Navigation() {
           ))}
         </div>
 
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-border space-y-2">
+          <Link href="/subscription" className={`
+            flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-300
+            ${isPremium 
+              ? "bg-accent/10 text-accent" 
+              : "text-accent hover:bg-accent/10"}
+          `}>
+            <Crown size={20} />
+            <span className="font-medium">{isPremium ? "Premium" : "Upgrade"}</span>
+          </Link>
           <Button 
             variant="ghost" 
             className="w-full justify-start text-muted-foreground hover:text-red-400 hover:bg-red-400/10"

@@ -12,10 +12,13 @@ import { Loader2, Send, Users, Plus, ArrowLeft, MessageSquare } from "lucide-rea
 import type { ConversationWithParticipants, MessageWithSender } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useNearbyProfiles } from "@/hooks/use-profiles";
+import { usePremiumFeature } from "@/hooks/use-subscription";
+import { PremiumGate } from "@/components/PremiumGate";
 
 export default function MessagesPage() {
   const { user } = useAuth();
   const currentUserId = user?.id;
+  const { isPremium, isLoading: isPremiumLoading } = usePremiumFeature();
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
@@ -121,12 +124,22 @@ export default function MessagesPage() {
 
   const selectedConversation = conversations?.find(c => c.id === selectedConversationId);
 
-  if (isLoadingConversations) {
+  if (isLoadingConversations || isPremiumLoading) {
     return (
       <Layout>
         <div className="flex h-full items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-accent" />
         </div>
+      </Layout>
+    );
+  }
+
+  if (!isPremium) {
+    return (
+      <Layout>
+        <PremiumGate featureName="messaging">
+          <div />
+        </PremiumGate>
       </Layout>
     );
   }

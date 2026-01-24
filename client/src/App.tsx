@@ -7,11 +7,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profiles";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
+import AuthPage from "@/pages/AuthPage";
 import MapPage from "@/pages/MapPage";
 import ProfilePage from "@/pages/ProfilePage";
 import GalleryPage from "@/pages/GalleryPage";
 import MessagesPage from "@/pages/MessagesPage";
 import EventsPage from "@/pages/EventsPage";
+import WardrobePage from "@/pages/WardrobePage";
+import SubscriptionPage from "@/pages/SubscriptionPage";
 import { AgeVerification } from "@/components/AgeVerification";
 import { Loader2 } from "lucide-react";
 
@@ -65,6 +68,14 @@ function Router() {
         {user ? <Redirect to="/map" /> : <Landing />}
       </Route>
       
+      <Route path="/auth">
+        {user ? <Redirect to="/map" /> : <AuthPage />}
+      </Route>
+
+      <Route path="/verify-age">
+        {user ? <AgeVerification /> : <Redirect to="/auth" />}
+      </Route>
+      
       <Route path="/map">
         <ProtectedRoute component={MapPage} />
       </Route>
@@ -83,6 +94,22 @@ function Router() {
 
       <Route path="/events">
         <ProtectedRoute component={EventsPage} />
+      </Route>
+
+      <Route path="/wardrobe">
+        <ProtectedRoute component={WardrobePage} />
+      </Route>
+
+      <Route path="/subscription">
+        <ProtectedRoute component={SubscriptionPage} />
+      </Route>
+
+      <Route path="/subscription/success">
+        <ProtectedRoute component={SubscriptionPage} />
+      </Route>
+
+      <Route path="/subscription/cancel">
+        <ProtectedRoute component={SubscriptionPage} />
       </Route>
 
       <Route component={NotFound} />
