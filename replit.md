@@ -44,6 +44,15 @@ Preferred communication style: Simple, everyday language.
   - `conversations` - Chat conversations (direct and group)
   - `conversation_participants` - Tracks members of each conversation
   - `messages` - Individual messages with sender info and read tracking
+  - `events` - User-created events for formal gatherings and social meetups
+  - `event_attendees` - Tracks event attendance with approval status
+
+### Events System
+- **Event Creation**: Users can create events with title, description, date/time, location, category
+- **Categories**: drinks_only, orgy, social_dinner, pump_and_dump, bukkake, side_event, messy_meetup
+- **Privacy**: Event details (location, description, attendee list) only visible to host and approved attendees
+- **Attendance**: Users request to join; hosts approve/decline attendees
+- **Visibility**: Events can be public (visible to all) or invite-only
 
 ### Messaging System
 - **Direct Messages**: 1-on-1 private chats between users

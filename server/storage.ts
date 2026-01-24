@@ -693,17 +693,23 @@ export class DatabaseStorage implements IStorage {
       const hostPhoto = profilePhotos.find(p => p.userId === event.hostId);
       const isAttending = eventAttendeesList.some(a => a.userId === userId);
       const isHost = event.hostId === userId;
+      const canSeeDetails = isAttending || isHost;
 
       return {
         ...event,
+        // Redact sensitive details for non-attendees/non-hosts
+        description: canSeeDetails ? event.description : null,
+        location: canSeeDetails ? event.location : null,
+        latitude: canSeeDetails ? event.latitude : null,
+        longitude: canSeeDetails ? event.longitude : null,
         host: {
           userId: event.hostId,
           displayName: hostProfile?.displayName || null,
           profileImageUrl: hostPhoto?.url || null,
         },
         attendeeCount: eventAttendeesList.filter(a => a.status === "approved").length,
-        isAttending: isAttending || isHost,
-        attendees: (isAttending || isHost) ? eventAttendeesList.map(a => {
+        isAttending: canSeeDetails,
+        attendees: canSeeDetails ? eventAttendeesList.map(a => {
           const profile = attendeeProfiles.find(p => p.userId === a.userId);
           const photo = profilePhotos.find(p => p.userId === a.userId);
           return {
