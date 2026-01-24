@@ -3,14 +3,23 @@ import {
   profiles,
   favorites,
   photos,
+  conversations,
+  conversationParticipants,
+  messages,
   type Profile,
   type InsertProfile,
   type UpdateProfileRequest,
   type Favorite,
   type Photo,
   type InsertPhoto,
+  type Conversation,
+  type InsertConversation,
+  type Message,
+  type InsertMessage,
+  type ConversationWithParticipants,
+  type MessageWithSender,
 } from "@shared/schema";
-import { eq, sql, and, desc } from "drizzle-orm";
+import { eq, sql, and, desc, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // Profiles
@@ -34,6 +43,18 @@ export interface IStorage {
   updatePhoto(userId: string, photoId: number, updates: Partial<InsertPhoto>): Promise<Photo>;
   deletePhoto(userId: string, photoId: number): Promise<void>;
   setProfilePhoto(userId: string, photoId: number): Promise<Photo>;
+  
+  // Conversations
+  getConversations(userId: string): Promise<ConversationWithParticipants[]>;
+  getConversation(conversationId: number, userId: string): Promise<ConversationWithParticipants | undefined>;
+  createConversation(userId: string, participantIds: string[], name?: string, isGroup?: boolean): Promise<Conversation>;
+  getOrCreateDirectConversation(userId: string, otherUserId: string): Promise<Conversation>;
+  addParticipantsToConversation(conversationId: number, userIds: string[]): Promise<void>;
+  
+  // Messages
+  getMessages(conversationId: number, userId: string, limit?: number, offset?: number): Promise<MessageWithSender[]>;
+  sendMessage(conversationId: number, senderId: string, content?: string, imageUrl?: string): Promise<Message>;
+  markConversationRead(conversationId: number, userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -246,6 +267,284 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(photos.id, photoId), eq(photos.userId, userId)))
       .returning();
     return updated;
+  }
+
+  // Conversation methods
+  async getConversations(userId: string): Promise<ConversationWithParticipants[]> {
+    // Get all conversations the user is a part of
+    const userParticipations = await db
+      .select()
+      .from(conversationParticipants)
+      .where(eq(conversationParticipants.userId, userId));
+
+    if (userParticipations.length === 0) return [];
+
+    const conversationIds = userParticipations.map(p => p.conversationId);
+    
+    const convos = await db
+      .select()
+      .from(conversations)
+      .where(inArray(conversations.id, conversationIds))
+      .orderBy(desc(conversations.updatedAt));
+
+    // For each conversation, get participants and last message
+    const result: ConversationWithParticipants[] = [];
+    
+    for (const convo of convos) {
+      const participants = await db
+        .select({
+          conversationId: conversationParticipants.conversationId,
+          userId: conversationParticipants.userId,
+          lastReadAt: conversationParticipants.lastReadAt,
+        })
+        .from(conversationParticipants)
+        .where(eq(conversationParticipants.conversationId, convo.id));
+
+      // Get display names for participants
+      const participantDetails = await Promise.all(
+        participants.map(async (p) => {
+          const profile = await this.getProfile(p.userId);
+          return {
+            userId: p.userId,
+            displayName: profile?.displayName || null,
+            profileImageUrl: null,
+          };
+        })
+      );
+
+      // Get last message
+      const [lastMsg] = await db
+        .select()
+        .from(messages)
+        .where(eq(messages.conversationId, convo.id))
+        .orderBy(desc(messages.createdAt))
+        .limit(1);
+
+      // Count unread messages for this user
+      const userParticipation = userParticipations.find(p => p.conversationId === convo.id);
+      let unreadCount = 0;
+      if (userParticipation?.lastReadAt) {
+        const unread = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(messages)
+          .where(
+            and(
+              eq(messages.conversationId, convo.id),
+              sql`${messages.createdAt} > ${userParticipation.lastReadAt}`
+            )
+          );
+        unreadCount = Number(unread[0]?.count || 0);
+      } else {
+        // If never read, all messages are unread
+        const unread = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(messages)
+          .where(eq(messages.conversationId, convo.id));
+        unreadCount = Number(unread[0]?.count || 0);
+      }
+
+      result.push({
+        ...convo,
+        participants: participantDetails,
+        lastMessage: lastMsg || null,
+        unreadCount,
+      });
+    }
+
+    return result;
+  }
+
+  async getConversation(conversationId: number, userId: string): Promise<ConversationWithParticipants | undefined> {
+    // Verify user is a participant
+    const [participation] = await db
+      .select()
+      .from(conversationParticipants)
+      .where(
+        and(
+          eq(conversationParticipants.conversationId, conversationId),
+          eq(conversationParticipants.userId, userId)
+        )
+      );
+
+    if (!participation) return undefined;
+
+    const [convo] = await db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.id, conversationId));
+
+    if (!convo) return undefined;
+
+    const participants = await db
+      .select()
+      .from(conversationParticipants)
+      .where(eq(conversationParticipants.conversationId, conversationId));
+
+    const participantDetails = await Promise.all(
+      participants.map(async (p) => {
+        const profile = await this.getProfile(p.userId);
+        return {
+          userId: p.userId,
+          displayName: profile?.displayName || null,
+          profileImageUrl: null,
+        };
+      })
+    );
+
+    return {
+      ...convo,
+      participants: participantDetails,
+    };
+  }
+
+  async createConversation(userId: string, participantIds: string[], name?: string, isGroup?: boolean): Promise<Conversation> {
+    const [convo] = await db
+      .insert(conversations)
+      .values({
+        name: name || null,
+        isGroup: isGroup || participantIds.length > 1,
+        createdBy: userId,
+      })
+      .returning();
+
+    // Add creator and all participants
+    const allParticipants = [userId, ...participantIds.filter(id => id !== userId)];
+    for (const participantId of allParticipants) {
+      await db.insert(conversationParticipants).values({
+        conversationId: convo.id,
+        userId: participantId,
+      });
+    }
+
+    return convo;
+  }
+
+  async getOrCreateDirectConversation(userId: string, otherUserId: string): Promise<Conversation> {
+    // Find existing 1-on-1 conversation between these two users
+    const userConvos = await db
+      .select({ conversationId: conversationParticipants.conversationId })
+      .from(conversationParticipants)
+      .where(eq(conversationParticipants.userId, userId));
+
+    for (const uc of userConvos) {
+      const [convo] = await db
+        .select()
+        .from(conversations)
+        .where(and(eq(conversations.id, uc.conversationId), eq(conversations.isGroup, false)));
+
+      if (convo) {
+        // Check if other user is also in this conversation
+        const [otherParticipant] = await db
+          .select()
+          .from(conversationParticipants)
+          .where(
+            and(
+              eq(conversationParticipants.conversationId, convo.id),
+              eq(conversationParticipants.userId, otherUserId)
+            )
+          );
+
+        if (otherParticipant) {
+          return convo;
+        }
+      }
+    }
+
+    // No existing conversation found, create one
+    return this.createConversation(userId, [otherUserId], undefined, false);
+  }
+
+  async addParticipantsToConversation(conversationId: number, userIds: string[]): Promise<void> {
+    for (const userId of userIds) {
+      // Check if already a participant
+      const [existing] = await db
+        .select()
+        .from(conversationParticipants)
+        .where(
+          and(
+            eq(conversationParticipants.conversationId, conversationId),
+            eq(conversationParticipants.userId, userId)
+          )
+        );
+
+      if (!existing) {
+        await db.insert(conversationParticipants).values({
+          conversationId,
+          userId,
+        });
+      }
+    }
+  }
+
+  async getMessages(conversationId: number, userId: string, limit: number = 50, offset: number = 0): Promise<MessageWithSender[]> {
+    // Verify user is a participant
+    const [participation] = await db
+      .select()
+      .from(conversationParticipants)
+      .where(
+        and(
+          eq(conversationParticipants.conversationId, conversationId),
+          eq(conversationParticipants.userId, userId)
+        )
+      );
+
+    if (!participation) return [];
+
+    const msgs = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.conversationId, conversationId))
+      .orderBy(desc(messages.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    // Get sender info for each message
+    const result: MessageWithSender[] = await Promise.all(
+      msgs.map(async (msg) => {
+        const profile = await this.getProfile(msg.senderId);
+        return {
+          ...msg,
+          sender: {
+            displayName: profile?.displayName || null,
+            profileImageUrl: null,
+          },
+        };
+      })
+    );
+
+    return result.reverse(); // Return in chronological order
+  }
+
+  async sendMessage(conversationId: number, senderId: string, content?: string, imageUrl?: string): Promise<Message> {
+    const [msg] = await db
+      .insert(messages)
+      .values({
+        conversationId,
+        senderId,
+        content: content || null,
+        imageUrl: imageUrl || null,
+      })
+      .returning();
+
+    // Update conversation's updatedAt
+    await db
+      .update(conversations)
+      .set({ updatedAt: new Date() })
+      .where(eq(conversations.id, conversationId));
+
+    return msg;
+  }
+
+  async markConversationRead(conversationId: number, userId: string): Promise<void> {
+    await db
+      .update(conversationParticipants)
+      .set({ lastReadAt: new Date() })
+      .where(
+        and(
+          eq(conversationParticipants.conversationId, conversationId),
+          eq(conversationParticipants.userId, userId)
+        )
+      );
   }
 }
 

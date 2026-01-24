@@ -146,3 +146,93 @@ export type MapUser = {
   styleInterests: string | null;
   updatedAt: Date | null;
 };
+
+// Conversations table - supports both 1-on-1 and group chats
+export const conversations = pgTable("conversations", {
+  id: serial("id").primaryKey(),
+  name: text("name"), // Optional name for group chats
+  isGroup: boolean("is_group").default(false),
+  createdBy: text("created_by").notNull().references(() => authUsers.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const conversationsRelations = relations(conversations, ({ one, many }) => ({
+  creator: one(authUsers, {
+    fields: [conversations.createdBy],
+    references: [authUsers.id],
+  }),
+  participants: many(conversationParticipants),
+  messages: many(messages),
+}));
+
+// Conversation participants - tracks who is in each conversation
+export const conversationParticipants = pgTable("conversation_participants", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull().references(() => conversations.id),
+  userId: text("user_id").notNull().references(() => authUsers.id),
+  joinedAt: timestamp("joined_at").defaultNow(),
+  lastReadAt: timestamp("last_read_at"),
+});
+
+export const conversationParticipantsRelations = relations(conversationParticipants, ({ one }) => ({
+  conversation: one(conversations, {
+    fields: [conversationParticipants.conversationId],
+    references: [conversations.id],
+  }),
+  user: one(authUsers, {
+    fields: [conversationParticipants.userId],
+    references: [authUsers.id],
+  }),
+}));
+
+// Messages table
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull().references(() => conversations.id),
+  senderId: text("sender_id").notNull().references(() => authUsers.id),
+  content: text("content"),
+  imageUrl: text("image_url"), // For photo messages
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  conversation: one(conversations, {
+    fields: [messages.conversationId],
+    references: [conversations.id],
+  }),
+  sender: one(authUsers, {
+    fields: [messages.senderId],
+    references: [authUsers.id],
+  }),
+}));
+
+export const insertConversationSchema = createInsertSchema(conversations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  createdBy: true,
+});
+
+export const insertMessageSchema = createInsertSchema(messages).omit({
+  id: true,
+  createdAt: true,
+  senderId: true,
+});
+
+export type Conversation = typeof conversations.$inferSelect;
+export type InsertConversation = z.infer<typeof insertConversationSchema>;
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type ConversationParticipant = typeof conversationParticipants.$inferSelect;
+
+// Extended types for frontend
+export type ConversationWithParticipants = Conversation & {
+  participants: { userId: string; displayName: string | null; profileImageUrl: string | null }[];
+  lastMessage?: Message | null;
+  unreadCount?: number;
+};
+
+export type MessageWithSender = Message & {
+  sender: { displayName: string | null; profileImageUrl: string | null };
+};
