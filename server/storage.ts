@@ -21,6 +21,41 @@ import {
 } from "@shared/schema";
 import { eq, sql, and, desc, inArray } from "drizzle-orm";
 
+// Fuzz location within approximately half a mile (~0.8km) for privacy
+// Uses haversine-based destination point formula for accuracy
+function fuzzLocation(lat: number, lng: number): { lat: number; lng: number } {
+  // Half mile in meters = 804.672 meters
+  const halfMileMeters = 804.672;
+  
+  // Earth's radius in meters
+  const R = 6371000;
+  
+  // Random bearing (0-360 degrees) and distance (uniform within circle)
+  const bearing = Math.random() * 2 * Math.PI;
+  const distance = Math.sqrt(Math.random()) * halfMileMeters;
+  
+  // Convert to radians
+  const lat1 = lat * Math.PI / 180;
+  const lng1 = lng * Math.PI / 180;
+  const angularDistance = distance / R;
+  
+  // Destination point formula (simplified for small distances)
+  const lat2 = Math.asin(
+    Math.sin(lat1) * Math.cos(angularDistance) +
+    Math.cos(lat1) * Math.sin(angularDistance) * Math.cos(bearing)
+  );
+  
+  const lng2 = lng1 + Math.atan2(
+    Math.sin(bearing) * Math.sin(angularDistance) * Math.cos(lat1),
+    Math.cos(angularDistance) - Math.sin(lat1) * Math.sin(lat2)
+  );
+  
+  return {
+    lat: lat2 * 180 / Math.PI,
+    lng: lng2 * 180 / Math.PI,
+  };
+}
+
 export interface IStorage {
   // Profiles
   getProfile(userId: string): Promise<Profile | undefined>;
@@ -92,13 +127,16 @@ export class DatabaseStorage implements IStorage {
   async updateLocation(userId: string, lat: number, lng: number, physicalLat?: number, physicalLng?: number): Promise<Profile> {
     const existing = await this.getProfile(userId);
     
+    // Fuzz the location for privacy (within half a mile)
+    const fuzzed = fuzzLocation(lat, lng);
+    
     // Calculate if traveling: if physical location is known and differs from map location
     let isTraveling = false;
     const pLat = physicalLat ?? (existing?.physicalLatitude);
     const pLng = physicalLng ?? (existing?.physicalLongitude);
 
     if (pLat && pLng) {
-      // Very simple distance check: if more than ~1km away
+      // Very simple distance check: if more than ~1km away (use original coords for accuracy)
       const dist = Math.sqrt(Math.pow(lat - pLat, 2) + Math.pow(lng - pLng, 2));
       isTraveling = dist > 0.01; // ~1.1km
     }
@@ -106,8 +144,8 @@ export class DatabaseStorage implements IStorage {
     if (!existing) {
       return this.createProfile({
         userId,
-        latitude: lat,
-        longitude: lng,
+        latitude: fuzzed.lat,
+        longitude: fuzzed.lng,
         physicalLatitude: pLat,
         physicalLongitude: pLng,
         isTraveling,
@@ -119,8 +157,8 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(profiles)
       .set({
-        latitude: lat,
-        longitude: lng,
+        latitude: fuzzed.lat,
+        longitude: fuzzed.lng,
         physicalLatitude: pLat,
         physicalLongitude: pLng,
         isTraveling,

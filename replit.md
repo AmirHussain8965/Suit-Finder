@@ -51,6 +51,10 @@ Preferred communication style: Simple, everyday language.
 - **Security**: Route-level membership verification on all message endpoints
 - **Screenshot Prevention**: CSS-based deterrent (user-select: none, print media hiding)
 
+### Privacy Features
+- **Location Fuzzing**: User locations are randomized within 0.5 miles (~800m) using geodesic calculation
+- **Photo Upload**: Direct file uploads via presigned URLs to object storage
+
 ### Legal Compliance
 - **Age Verification**: Mandatory 21+ age gate with server-side validation
 - **Legal Disclaimers**: Comprehensive disclaimers on age verification page including:
