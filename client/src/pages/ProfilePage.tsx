@@ -56,7 +56,8 @@ export default function ProfilePage() {
 
   const suitCategories = [
     "wet", "gunging", "ripping", "touching", "shoe worship", 
-    "fully clothed sex", "watersports", "bukkake", "simple meet and greet"
+    "fully clothed sex", "watersports", "bukkake", "simple meet and greet",
+    "butler"
   ];
 
   const onSubmit = (data: ProfileFormValues) => {

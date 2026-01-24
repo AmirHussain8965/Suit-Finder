@@ -30,7 +30,7 @@ export const profiles = pgTable("profiles", {
   styleInterests: text("style_interests"), // e.g. "Tuxedos, Vintage, Modern"
   role: text("role"), // "submissive", "dominant", "vers"
   interestType: text("interest_type"), // "styling", "fetish"
-  categories: text("categories").array(), // wet, gunging, ripping, touching, shoe worship, fully clothed sex, watersports, bukkake, simple meet and greet
+  categories: text("categories").array(), // wet, gunging, ripping, touching, shoe worship, fully clothed sex, watersports, bukkake, simple meet and greet, butler
   contactInfo: text("contact_info"), // Optional contact method
 });
 
