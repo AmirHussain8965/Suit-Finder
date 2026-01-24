@@ -29,6 +29,7 @@ const categoryLabels: Record<string, string> = {
   bukkake: "Bukkake",
   side_event: "Side Event",
   messy_meetup: "Messy Meetup",
+  bondage: "Bondage",
 };
 
 const categoryColors: Record<string, string> = {
@@ -39,6 +40,7 @@ const categoryColors: Record<string, string> = {
   bukkake: "bg-purple-600 text-white border-purple-700",
   side_event: "bg-yellow-500 text-black border-yellow-600",
   messy_meetup: "bg-pink-500 text-white border-pink-600",
+  bondage: "bg-gray-800 text-white border-gray-900",
 };
 
 export default function EventsPage() {

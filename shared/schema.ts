@@ -245,7 +245,8 @@ export const eventCategories = [
   "pump_and_dump",
   "bukkake",
   "side_event",
-  "messy_meetup"
+  "messy_meetup",
+  "bondage"
 ] as const;
 
 export type EventCategory = typeof eventCategories[number];
