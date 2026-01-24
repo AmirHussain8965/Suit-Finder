@@ -112,17 +112,18 @@ export default function MapPage() {
         </MapContainer>
 
         {/* Floating Controls */}
-        <div className="absolute top-4 right-4 z-[400] flex flex-col gap-2">
+        <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
           <Button
             size="icon"
             onClick={handleLocateMe}
             disabled={isUpdatingLocation}
-            className="bg-card border border-border hover:bg-card/90 text-accent shadow-lg rounded-full h-12 w-12"
+            className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-xl rounded-full h-14 w-14 border-2 border-white"
+            data-testid="button-locate-me"
           >
             {isUpdatingLocation ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <Loader2 className="h-6 w-6 animate-spin" />
             ) : (
-              <Crosshair className="h-5 w-5" />
+              <Crosshair className="h-6 w-6" />
             )}
           </Button>
         </div>
