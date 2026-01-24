@@ -56,14 +56,28 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async updateLocation(userId: string, lat: number, lng: number): Promise<Profile> {
+  async updateLocation(userId: string, lat: number, lng: number, physicalLat?: number, physicalLng?: number): Promise<Profile> {
     const existing = await this.getProfile(userId);
     
+    // Calculate if traveling: if physical location is known and differs from map location
+    let isTraveling = false;
+    const pLat = physicalLat ?? (existing?.physicalLatitude);
+    const pLng = physicalLng ?? (existing?.physicalLongitude);
+
+    if (pLat && pLng) {
+      // Very simple distance check: if more than ~1km away
+      const dist = Math.sqrt(Math.pow(lat - pLat, 2) + Math.pow(lng - pLng, 2));
+      isTraveling = dist > 0.01; // ~1.1km
+    }
+
     if (!existing) {
       return this.createProfile({
         userId,
         latitude: lat,
         longitude: lng,
+        physicalLatitude: pLat,
+        physicalLongitude: pLng,
+        isTraveling,
         locationUpdatedAt: new Date(),
         isVisible: true,
       });
@@ -74,6 +88,9 @@ export class DatabaseStorage implements IStorage {
       .set({
         latitude: lat,
         longitude: lng,
+        physicalLatitude: pLat,
+        physicalLongitude: pLng,
+        isTraveling,
         locationUpdatedAt: new Date(),
       })
       .where(eq(profiles.userId, userId))

@@ -251,19 +251,6 @@ export default function ProfilePage() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between p-4 rounded-lg bg-background border border-border">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">Travel Mode</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Indicate you are traveling to your map location
-                    </p>
-                  </div>
-                  <Switch 
-                    checked={form.watch("isTraveling")}
-                    onCheckedChange={(checked) => form.setValue("isTraveling", checked)}
-                    className="data-[state=checked]:bg-accent"
-                  />
-                </div>
               </CardContent>
             </Card>
           </div>

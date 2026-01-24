@@ -43,11 +43,16 @@ export default function MapPage() {
         (position) => {
           const { latitude, longitude } = position.coords;
           setCenter([latitude, longitude]);
-          updateLocation({ latitude, longitude });
+          updateLocation({ 
+            latitude, 
+            longitude,
+            // Pass physical location to backend for travel detection
+            physicalLatitude: latitude,
+            physicalLongitude: longitude
+          } as any);
         },
         (error) => {
           console.error("Error getting location:", error);
-          // Fallback or toast error could go here
         }
       );
     }

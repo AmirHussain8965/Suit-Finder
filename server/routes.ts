@@ -62,7 +62,13 @@ export async function registerRoutes(
 
     try {
       const input = api.profiles.location.input.parse(req.body);
-      const profile = await storage.updateLocation(userId, input.latitude, input.longitude);
+      const profile = await storage.updateLocation(
+        userId, 
+        input.latitude, 
+        input.longitude,
+        (req.body as any).physicalLatitude,
+        (req.body as any).physicalLongitude
+      );
       res.json(profile);
     } catch (err) {
       if (err instanceof z.ZodError) {

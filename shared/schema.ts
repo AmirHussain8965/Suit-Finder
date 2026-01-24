@@ -24,6 +24,8 @@ export const profiles = pgTable("profiles", {
   // Location data
   latitude: doublePrecision("latitude"),
   longitude: doublePrecision("longitude"),
+  physicalLatitude: doublePrecision("physical_latitude"),
+  physicalLongitude: doublePrecision("physical_longitude"),
   locationUpdatedAt: timestamp("location_updated_at"),
   isVisible: boolean("is_visible").default(true),
   isTraveling: boolean("is_traveling").default(false),
