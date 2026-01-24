@@ -30,7 +30,7 @@ Preferred communication style: Simple, everyday language.
 - **Schema Location**: `shared/schema.ts` contains all table definitions
 - **Migrations**: Drizzle Kit with `db:push` command for schema updates
 - **Key Tables**:
-  - `users` - Authentication user records (managed by Replit Auth)
+  - `users` - Authentication user records with email/password login
   - `sessions` - Session storage for authentication
   - `profiles` - Extended user profile data including:
     - Basic info (displayName, bio, contactInfo)
@@ -85,9 +85,14 @@ Preferred communication style: Simple, everyday language.
   - Health information disclaimer (self-reported, not verified)
 
 ### Authentication
-- **Provider**: Replit OpenID Connect (OIDC) authentication
+- **Provider**: Email/Password authentication with bcrypt password hashing
 - **Session Storage**: PostgreSQL-backed sessions via connect-pg-simple
-- **Implementation**: Passport.js with custom OIDC strategy in `server/replit_integrations/auth/`
+- **Routes**: 
+  - POST /api/auth/register - User registration
+  - POST /api/auth/login - User login
+  - POST /api/auth/logout - User logout
+  - GET /api/auth/user - Get current user
+- **Implementation**: Express sessions with Passport.js in `server/replit_integrations/auth/`
 
 ### Key Design Patterns
 - **Shared Types**: Schema and route definitions in `shared/` directory enable type sharing between client and server
@@ -100,12 +105,10 @@ Preferred communication style: Simple, everyday language.
 - **PostgreSQL**: Primary data store, connection via `DATABASE_URL` environment variable
 
 ### Authentication Services
-- **Replit OIDC**: OpenID Connect provider at `https://replit.com/oidc`
+- **Email/Password**: Local authentication with bcrypt password hashing
 - **Required Environment Variables**:
   - `DATABASE_URL` - PostgreSQL connection string
   - `SESSION_SECRET` - Express session encryption key
-  - `REPL_ID` - Replit deployment identifier
-  - `ISSUER_URL` - OIDC issuer (defaults to Replit)
 
 ### Frontend Services
 - **Google Fonts**: DM Sans and Playfair Display font families
