@@ -11,6 +11,7 @@ import MapPage from "@/pages/MapPage";
 import ProfilePage from "@/pages/ProfilePage";
 import GalleryPage from "@/pages/GalleryPage";
 import MessagesPage from "@/pages/MessagesPage";
+import EventsPage from "@/pages/EventsPage";
 import { AgeVerification } from "@/components/AgeVerification";
 import { Loader2 } from "lucide-react";
 
@@ -78,6 +79,10 @@ function Router() {
 
       <Route path="/messages">
         <ProtectedRoute component={MessagesPage} />
+      </Route>
+
+      <Route path="/events">
+        <ProtectedRoute component={EventsPage} />
       </Route>
 
       <Route component={NotFound} />
