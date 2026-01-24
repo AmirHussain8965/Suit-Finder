@@ -29,6 +29,7 @@ export const profiles = pgTable("profiles", {
   // Style preferences
   styleInterests: text("style_interests"), // e.g. "Tuxedos, Vintage, Modern"
   role: text("role"), // "submissive", "dominant", "vers"
+  interestType: text("interest_type"), // "styling", "fetish"
   contactInfo: text("contact_info"), // Optional contact method
 });
 

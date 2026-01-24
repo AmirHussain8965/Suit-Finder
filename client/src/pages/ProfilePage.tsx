@@ -33,6 +33,7 @@ export default function ProfilePage() {
       bio: "",
       styleInterests: "",
       role: "",
+      interestType: "",
       isVisible: true,
     },
   });
@@ -45,6 +46,7 @@ export default function ProfilePage() {
         bio: profile.bio || "",
         styleInterests: profile.styleInterests || "",
         role: profile.role || "",
+        interestType: profile.interestType || "",
         isVisible: profile.isVisible ?? true,
       });
     }
@@ -157,6 +159,16 @@ export default function ProfilePage() {
                     {...form.register("role")} 
                     className="bg-background border-input focus:border-accent"
                     placeholder="E.g. Dominant"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="interestType">Interest Type (Styling or Fetish)</Label>
+                  <Input 
+                    id="interestType" 
+                    {...form.register("interestType")} 
+                    className="bg-background border-input focus:border-accent"
+                    placeholder="E.g. Styling"
                   />
                 </div>
 
