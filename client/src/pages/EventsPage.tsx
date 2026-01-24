@@ -13,7 +13,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Plus, Calendar, MapPin, Users, Clock, Check, X, Eye, EyeOff, Trash2, ArrowLeft } from "lucide-react";
 import type { EventWithDetails } from "@shared/schema";
 import { eventCategories } from "@shared/schema";
@@ -527,9 +526,8 @@ export default function EventsPage() {
             </Button>
           </Card>
         ) : (
-          <ScrollArea className="h-[calc(100vh-220px)]">
-            <div className="space-y-4 pr-4">
-              {events.map((event) => (
+          <div className="space-y-4">
+            {events.map((event) => (
                 <Card 
                   key={event.id} 
                   className="cursor-pointer hover-elevate transition-all"
@@ -581,8 +579,7 @@ export default function EventsPage() {
                   </CardFooter>
                 </Card>
               ))}
-            </div>
-          </ScrollArea>
+          </div>
         )}
       </div>
     </Layout>
