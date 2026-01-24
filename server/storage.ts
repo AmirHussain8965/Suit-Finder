@@ -9,6 +9,8 @@ import {
   events,
   eventAttendees,
   wardrobeItems,
+  auctions,
+  bids,
   type Profile,
   type InsertProfile,
   type UpdateProfileRequest,
@@ -27,6 +29,10 @@ import {
   type EventWithDetails,
   type WardrobeItem,
   type InsertWardrobeItem,
+  type Auction,
+  type InsertAuction,
+  type Bid,
+  type InsertBid,
 } from "@shared/schema";
 import { eq, sql, and, desc, inArray, gte, or } from "drizzle-orm";
 
@@ -118,6 +124,30 @@ export interface IStorage {
   updateWardrobeItem(userId: string, itemId: number, updates: Partial<InsertWardrobeItem>): Promise<WardrobeItem>;
   deleteWardrobeItem(userId: string, itemId: number): Promise<void>;
   toggleWardrobeFavorite(userId: string, itemId: number): Promise<WardrobeItem>;
+  
+  // Auctions
+  getAuctions(userId?: string): Promise<AuctionWithDetails[]>;
+  getAuction(auctionId: number): Promise<AuctionWithDetails | undefined>;
+  createAuction(sellerId: string, data: InsertAuction): Promise<Auction>;
+  updateAuction(auctionId: number, sellerId: string, updates: Partial<InsertAuction>): Promise<Auction>;
+  deleteAuction(auctionId: number, sellerId: string): Promise<void>;
+  endAuction(auctionId: number, sellerId: string): Promise<Auction>;
+  
+  // Bids
+  getBids(auctionId: number): Promise<BidWithBidder[]>;
+  placeBid(auctionId: number, bidderId: string, amount: number): Promise<Bid>;
+}
+
+export interface AuctionWithDetails extends Auction {
+  seller: { id: string; displayName: string | null } | null;
+  winner: { id: string; displayName: string | null } | null;
+  wardrobeItem: WardrobeItem | null;
+  bidCount: number;
+  highestBid: number | null;
+}
+
+export interface BidWithBidder extends Bid {
+  bidder: { id: string; displayName: string | null } | null;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -872,6 +902,192 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(wardrobeItems.id, itemId), eq(wardrobeItems.userId, userId)))
       .returning();
     return item;
+  }
+
+  // Auction methods
+  async getAuctions(userId?: string): Promise<AuctionWithDetails[]> {
+    const auctionList = await db
+      .select()
+      .from(auctions)
+      .orderBy(desc(auctions.createdAt));
+    
+    const results: AuctionWithDetails[] = [];
+    for (const auction of auctionList) {
+      const details = await this.enrichAuction(auction);
+      results.push(details);
+    }
+    return results;
+  }
+
+  async getAuction(auctionId: number): Promise<AuctionWithDetails | undefined> {
+    const [auction] = await db
+      .select()
+      .from(auctions)
+      .where(eq(auctions.id, auctionId));
+    
+    if (!auction) return undefined;
+    return this.enrichAuction(auction);
+  }
+
+  private async enrichAuction(auction: Auction): Promise<AuctionWithDetails> {
+    const [sellerProfile] = await db
+      .select({ id: profiles.userId, displayName: profiles.displayName })
+      .from(profiles)
+      .where(eq(profiles.userId, auction.sellerId));
+    
+    let winnerProfile = null;
+    if (auction.winnerId) {
+      const [winner] = await db
+        .select({ id: profiles.userId, displayName: profiles.displayName })
+        .from(profiles)
+        .where(eq(profiles.userId, auction.winnerId));
+      winnerProfile = winner || null;
+    }
+    
+    let wardrobeItem = null;
+    if (auction.wardrobeItemId) {
+      const [item] = await db
+        .select()
+        .from(wardrobeItems)
+        .where(eq(wardrobeItems.id, auction.wardrobeItemId));
+      wardrobeItem = item || null;
+    }
+    
+    const bidList = await db
+      .select()
+      .from(bids)
+      .where(eq(bids.auctionId, auction.id))
+      .orderBy(desc(bids.amount));
+    
+    return {
+      ...auction,
+      seller: sellerProfile || null,
+      winner: winnerProfile,
+      wardrobeItem,
+      bidCount: bidList.length,
+      highestBid: bidList.length > 0 ? Number(bidList[0].amount) : null,
+    };
+  }
+
+  async createAuction(sellerId: string, data: InsertAuction): Promise<Auction> {
+    const [auction] = await db
+      .insert(auctions)
+      .values({ ...data, sellerId })
+      .returning();
+    return auction;
+  }
+
+  async updateAuction(auctionId: number, sellerId: string, updates: Partial<InsertAuction>): Promise<Auction> {
+    const [auction] = await db
+      .update(auctions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(and(eq(auctions.id, auctionId), eq(auctions.sellerId, sellerId)))
+      .returning();
+    if (!auction) throw new Error("Auction not found or not authorized");
+    return auction;
+  }
+
+  async deleteAuction(auctionId: number, sellerId: string): Promise<void> {
+    await db.delete(bids).where(eq(bids.auctionId, auctionId));
+    await db
+      .delete(auctions)
+      .where(and(eq(auctions.id, auctionId), eq(auctions.sellerId, sellerId)));
+  }
+
+  async endAuction(auctionId: number, sellerId: string): Promise<Auction> {
+    const bidList = await db
+      .select()
+      .from(bids)
+      .where(eq(bids.auctionId, auctionId))
+      .orderBy(desc(bids.amount))
+      .limit(1);
+    
+    const winnerId = bidList.length > 0 ? bidList[0].bidderId : null;
+    const finalPriceCents = bidList.length > 0 ? Number(bidList[0].amount) : null;
+    
+    const [auction] = await db
+      .update(auctions)
+      .set({
+        status: 'ended',
+        winnerId,
+        currentPrice: finalPriceCents ?? undefined,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(auctions.id, auctionId), eq(auctions.sellerId, sellerId)))
+      .returning();
+    
+    if (!auction) throw new Error("Auction not found or not authorized");
+    return auction;
+  }
+
+  async getBids(auctionId: number): Promise<BidWithBidder[]> {
+    const bidList = await db
+      .select()
+      .from(bids)
+      .where(eq(bids.auctionId, auctionId))
+      .orderBy(desc(bids.amount));
+    
+    const results: BidWithBidder[] = [];
+    for (const bid of bidList) {
+      const [bidderProfile] = await db
+        .select({ id: profiles.userId, displayName: profiles.displayName })
+        .from(profiles)
+        .where(eq(profiles.userId, bid.bidderId));
+      
+      results.push({
+        ...bid,
+        bidder: bidderProfile || null,
+      });
+    }
+    return results;
+  }
+
+  async placeBid(auctionId: number, bidderId: string, amountCents: number): Promise<Bid> {
+    const [auction] = await db
+      .select()
+      .from(auctions)
+      .where(eq(auctions.id, auctionId));
+    
+    if (!auction) throw new Error("Auction not found");
+    if (auction.status !== 'active') throw new Error("Auction is not active");
+    if (auction.endDate && new Date(auction.endDate) < new Date()) {
+      throw new Error("Auction has ended");
+    }
+    if (auction.sellerId === bidderId) throw new Error("Cannot bid on your own auction");
+    
+    const existingBids = await db
+      .select()
+      .from(bids)
+      .where(eq(bids.auctionId, auctionId))
+      .orderBy(desc(bids.amount))
+      .limit(1);
+    
+    const currentHighestCents = existingBids.length > 0 ? Number(existingBids[0].amount) : Number(auction.startingPrice);
+    const minBidCents = 100;
+    
+    if (amountCents <= currentHighestCents) {
+      throw new Error(`Bid must be higher than current highest bid of $${(currentHighestCents / 100).toFixed(2)}`);
+    }
+    
+    if (amountCents < currentHighestCents + minBidCents) {
+      throw new Error(`Minimum bid increment is $${(minBidCents / 100).toFixed(2)}`);
+    }
+    
+    const [bid] = await db
+      .insert(bids)
+      .values({
+        auctionId,
+        bidderId,
+        amount: amountCents,
+      })
+      .returning();
+    
+    await db
+      .update(auctions)
+      .set({ currentPrice: amountCents, updatedAt: new Date() })
+      .where(eq(auctions.id, auctionId));
+    
+    return bid;
   }
 }
 

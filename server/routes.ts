@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
@@ -8,6 +8,20 @@ import { authStorage } from "./replit_integrations/auth/storage";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { stripeService } from "./stripeService";
 import { getStripePublishableKey } from "./stripeClient";
+import { insertAuctionSchema, insertBidSchema } from "@shared/schema";
+
+async function checkPlatinumTier(userId: string): Promise<boolean> {
+  const user = await authStorage.getUser(userId);
+  if (!user) return false;
+  const hasActiveSubscription = user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing';
+  return hasActiveSubscription && user.subscriptionTier === 'platinum';
+}
+
+async function checkPremiumTier(userId: string): Promise<boolean> {
+  const user = await authStorage.getUser(userId);
+  if (!user) return false;
+  return user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing';
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -746,7 +760,7 @@ export async function registerRoutes(
     }
   });
 
-  // === Wardrobe ===
+  // === Wardrobe (Platinum-only) ===
 
   // List wardrobe items
   app.get(api.wardrobe.list.path, async (req, res) => {
@@ -754,6 +768,10 @@ export async function registerRoutes(
       return res.status(401).json({ message: "Unauthorized" });
     }
     const userId = (req.user as any).claims.sub;
+    const isPlatinum = await checkPlatinumTier(userId);
+    if (!isPlatinum) {
+      return res.status(403).json({ message: "Platinum subscription required" });
+    }
     const category = req.query.category as string | undefined;
     
     try {
@@ -771,6 +789,10 @@ export async function registerRoutes(
       return res.status(401).json({ message: "Unauthorized" });
     }
     const userId = (req.user as any).claims.sub;
+    const isPlatinum = await checkPlatinumTier(userId);
+    if (!isPlatinum) {
+      return res.status(403).json({ message: "Platinum subscription required" });
+    }
     const itemId = parseInt(req.params.itemId);
     
     try {
@@ -791,6 +813,10 @@ export async function registerRoutes(
       return res.status(401).json({ message: "Unauthorized" });
     }
     const userId = (req.user as any).claims.sub;
+    const isPlatinum = await checkPlatinumTier(userId);
+    if (!isPlatinum) {
+      return res.status(403).json({ message: "Platinum subscription required" });
+    }
     
     try {
       const input = api.wardrobe.create.input.parse(req.body);
@@ -808,6 +834,10 @@ export async function registerRoutes(
       return res.status(401).json({ message: "Unauthorized" });
     }
     const userId = (req.user as any).claims.sub;
+    const isPlatinum = await checkPlatinumTier(userId);
+    if (!isPlatinum) {
+      return res.status(403).json({ message: "Platinum subscription required" });
+    }
     const itemId = parseInt(req.params.itemId);
     
     try {
@@ -830,6 +860,10 @@ export async function registerRoutes(
       return res.status(401).json({ message: "Unauthorized" });
     }
     const userId = (req.user as any).claims.sub;
+    const isPlatinum = await checkPlatinumTier(userId);
+    if (!isPlatinum) {
+      return res.status(403).json({ message: "Platinum subscription required" });
+    }
     const itemId = parseInt(req.params.itemId);
     
     try {
@@ -851,6 +885,10 @@ export async function registerRoutes(
       return res.status(401).json({ message: "Unauthorized" });
     }
     const userId = (req.user as any).claims.sub;
+    const isPlatinum = await checkPlatinumTier(userId);
+    if (!isPlatinum) {
+      return res.status(403).json({ message: "Platinum subscription required" });
+    }
     const itemId = parseInt(req.params.itemId);
     
     try {
@@ -863,6 +901,205 @@ export async function registerRoutes(
     } catch (err) {
       console.error("Error toggling favorite:", err);
       res.status(400).json({ message: "Failed to toggle favorite" });
+    }
+  });
+
+  // Auction routes (Platinum-only)
+  app.get("/api/auctions", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const userId = (req.user as any).claims.sub;
+      const isPlatinum = await checkPlatinumTier(userId);
+      if (!isPlatinum) {
+        return res.status(403).json({ message: "Platinum subscription required" });
+      }
+      const auctions = await storage.getAuctions(userId);
+      res.json(auctions);
+    } catch (err) {
+      console.error("Error fetching auctions:", err);
+      res.status(500).json({ message: "Failed to fetch auctions" });
+    }
+  });
+
+  app.get("/api/auctions/:auctionId", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const userId = (req.user as any).claims.sub;
+      const isPlatinum = await checkPlatinumTier(userId);
+      if (!isPlatinum) {
+        return res.status(403).json({ message: "Platinum subscription required" });
+      }
+      const auctionId = parseInt(req.params.auctionId);
+      if (isNaN(auctionId)) {
+        return res.status(400).json({ message: "Invalid auction ID" });
+      }
+      const auction = await storage.getAuction(auctionId);
+      if (!auction) {
+        return res.status(404).json({ message: "Auction not found" });
+      }
+      res.json(auction);
+    } catch (err) {
+      console.error("Error fetching auction:", err);
+      res.status(500).json({ message: "Failed to fetch auction" });
+    }
+  });
+
+  const createAuctionSchema = z.object({
+    title: z.string().min(1).max(200),
+    description: z.string().optional(),
+    category: z.string().min(1),
+    startingPrice: z.number().int().positive(),
+    currentPrice: z.number().int().positive(),
+    buyNowPrice: z.number().int().positive().optional(),
+    endDate: z.string().datetime(),
+    imageUrl: z.string().optional(),
+  });
+
+  app.post("/api/auctions", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const userId = (req.user as any).claims.sub;
+      const isPlatinum = await checkPlatinumTier(userId);
+      if (!isPlatinum) {
+        return res.status(403).json({ message: "Platinum subscription required" });
+      }
+      const parsed = createAuctionSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid auction data", errors: parsed.error.errors });
+      }
+      const auction = await storage.createAuction(userId, parsed.data);
+      res.status(201).json(auction);
+    } catch (err) {
+      console.error("Error creating auction:", err);
+      res.status(400).json({ message: "Failed to create auction" });
+    }
+  });
+
+  app.patch("/api/auctions/:auctionId", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const userId = (req.user as any).claims.sub;
+      const isPlatinum = await checkPlatinumTier(userId);
+      if (!isPlatinum) {
+        return res.status(403).json({ message: "Platinum subscription required" });
+      }
+      const auctionId = parseInt(req.params.auctionId);
+      if (isNaN(auctionId)) {
+        return res.status(400).json({ message: "Invalid auction ID" });
+      }
+      const auction = await storage.updateAuction(auctionId, userId, req.body);
+      res.json(auction);
+    } catch (err) {
+      console.error("Error updating auction:", err);
+      res.status(400).json({ message: "Failed to update auction" });
+    }
+  });
+
+  app.delete("/api/auctions/:auctionId", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const userId = (req.user as any).claims.sub;
+      const isPlatinum = await checkPlatinumTier(userId);
+      if (!isPlatinum) {
+        return res.status(403).json({ message: "Platinum subscription required" });
+      }
+      const auctionId = parseInt(req.params.auctionId);
+      if (isNaN(auctionId)) {
+        return res.status(400).json({ message: "Invalid auction ID" });
+      }
+      await storage.deleteAuction(auctionId, userId);
+      res.status(204).send();
+    } catch (err) {
+      console.error("Error deleting auction:", err);
+      res.status(400).json({ message: "Failed to delete auction" });
+    }
+  });
+
+  app.post("/api/auctions/:auctionId/end", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const userId = (req.user as any).claims.sub;
+      const isPlatinum = await checkPlatinumTier(userId);
+      if (!isPlatinum) {
+        return res.status(403).json({ message: "Platinum subscription required" });
+      }
+      const auctionId = parseInt(req.params.auctionId);
+      if (isNaN(auctionId)) {
+        return res.status(400).json({ message: "Invalid auction ID" });
+      }
+      const auction = await storage.endAuction(auctionId, userId);
+      res.json(auction);
+    } catch (err) {
+      console.error("Error ending auction:", err);
+      res.status(400).json({ message: "Failed to end auction" });
+    }
+  });
+
+  app.get("/api/auctions/:auctionId/bids", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const userId = (req.user as any).claims.sub;
+      const isPlatinum = await checkPlatinumTier(userId);
+      if (!isPlatinum) {
+        return res.status(403).json({ message: "Platinum subscription required" });
+      }
+      const auctionId = parseInt(req.params.auctionId);
+      if (isNaN(auctionId)) {
+        return res.status(400).json({ message: "Invalid auction ID" });
+      }
+      const bids = await storage.getBids(auctionId);
+      res.json(bids);
+    } catch (err) {
+      console.error("Error fetching bids:", err);
+      res.status(500).json({ message: "Failed to fetch bids" });
+    }
+  });
+
+  const placeBidSchema = z.object({
+    amount: z.number().int().positive(),
+  });
+
+  app.post("/api/auctions/:auctionId/bids", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const userId = (req.user as any).claims.sub;
+      const isPlatinum = await checkPlatinumTier(userId);
+      if (!isPlatinum) {
+        return res.status(403).json({ message: "Platinum subscription required" });
+      }
+      const auctionId = parseInt(req.params.auctionId);
+      if (isNaN(auctionId)) {
+        return res.status(400).json({ message: "Invalid auction ID" });
+      }
+      const parsed = placeBidSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid bid amount" });
+      }
+      const { amount } = parsed.data;
+      if (!amount || isNaN(Number(amount))) {
+        return res.status(400).json({ message: "Invalid bid amount" });
+      }
+      const bid = await storage.placeBid(auctionId, userId, Number(amount));
+      res.status(201).json(bid);
+    } catch (err: any) {
+      console.error("Error placing bid:", err);
+      res.status(400).json({ message: err.message || "Failed to place bid" });
     }
   });
 

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Map, User, Image, LogOut, MessageSquare, Calendar, Crown, Shirt } from "lucide-react";
+import { Map, User, Image, LogOut, MessageSquare, Calendar, Crown, Shirt, Gavel } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { usePremiumFeature } from "@/hooks/use-subscription";
@@ -16,6 +16,7 @@ export function Navigation() {
     { href: "/messages", icon: MessageSquare, label: "Messages" },
     { href: "/events", icon: Calendar, label: "Events" },
     { href: "/wardrobe", icon: Shirt, label: "Wardrobe" },
+    { href: "/auctions", icon: Gavel, label: "Auctions" },
     { href: "/gallery", icon: Image, label: "Gallery" },
     { href: "/profile", icon: User, label: "Profile" },
   ];

@@ -14,6 +14,7 @@ import GalleryPage from "@/pages/GalleryPage";
 import MessagesPage from "@/pages/MessagesPage";
 import EventsPage from "@/pages/EventsPage";
 import WardrobePage from "@/pages/WardrobePage";
+import AuctionPage from "@/pages/AuctionPage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import { AgeVerification } from "@/components/AgeVerification";
 import { Loader2 } from "lucide-react";
@@ -98,6 +99,10 @@ function Router() {
 
       <Route path="/wardrobe">
         <ProtectedRoute component={WardrobePage} />
+      </Route>
+
+      <Route path="/auctions">
+        <ProtectedRoute component={AuctionPage} />
       </Route>
 
       <Route path="/subscription">
