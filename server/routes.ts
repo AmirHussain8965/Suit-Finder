@@ -6,7 +6,9 @@ import { z } from "zod";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 import { authStorage } from "./replit_integrations/auth/storage";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { ccbillService } from "./ccbillService";
+import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
+import { sql } from "drizzle-orm";
+import { db } from "./db";
 import { insertAuctionSchema, insertBidSchema } from "@shared/schema";
 
 async function checkPlatinumTier(userId: string): Promise<boolean> {
@@ -814,13 +816,13 @@ export async function registerRoutes(
     }
   });
 
-  // === Subscription/Payment Routes (CCBill) ===
+  // === Subscription/Payment Routes (Stripe) ===
 
-  // Get payment config
+  // Get Stripe publishable key for frontend
   app.get("/api/payment/config", async (req, res) => {
     try {
-      const config = ccbillService.getConfig();
-      res.json(config);
+      const publishableKey = await getStripePublishableKey();
+      res.json({ publishableKey });
     } catch (err) {
       console.error("Error getting payment config:", err);
       res.status(500).json({ error: "Payment system unavailable" });
@@ -855,56 +857,65 @@ export async function registerRoutes(
     });
   });
 
-  // Get available membership tiers/prices
+  // Get available membership tiers/prices from Stripe
   app.get("/api/prices", async (req, res) => {
     try {
-      const prices = [
-        {
-          id: 'premium',
-          name: 'The Tailored Circle',
-          price: 19.99,
-          currency: 'USD',
-          interval: 'month',
-          features: [
-            'Access to all member profiles',
-            'Unlimited messaging',
-            'View member galleries',
-            'Create events',
-            'Add favorites'
-          ]
-        },
-        {
-          id: 'platinum',
-          name: 'The Krug Society',
-          price: 49.99,
-          currency: 'USD',
-          interval: 'month',
-          features: [
-            'All Tailored Circle features',
-            'Virtual wardrobe access',
-            'Suit auctions access',
-            'Priority support',
-            'Exclusive events'
-          ]
+      const result = await db.execute(sql`
+        SELECT 
+          p.id as product_id,
+          p.name as product_name,
+          p.description as product_description,
+          p.metadata as product_metadata,
+          pr.id as price_id,
+          pr.unit_amount,
+          pr.currency,
+          pr.recurring
+        FROM stripe.products p
+        LEFT JOIN stripe.prices pr ON pr.product = p.id AND pr.active = true
+        WHERE p.active = true
+        ORDER BY pr.unit_amount ASC
+      `);
+
+      const productsMap = new Map();
+      for (const row of result.rows as any[]) {
+        if (!productsMap.has(row.product_id)) {
+          const metadata = row.product_metadata || {};
+          productsMap.set(row.product_id, {
+            id: row.product_id,
+            name: row.product_name,
+            description: row.product_description,
+            tier: metadata.tier || 'premium',
+            features: metadata.features ? JSON.parse(metadata.features) : [],
+            prices: []
+          });
         }
-      ];
-      res.json({ prices });
+        if (row.price_id) {
+          productsMap.get(row.product_id).prices.push({
+            id: row.price_id,
+            amount: row.unit_amount,
+            currency: row.currency,
+            interval: row.recurring?.interval || 'month',
+          });
+        }
+      }
+
+      res.json({ prices: Array.from(productsMap.values()) });
     } catch (err) {
       console.error("Error fetching prices:", err);
       res.status(500).json({ error: "Could not fetch prices" });
     }
   });
 
-  // Create CCBill checkout URL
+  // Create Stripe checkout session
   app.post("/api/checkout", async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     const userId = (req.user as any).claims.sub;
-    const { tier } = req.body;
+    const { priceId } = req.body;
 
-    if (!tier || !['premium', 'platinum'].includes(tier)) {
-      return res.status(400).json({ error: "Valid tier required (premium or platinum)" });
+    if (!priceId) {
+      return res.status(400).json({ error: "Price ID required" });
     }
 
     try {
@@ -913,75 +924,61 @@ export async function registerRoutes(
         return res.status(400).json({ error: "User email required for payment" });
       }
 
-      if (!ccbillService.isConfigured()) {
-        return res.status(503).json({ 
-          error: "Payment system not configured",
-          message: "CCBill credentials are not set up. Please contact support."
+      const stripe = await getUncachableStripeClient();
+
+      let customerId = user.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          metadata: { userId },
         });
+        await authStorage.updateUserStripeCustomerId(userId, customer.id);
+        customerId = customer.id;
       }
 
-      const paymentUrl = ccbillService.generatePaymentUrl({
-        tier: tier as 'premium' | 'platinum',
-        userId,
-        email: user.email,
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        line_items: [{ price: priceId, quantity: 1 }],
+        mode: 'subscription',
+        success_url: `${baseUrl}/subscription?success=true`,
+        cancel_url: `${baseUrl}/subscription?canceled=true`,
+        metadata: { userId },
       });
 
-      res.json({ url: paymentUrl });
+      res.json({ url: session.url });
     } catch (err) {
       console.error("Error creating checkout:", err);
       res.status(500).json({ error: "Could not create checkout session" });
     }
   });
 
-  // CCBill webhook for payment notifications
-  app.post("/api/webhooks/ccbill", async (req, res) => {
+  // Create Stripe customer portal session
+  app.post("/api/billing/portal", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+
     try {
-      const { 
-        subscriptionId,
-        eventType,
-        clientAccnum,
-        clientSubacc,
-        'X-userId': userId,
-        'X-tier': tier,
-        timestamp,
-        responseDigest
-      } = req.body;
-
-      console.log("CCBill webhook received:", { eventType, userId, tier });
-
-      if (eventType === 'NewSaleSuccess' && userId && tier) {
-        const endDate = new Date();
-        endDate.setMonth(endDate.getMonth() + 1);
-
-        await authStorage.updateUserSubscription(userId, {
-          subscriptionStatus: 'active',
-          subscriptionTier: tier,
-          subscriptionPlan: tier === 'platinum' ? 'The Krug Society' : 'The Tailored Circle',
-          subscriptionEndDate: endDate.toISOString(),
-          ccbillSubscriptionId: subscriptionId,
-        });
-
-        console.log(`Subscription activated for user ${userId}: ${tier}`);
-      } else if (eventType === 'Cancellation' && userId) {
-        await authStorage.updateUserSubscription(userId, {
-          subscriptionStatus: 'canceled',
-        });
-        console.log(`Subscription canceled for user ${userId}`);
-      } else if (eventType === 'RenewalSuccess' && userId) {
-        const endDate = new Date();
-        endDate.setMonth(endDate.getMonth() + 1);
-        
-        await authStorage.updateUserSubscription(userId, {
-          subscriptionStatus: 'active',
-          subscriptionEndDate: endDate.toISOString(),
-        });
-        console.log(`Subscription renewed for user ${userId}`);
+      const user = await authStorage.getUser(userId);
+      if (!user?.stripeCustomerId) {
+        return res.status(400).json({ error: "No billing account found" });
       }
 
-      res.status(200).send('OK');
+      const stripe = await getUncachableStripeClient();
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      
+      const session = await stripe.billingPortal.sessions.create({
+        customer: user.stripeCustomerId,
+        return_url: `${baseUrl}/subscription`,
+      });
+
+      res.json({ url: session.url });
     } catch (err) {
-      console.error("CCBill webhook error:", err);
-      res.status(500).send('Error processing webhook');
+      console.error("Error creating portal session:", err);
+      res.status(500).json({ error: "Could not create portal session" });
     }
   });
 

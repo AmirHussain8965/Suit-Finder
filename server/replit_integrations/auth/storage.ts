@@ -28,6 +28,7 @@ export interface IAuthStorage {
     subscriptionTier?: string;
     subscriptionEndDate?: Date | null;
   }): Promise<User | undefined>;
+  updateUserStripeCustomerId(userId: string, stripeCustomerId: string): Promise<User | undefined>;
 }
 
 class AuthStorage implements IAuthStorage {
@@ -123,6 +124,18 @@ class AuthStorage implements IAuthStorage {
         subscriptionEndDate: subscriptionInfo.subscriptionEndDate 
           ? new Date(subscriptionInfo.subscriptionEndDate) 
           : undefined,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async updateUserStripeCustomerId(userId: string, stripeCustomerId: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({
+        stripeCustomerId,
         updatedAt: new Date(),
       })
       .where(eq(users.id, userId))

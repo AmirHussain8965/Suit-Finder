@@ -6,17 +6,39 @@ import { useSubscription } from "@/hooks/use-subscription";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
-import { Check, Crown, Loader2, MapPin, MessageSquare, Calendar, Users, Shield, Globe, Shirt, Gavel } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Check, Crown, Loader2, MapPin, MessageSquare, Calendar, Users, Shield, Globe, Shirt, Gavel, ExternalLink } from "lucide-react";
+
+type StripePrice = {
+  id: string;
+  amount: number;
+  currency: string;
+  interval: string;
+};
+
+type StripeProduct = {
+  id: string;
+  name: string;
+  description: string;
+  tier: string;
+  features: string[];
+  prices: StripePrice[];
+};
 
 export default function SubscriptionPage() {
   const { data: subscription, isLoading } = useSubscription();
   const { toast } = useToast();
   const [isCheckingOut, setIsCheckingOut] = useState<string | null>(null);
+  const [isOpeningPortal, setIsOpeningPortal] = useState(false);
 
-  const handleSubscribe = async (tier: 'premium' | 'platinum') => {
-    setIsCheckingOut(tier);
+  const { data: pricesData } = useQuery<{ prices: StripeProduct[] }>({
+    queryKey: ['/api/prices'],
+  });
+
+  const handleSubscribe = async (priceId: string, productId: string) => {
+    setIsCheckingOut(productId);
     try {
-      const res = await apiRequest("POST", "/api/checkout", { tier });
+      const res = await apiRequest("POST", "/api/checkout", { priceId });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || data.message || "Failed to create checkout");
@@ -32,6 +54,29 @@ export default function SubscriptionPage() {
       setIsCheckingOut(null);
     }
   };
+
+  const handleManageSubscription = async () => {
+    setIsOpeningPortal(true);
+    try {
+      const res = await apiRequest("POST", "/api/billing/portal", {});
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || data.message || "Failed to open billing portal");
+      }
+      const { url } = await res.json();
+      window.location.href = url;
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsOpeningPortal(false);
+    }
+  };
+
+  const premiumProduct = pricesData?.prices?.find(p => p.tier === 'premium');
+  const platinumProduct = pricesData?.prices?.find(p => p.tier === 'platinum');
 
   const premiumFeatures = [
     { icon: MessageSquare, title: "Unlimited Messaging", description: "Send and receive private messages" },
@@ -99,9 +144,16 @@ export default function SubscriptionPage() {
                   Next billing: {new Date(subscription.endDate).toLocaleDateString()}
                 </p>
               )}
-              <p className="text-sm text-muted-foreground">
-                To manage your subscription, please visit the CCBill customer portal or contact support.
-              </p>
+              <Button
+                onClick={handleManageSubscription}
+                disabled={isOpeningPortal}
+                variant="outline"
+                className="gap-2"
+                data-testid="button-manage-subscription"
+              >
+                {isOpeningPortal ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+                Manage Subscription
+              </Button>
             </CardContent>
           </Card>
         ) : (
@@ -136,12 +188,13 @@ export default function SubscriptionPage() {
               {/* Tailored Circle */}
               <Card className="relative">
                 <CardHeader>
-                  <CardTitle>The Tailored Circle</CardTitle>
+                  <CardTitle>{premiumProduct?.name || "The Tailored Circle"}</CardTitle>
                   <CardDescription>Full messaging and events</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-3xl font-bold">
-                    $19.99<span className="text-base font-normal text-muted-foreground">/month</span>
+                    ${premiumProduct?.prices[0] ? (premiumProduct.prices[0].amount / 100).toFixed(2) : "19.99"}
+                    <span className="text-base font-normal text-muted-foreground">/month</span>
                   </div>
                   <ul className="text-sm text-muted-foreground space-y-2">
                     <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> All free features</li>
@@ -151,11 +204,11 @@ export default function SubscriptionPage() {
                   </ul>
                   <Button 
                     className="w-full bg-accent text-accent-foreground border-accent-border"
-                    onClick={() => handleSubscribe('premium')}
-                    disabled={isCheckingOut !== null}
+                    onClick={() => premiumProduct?.prices[0] && handleSubscribe(premiumProduct.prices[0].id, premiumProduct.id)}
+                    disabled={isCheckingOut !== null || !premiumProduct?.prices[0]}
                     data-testid="button-subscribe-premium"
                   >
-                    {isCheckingOut === "premium" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    {isCheckingOut === premiumProduct?.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                     Join The Tailored Circle
                   </Button>
                 </CardContent>
@@ -167,12 +220,13 @@ export default function SubscriptionPage() {
                   <Badge className="bg-accent text-accent-foreground">Best Value</Badge>
                 </div>
                 <CardHeader>
-                  <CardTitle>The Krug Society</CardTitle>
+                  <CardTitle>{platinumProduct?.name || "The Krug Society"}</CardTitle>
                   <CardDescription>All features plus wardrobe and auctions</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-3xl font-bold">
-                    $49.99<span className="text-base font-normal text-muted-foreground">/month</span>
+                    ${platinumProduct?.prices[0] ? (platinumProduct.prices[0].amount / 100).toFixed(2) : "49.99"}
+                    <span className="text-base font-normal text-muted-foreground">/month</span>
                   </div>
                   <ul className="text-sm text-muted-foreground space-y-2">
                     <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> All Tailored Circle features</li>
@@ -182,11 +236,11 @@ export default function SubscriptionPage() {
                   </ul>
                   <Button 
                     className="w-full bg-accent text-accent-foreground border-accent-border"
-                    onClick={() => handleSubscribe('platinum')}
-                    disabled={isCheckingOut !== null}
+                    onClick={() => platinumProduct?.prices[0] && handleSubscribe(platinumProduct.prices[0].id, platinumProduct.id)}
+                    disabled={isCheckingOut !== null || !platinumProduct?.prices[0]}
                     data-testid="button-subscribe-platinum"
                   >
-                    {isCheckingOut === "platinum" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    {isCheckingOut === platinumProduct?.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                     Join The Krug Society
                   </Button>
                 </CardContent>
@@ -248,7 +302,7 @@ export default function SubscriptionPage() {
         )}
 
         <p className="text-center text-xs text-muted-foreground">
-          Payments are processed securely through CCBill. Cancel anytime. Subscription will continue until the end of the billing period.
+          Payments are processed securely through Stripe. Cancel anytime. Subscription will continue until the end of the billing period.
           <br />
           <a href="/refund-policy" className="underline hover:text-accent" data-testid="link-refund-policy">
             View Refund & Cancellation Policy
