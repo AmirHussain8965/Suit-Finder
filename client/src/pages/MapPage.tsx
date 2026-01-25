@@ -102,7 +102,7 @@ export default function MapPage() {
 
   if (isProfileLoading) {
     return (
-      <Layout>
+      <Layout hideSilhouettes>
         <div className="flex h-full items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-accent" />
         </div>
@@ -114,7 +114,7 @@ export default function MapPage() {
   if (!profile) return null;
 
   return (
-    <Layout>
+    <Layout hideSilhouettes>
       <div className="relative flex-1 w-full bg-background min-h-0">
         <MapContainer
           center={center}

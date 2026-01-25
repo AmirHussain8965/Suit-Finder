@@ -2,12 +2,14 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, MapPin, Shield, Users } from "lucide-react";
 import { useLocation } from "wouter";
 import heroImage from "../assets/images/hero-gentlemen.png";
+import { SuitedSilhouettes } from "@/components/SuitedSilhouettes";
 
 export default function Landing() {
   const [, setLocation] = useLocation();
   
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <SuitedSilhouettes variant="minimal" />
       {/* Hero Section */}
       <header className="flex-1 flex flex-col justify-center items-center text-center p-6 relative overflow-hidden">
         {/* Background Overlay */}

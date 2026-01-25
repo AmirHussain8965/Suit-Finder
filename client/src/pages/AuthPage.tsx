@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
+import { SuitedSilhouettes } from "@/components/SuitedSilhouettes";
 
 export default function AuthPage() {
   const [, setLocation] = useLocation();
@@ -98,6 +99,7 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+      <SuitedSilhouettes variant="corner" />
       <Button 
         variant="ghost" 
         className="absolute top-4 left-4"

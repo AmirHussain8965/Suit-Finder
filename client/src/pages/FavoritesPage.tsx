@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navigation } from "@/components/Navigation";
+import { SuitedSilhouettes } from "@/components/SuitedSilhouettes";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -44,6 +45,7 @@ export default function FavoritesPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
+      <SuitedSilhouettes />
       
       <main className="md:ml-64 pb-20 md:pb-0">
         <div className="p-6 max-w-4xl mx-auto">

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { Navigation } from "@/components/Navigation";
+import { SuitedSilhouettes } from "@/components/SuitedSilhouettes";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -103,6 +104,7 @@ export default function UserProfilePage() {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
+        <SuitedSilhouettes />
         <main className="md:ml-64 pb-20 md:pb-0">
           <div className="flex items-center justify-center h-[80vh]">
             <Loader2 className="h-8 w-8 animate-spin text-accent" />
@@ -116,6 +118,7 @@ export default function UserProfilePage() {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
+        <SuitedSilhouettes />
         <main className="md:ml-64 pb-20 md:pb-0">
           <div className="p-6 max-w-2xl mx-auto text-center">
             <h1 className="text-2xl font-serif font-bold text-foreground mb-4">Profile Not Found</h1>
@@ -133,6 +136,7 @@ export default function UserProfilePage() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
+      <SuitedSilhouettes />
       
       <main className="md:ml-64 pb-20 md:pb-0">
         <div className="p-6 max-w-2xl mx-auto">
