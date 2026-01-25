@@ -9,6 +9,7 @@ import {
   events,
   eventAttendees,
   wardrobeItems,
+  wardrobeAccess,
   auctions,
   bids,
   type Profile,
@@ -29,6 +30,7 @@ import {
   type EventWithDetails,
   type WardrobeItem,
   type InsertWardrobeItem,
+  type WardrobeAccess,
   type Auction,
   type InsertAuction,
   type Bid,
@@ -124,6 +126,12 @@ export interface IStorage {
   updateWardrobeItem(userId: string, itemId: number, updates: Partial<InsertWardrobeItem>): Promise<WardrobeItem>;
   deleteWardrobeItem(userId: string, itemId: number): Promise<void>;
   toggleWardrobeFavorite(userId: string, itemId: number): Promise<WardrobeItem>;
+  
+  // Wardrobe Access
+  getWardrobeAccessList(ownerId: string): Promise<WardrobeAccess[]>;
+  grantWardrobeAccess(ownerId: string, grantedUserId: string): Promise<WardrobeAccess>;
+  revokeWardrobeAccess(ownerId: string, grantedUserId: string): Promise<void>;
+  hasWardrobeAccess(ownerId: string, viewerId: string): Promise<boolean>;
   
   // Auctions
   getAuctions(userId?: string): Promise<AuctionWithDetails[]>;
@@ -902,6 +910,55 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(wardrobeItems.id, itemId), eq(wardrobeItems.userId, userId)))
       .returning();
     return item;
+  }
+
+  // Wardrobe Access methods
+  async getWardrobeAccessList(ownerId: string): Promise<WardrobeAccess[]> {
+    return db
+      .select()
+      .from(wardrobeAccess)
+      .where(eq(wardrobeAccess.ownerId, ownerId));
+  }
+
+  async grantWardrobeAccess(ownerId: string, grantedUserId: string): Promise<WardrobeAccess> {
+    // Check if access already exists
+    const existing = await db
+      .select()
+      .from(wardrobeAccess)
+      .where(and(
+        eq(wardrobeAccess.ownerId, ownerId),
+        eq(wardrobeAccess.grantedUserId, grantedUserId)
+      ));
+    
+    if (existing.length > 0) {
+      return existing[0];
+    }
+    
+    const [access] = await db
+      .insert(wardrobeAccess)
+      .values({ ownerId, grantedUserId })
+      .returning();
+    return access;
+  }
+
+  async revokeWardrobeAccess(ownerId: string, grantedUserId: string): Promise<void> {
+    await db
+      .delete(wardrobeAccess)
+      .where(and(
+        eq(wardrobeAccess.ownerId, ownerId),
+        eq(wardrobeAccess.grantedUserId, grantedUserId)
+      ));
+  }
+
+  async hasWardrobeAccess(ownerId: string, viewerId: string): Promise<boolean> {
+    const access = await db
+      .select()
+      .from(wardrobeAccess)
+      .where(and(
+        eq(wardrobeAccess.ownerId, ownerId),
+        eq(wardrobeAccess.grantedUserId, viewerId)
+      ));
+    return access.length > 0;
   }
 
   // Auction methods

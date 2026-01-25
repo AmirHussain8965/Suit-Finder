@@ -131,6 +131,29 @@ export const insertFavoriteSchema = createInsertSchema(favorites).omit({
 export type Favorite = typeof favorites.$inferSelect;
 export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
 
+// Wardrobe access permissions - tracks who can view each user's wardrobe
+export const wardrobeAccess = pgTable("wardrobe_access", {
+  id: serial("id").primaryKey(),
+  ownerId: text("owner_id").notNull().references(() => authUsers.id), // The wardrobe owner
+  grantedUserId: text("granted_user_id").notNull().references(() => authUsers.id), // User who can view
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const wardrobeAccessRelations = relations(wardrobeAccess, ({ one }) => ({
+  owner: one(authUsers, {
+    fields: [wardrobeAccess.ownerId],
+    references: [authUsers.id],
+    relationName: "wardrobe_owner",
+  }),
+  grantedUser: one(authUsers, {
+    fields: [wardrobeAccess.grantedUserId],
+    references: [authUsers.id],
+    relationName: "wardrobe_viewer",
+  }),
+}));
+
+export type WardrobeAccess = typeof wardrobeAccess.$inferSelect;
+
 // Combined User + Profile for the frontend
 export type UserWithProfile = {
   user: typeof authUsers.$inferSelect;
