@@ -98,19 +98,30 @@ Preferred communication style: Simple, everyday language.
   - GET /api/auth/user - Get current user
 - **Implementation**: Express sessions with Passport.js in `server/replit_integrations/auth/`
 
-### Payment Processing (CCBill)
-- **Provider**: CCBill payment processor (suitable for adult content sites)
-- **Integration Type**: FlexForms - hosted payment page
+### Payment Processing (Stripe)
+- **Provider**: Stripe payment processor
+- **Integration Type**: Stripe Checkout with Customer Portal
 - **Subscription Tiers**:
   - The Tailored Circle (Premium): $19.99/month
   - The Krug Society (Platinum): $49.99/month
-- **Webhook Handler**: POST /api/webhooks/ccbill for payment notifications
-- **Service File**: `server/ccbillService.ts`
+- **API Endpoints**:
+  - GET /api/prices - List available products and prices
+  - POST /api/checkout - Create Stripe Checkout session
+  - POST /api/billing/portal - Create Stripe Customer Portal session
+  - POST /api/stripe/webhook - Stripe webhook handler (raw body)
+- **Service Files**:
+  - `server/stripeClient.ts` - Stripe client initialization
+  - `server/webhookHandlers.ts` - Webhook event handlers
+  - `server/seed-stripe-products.ts` - Product seed script
+- **Stripe Tables** (managed by stripe-replit-sync):
+  - `stripe_customers` - Customer records
+  - `stripe_products` - Product catalog
+  - `stripe_prices` - Price definitions
+  - `stripe_subscriptions` - Active subscriptions
+  - `stripe_invoices` - Invoice records
+  - `stripe_webhook` - Webhook configuration
 - **Required Environment Variables**:
-  - `CCBILL_ACCOUNT_NUMBER` - CCBill merchant account number (6 digits)
-  - `CCBILL_SUBACCOUNT_NUMBER` - CCBill sub-account number (4 digits)
-  - `CCBILL_FORM_NAME` - CCBill FlexForm name
-  - `CCBILL_SALT` - CCBill salt key for digest verification
+  - `STRIPE_SECRET_KEY` - Stripe secret API key (auto-configured via integration)
 
 ### Report System
 - **Purpose**: Allow users to flag inappropriate behavior
@@ -129,18 +140,15 @@ Preferred communication style: Simple, everyday language.
 - **PostgreSQL**: Primary data store, connection via `DATABASE_URL` environment variable
 
 ### Payment Services
-- **CCBill**: Payment processor for subscription billing
-- **Note**: Stripe has been removed as it does not accept adult content sites
+- **Stripe**: Payment processor for subscription billing
+- **Integration**: stripe-replit-sync for webhook handling and data sync
 
 ### Authentication Services
 - **Email/Password**: Local authentication with bcrypt password hashing
 - **Required Environment Variables**:
   - `DATABASE_URL` - PostgreSQL connection string
   - `SESSION_SECRET` - Express session encryption key
-  - `CCBILL_ACCOUNT_NUMBER` - CCBill account number
-  - `CCBILL_SUBACCOUNT_NUMBER` - CCBill sub-account
-  - `CCBILL_FORM_NAME` - CCBill form name
-  - `CCBILL_SALT` - CCBill salt for security
+  - `STRIPE_SECRET_KEY` - Stripe API key (auto-configured via Replit integration)
 
 ### Frontend Services
 - **Google Fonts**: DM Sans and Playfair Display font families
