@@ -57,6 +57,10 @@ Preferred communication style: Simple, everyday language.
 - **Image Upload**: Uses presigned URL flow via object storage integration
 - **CRUD Operations**: Full create, read, update, delete functionality
 - **Favorites**: Users can mark items as favorites for quick access
+- **Access Control**: Users can grant/revoke wardrobe viewing access to specific members (via `wardrobe_access` table)
+  - Access is managed from the Profile page through a dialog
+  - Users can add members from their favorites list
+  - Only explicitly granted users can view another user's wardrobe
 
 ### Events System
 - **Event Creation**: Users can create events with title, description, date/time, location, category
