@@ -34,7 +34,7 @@ export const profiles = pgTable("profiles", {
   isTraveling: boolean("is_traveling").default(false),
   // Style preferences
   styleInterests: text("style_interests"), // e.g. "Tuxedos, Vintage, Modern"
-  role: text("role"), // "submissive", "dominant", "vers"
+  role: text("role"), // "Top", "Bottom", "Vers"
   interestType: text("interest_type"), // "styling", "fetish"
   categories: jsonb("categories"), // Array of { name: string, mode: 'give' | 'receive' | 'both' }
   contactInfo: text("contact_info"), // Optional contact method

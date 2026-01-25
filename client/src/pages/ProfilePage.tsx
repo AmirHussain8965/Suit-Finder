@@ -261,13 +261,18 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="role">Role (Submissive, Dominant, Vers)</Label>
-                  <Input 
+                  <Label htmlFor="role">Role</Label>
+                  <select 
                     id="role" 
                     {...form.register("role")} 
-                    className="bg-background border-input focus:border-accent"
-                    placeholder="E.g. Dominant"
-                  />
+                    className="w-full h-9 px-3 rounded-md bg-background border border-input focus:border-accent text-sm"
+                    data-testid="select-role"
+                  >
+                    <option value="">Select role...</option>
+                    <option value="Top">Top</option>
+                    <option value="Bottom">Bottom</option>
+                    <option value="Vers">Vers</option>
+                  </select>
                 </div>
 
                 <div className="space-y-2">
