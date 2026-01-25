@@ -100,6 +100,10 @@ export default function Landing() {
       {/* Footer */}
       <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
         <p>© 2024 FORMAL FINDINGS. Elegance is not standing out, but being remembered.</p>
+        <div className="mt-4 flex justify-center gap-4">
+          <a href="/about" className="underline hover:text-accent" data-testid="link-footer-about">About</a>
+          <a href="/refund-policy" className="underline hover:text-accent" data-testid="link-footer-refund">Refund Policy</a>
+        </div>
       </footer>
     </div>
   );

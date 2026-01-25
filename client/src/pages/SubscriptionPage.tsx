@@ -249,6 +249,10 @@ export default function SubscriptionPage() {
 
         <p className="text-center text-xs text-muted-foreground">
           Payments are processed securely through CCBill. Cancel anytime. Subscription will continue until the end of the billing period.
+          <br />
+          <a href="/refund-policy" className="underline hover:text-accent" data-testid="link-refund-policy">
+            View Refund & Cancellation Policy
+          </a>
         </p>
       </div>
     </Layout>

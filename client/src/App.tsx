@@ -19,6 +19,7 @@ import SubscriptionPage from "@/pages/SubscriptionPage";
 import FavoritesPage from "@/pages/FavoritesPage";
 import UserProfilePage from "@/pages/UserProfilePage";
 import AboutPage from "@/pages/AboutPage";
+import RefundPolicyPage from "@/pages/RefundPolicyPage";
 import { AgeVerification } from "@/components/AgeVerification";
 import { Loader2 } from "lucide-react";
 
@@ -78,6 +79,10 @@ function Router() {
 
       <Route path="/about">
         <AboutPage />
+      </Route>
+
+      <Route path="/refund-policy">
+        <RefundPolicyPage />
       </Route>
 
       <Route path="/verify-age">
