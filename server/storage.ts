@@ -12,6 +12,7 @@ import {
   wardrobeAccess,
   auctions,
   bids,
+  reports,
   type Profile,
   type InsertProfile,
   type UpdateProfileRequest,
@@ -35,6 +36,8 @@ import {
   type InsertAuction,
   type Bid,
   type InsertBid,
+  type Report,
+  type InsertReport,
 } from "@shared/schema";
 import { eq, sql, and, desc, inArray, gte, or } from "drizzle-orm";
 
@@ -144,6 +147,10 @@ export interface IStorage {
   // Bids
   getBids(auctionId: number): Promise<BidWithBidder[]>;
   placeBid(auctionId: number, bidderId: string, amount: number): Promise<Bid>;
+  
+  // Reports
+  createReport(reporterId: string, data: InsertReport): Promise<Report>;
+  getReportsByUser(reportedUserId: string): Promise<Report[]>;
 }
 
 export interface AuctionWithDetails extends Auction {
@@ -1145,6 +1152,26 @@ export class DatabaseStorage implements IStorage {
       .where(eq(auctions.id, auctionId));
     
     return bid;
+  }
+
+  // Reports
+  async createReport(reporterId: string, data: InsertReport): Promise<Report> {
+    const [report] = await db
+      .insert(reports)
+      .values({
+        ...data,
+        reporterId,
+      })
+      .returning();
+    return report;
+  }
+
+  async getReportsByUser(reportedUserId: string): Promise<Report[]> {
+    return await db
+      .select()
+      .from(reports)
+      .where(eq(reports.reportedUserId, reportedUserId))
+      .orderBy(desc(reports.createdAt));
   }
 }
 

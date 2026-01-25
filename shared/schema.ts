@@ -483,3 +483,52 @@ export type AuctionWithDetails = Auction & {
   bidCount: number;
   highestBidder?: { displayName: string | null };
 };
+
+// Report reasons
+export const reportReasons = [
+  "harassment",
+  "inappropriate_content", 
+  "fake_profile",
+  "underage",
+  "spam",
+  "threats",
+  "non_consensual",
+  "other"
+] as const;
+export type ReportReason = typeof reportReasons[number];
+
+// Reports table for flagging bad behavior
+export const reports = pgTable("reports", {
+  id: serial("id").primaryKey(),
+  reporterId: text("reporter_id").notNull().references(() => authUsers.id),
+  reportedUserId: text("reported_user_id").notNull().references(() => authUsers.id),
+  reason: text("reason").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("pending"), // pending, reviewed, resolved, dismissed
+  createdAt: timestamp("created_at").defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewNotes: text("review_notes"),
+});
+
+export const reportsRelations = relations(reports, ({ one }) => ({
+  reporter: one(authUsers, {
+    fields: [reports.reporterId],
+    references: [authUsers.id],
+  }),
+  reportedUser: one(authUsers, {
+    fields: [reports.reportedUserId],
+    references: [authUsers.id],
+  }),
+}));
+
+export const insertReportSchema = createInsertSchema(reports).omit({
+  id: true,
+  reporterId: true,
+  status: true,
+  createdAt: true,
+  reviewedAt: true,
+  reviewNotes: true,
+});
+
+export type Report = typeof reports.$inferSelect;
+export type InsertReport = z.infer<typeof insertReportSchema>;

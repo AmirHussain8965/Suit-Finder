@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Heart, MessageCircle, Loader2, ArrowLeft, User, Palette, Ruler, Activity, Shirt } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { ReportDialog } from "@/components/ReportDialog";
 
 interface UserProfile {
   userId: string;
@@ -176,7 +177,7 @@ export default function UserProfilePage() {
                   </p>
                 )}
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <Button
                     variant={isFavorited ? "default" : "outline"}
                     onClick={handleFavoriteClick}
@@ -197,6 +198,10 @@ export default function UserProfilePage() {
                     <MessageCircle className="mr-2 h-4 w-4" />
                     Message
                   </Button>
+                  <ReportDialog 
+                    userId={userId!} 
+                    userName={profile?.displayName || undefined} 
+                  />
                 </div>
               </div>
             </CardContent>

@@ -1254,5 +1254,34 @@ export async function registerRoutes(
     }
   });
 
+  // Reports
+  app.post("/api/reports", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    try {
+      const { reportedUserId, reason, description } = req.body;
+      
+      if (!reportedUserId || !reason) {
+        return res.status(400).json({ message: "Reported user and reason are required" });
+      }
+      
+      if (reportedUserId === req.user.id) {
+        return res.status(400).json({ message: "You cannot report yourself" });
+      }
+      
+      const report = await storage.createReport(req.user.id, {
+        reportedUserId,
+        reason,
+        description,
+      });
+      
+      res.status(201).json(report);
+    } catch (err: any) {
+      console.error("Error creating report:", err);
+      res.status(500).json({ message: "Failed to submit report" });
+    }
+  });
+
   return httpServer;
 }
