@@ -249,6 +249,39 @@ export async function registerRoutes(
     });
   });
 
+  // === View Other User's Wardrobe ===
+  
+  app.get(api.wardrobe.listByUser.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    const viewerId = (req.user as any).claims.sub;
+    const targetUserId = req.params.userId;
+    
+    // Check if user is viewing their own wardrobe
+    if (viewerId === targetUserId) {
+      const items = await storage.getWardrobeItems(viewerId);
+      return res.json(items);
+    }
+    
+    // Check if target user exists
+    const targetUser = await authStorage.getUser(targetUserId);
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    // Check if target user has made their wardrobe public
+    const targetProfile = await storage.getProfile(targetUserId);
+    if (!targetProfile?.wardrobePublic) {
+      return res.status(403).json({ message: "This user's wardrobe is private" });
+    }
+    
+    // Return wardrobe items
+    const items = await storage.getWardrobeItems(targetUserId);
+    res.json(items);
+  });
+
   // === Favorites ===
 
   app.get(api.favorites.list.path, async (req, res) => {

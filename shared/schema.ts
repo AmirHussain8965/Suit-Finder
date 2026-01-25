@@ -50,6 +50,8 @@ export const profiles = pgTable("profiles", {
   hivStatus: text("hiv_status"), // negative, positive, undetectable, prefer not to say
   onPrep: boolean("on_prep"),
   lastStdScreening: timestamp("last_std_screening"),
+  // Privacy settings
+  wardrobePublic: boolean("wardrobe_public").default(false), // Allow others to view wardrobe
 });
 
 export const profilesRelations = relations(profiles, ({ one }) => ({

@@ -340,6 +340,15 @@ export const api = {
         200: z.array(z.custom<typeof wardrobeItems.$inferSelect>()),
       },
     },
+    listByUser: {
+      method: 'GET' as const,
+      path: '/api/profiles/:userId/wardrobe',
+      responses: {
+        200: z.array(z.custom<typeof wardrobeItems.$inferSelect>()),
+        403: z.object({ message: z.string() }),
+        404: errorSchemas.notFound,
+      },
+    },
     get: {
       method: 'GET' as const,
       path: '/api/wardrobe/:itemId',
