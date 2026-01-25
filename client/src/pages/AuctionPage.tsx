@@ -168,7 +168,7 @@ export default function AuctionPage() {
 
   if (isLoading || isPlatinumLoading) {
     return (
-      <Layout backgroundVariant="three-piece">
+      <Layout backgroundVariant="auction">
         <div className="flex items-center justify-center h-[60vh]">
           <Loader2 className="h-10 w-10 animate-spin text-accent" />
         </div>
@@ -178,7 +178,7 @@ export default function AuctionPage() {
 
   if (!isPlatinum) {
     return (
-      <Layout backgroundVariant="three-piece">
+      <Layout backgroundVariant="auction">
         <PlatinumGate featureName="Auctions" description="List and bid on exclusive formal wear items with other Platinum members.">
           <div />
         </PlatinumGate>
@@ -191,7 +191,7 @@ export default function AuctionPage() {
   const myAuctions = auctions?.filter(a => a.sellerId === user?.id) || [];
 
   return (
-    <Layout backgroundVariant="three-piece">
+    <Layout backgroundVariant="auction">
       <div className="flex flex-col h-full">
         <div className="p-4 border-b border-border flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
