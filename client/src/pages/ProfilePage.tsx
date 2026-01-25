@@ -322,54 +322,35 @@ export default function ProfilePage() {
 
                 <div className="space-y-3">
                   <Label>Suit Desire Categories</Label>
-                  <div className="space-y-4">
+                  <div className="flex flex-wrap gap-2">
                     {suitCategories.map((category) => {
-                      const currentCategories = form.watch("categories") || [];
-                      const categoryEntry = currentCategories.find((c: any) => c.name === category);
-                      const isChecked = !!categoryEntry;
+                      const watchedCategories = form.watch("categories");
+                      const currentCategories = (Array.isArray(watchedCategories) ? watchedCategories : []) as Array<{name: string}>;
+                      const isChecked = currentCategories.some((c) => c.name === category);
 
                       return (
-                        <div key={category} className="space-y-2 p-3 rounded-lg border border-border bg-background/50">
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id={`cat-${category}`}
-                              checked={isChecked}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  form.setValue("categories", [...currentCategories, { name: category, mode: 'both' }]);
-                                } else {
-                                  form.setValue("categories", currentCategories.filter((c: any) => c.name !== category));
-                                }
-                              }}
-                              className="h-4 w-4 rounded border-gray-300 text-accent focus:ring-accent"
-                            />
-                            <Label htmlFor={`cat-${category}`} className="text-sm font-bold capitalize">
-                              {category}
-                            </Label>
-                          </div>
-                          
-                          {isChecked && (
-                            <div className="flex gap-4 ml-6 pt-1">
-                              {['give', 'receive', 'both'].map((mode) => (
-                                <label key={mode} className="flex items-center gap-1.5 cursor-pointer">
-                                  <input
-                                    type="radio"
-                                    name={`mode-${category}`}
-                                    checked={categoryEntry.mode === mode}
-                                    onChange={() => {
-                                      form.setValue("categories", currentCategories.map((c: any) => 
-                                        c.name === category ? { ...c, mode } : c
-                                      ));
-                                    }}
-                                    className="h-3 w-3 text-accent border-gray-300 focus:ring-accent"
-                                  />
-                                  <span className="text-xs capitalize text-muted-foreground">{mode}</span>
-                                </label>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                        <label 
+                          key={category} 
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+                            isChecked 
+                              ? 'border-accent bg-accent/20 text-accent-foreground' 
+                              : 'border-border bg-background/50 hover:border-accent/50'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                form.setValue("categories", [...currentCategories, { name: category }]);
+                              } else {
+                                form.setValue("categories", currentCategories.filter((c) => c.name !== category));
+                              }
+                            }}
+                            className="h-4 w-4 rounded border-gray-300 text-accent focus:ring-accent"
+                          />
+                          <span className="text-sm font-medium capitalize">{category}</span>
+                        </label>
                       );
                     })}
                   </div>
@@ -383,7 +364,7 @@ export default function ProfilePage() {
                     </p>
                   </div>
                   <Switch 
-                    checked={form.watch("isVisible")}
+                    checked={form.watch("isVisible") ?? false}
                     onCheckedChange={(checked) => form.setValue("isVisible", checked)}
                     className="data-[state=checked]:bg-accent"
                     data-testid="switch-visible-on-map"
