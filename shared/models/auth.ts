@@ -22,13 +22,15 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  // Stripe subscription fields
-  stripeCustomerId: varchar("stripe_customer_id"),
-  stripeSubscriptionId: varchar("stripe_subscription_id"),
+  // Subscription fields (CCBill)
+  ccbillSubscriptionId: varchar("ccbill_subscription_id"),
   subscriptionStatus: varchar("subscription_status"), // active, canceled, past_due, etc.
-  subscriptionPlan: varchar("subscription_plan"), // monthly, yearly
+  subscriptionPlan: varchar("subscription_plan"), // The Tailored Circle, The Krug Society
   subscriptionTier: varchar("subscription_tier"), // premium, platinum
   subscriptionEndDate: timestamp("subscription_end_date"),
+  // Legacy Stripe fields (deprecated but kept for data migration)
+  stripeCustomerId: varchar("stripe_customer_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

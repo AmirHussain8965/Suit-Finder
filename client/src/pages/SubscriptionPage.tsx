@@ -6,24 +6,20 @@ import { useSubscription } from "@/hooks/use-subscription";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
-import { Check, Crown, Loader2, MapPin, MessageSquare, Calendar, Users, Shield, Globe } from "lucide-react";
-
-const MONTHLY_PRICE_ID = "price_1St8wo2RfNP47wiLvi4rAalU";
-const YEARLY_PRICE_ID = "price_1St8wo2RfNP47wiLMrxNFl2V";
+import { Check, Crown, Loader2, MapPin, MessageSquare, Calendar, Users, Shield, Globe, Shirt, Gavel } from "lucide-react";
 
 export default function SubscriptionPage() {
   const { data: subscription, isLoading } = useSubscription();
   const { toast } = useToast();
   const [isCheckingOut, setIsCheckingOut] = useState<string | null>(null);
-  const [isManaging, setIsManaging] = useState(false);
 
-  const handleSubscribe = async (priceId: string, plan: string) => {
-    setIsCheckingOut(plan);
+  const handleSubscribe = async (tier: 'premium' | 'platinum') => {
+    setIsCheckingOut(tier);
     try {
-      const res = await apiRequest("POST", "/api/checkout", { priceId });
+      const res = await apiRequest("POST", "/api/checkout", { tier });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Failed to create checkout");
+        throw new Error(data.error || data.message || "Failed to create checkout");
       }
       const { url } = await res.json();
       window.location.href = url;
@@ -37,26 +33,6 @@ export default function SubscriptionPage() {
     }
   };
 
-  const handleManageSubscription = async () => {
-    setIsManaging(true);
-    try {
-      const res = await apiRequest("POST", "/api/customer-portal", {});
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to open portal");
-      }
-      const { url } = await res.json();
-      window.location.href = url;
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-      setIsManaging(false);
-    }
-  };
-
   const premiumFeatures = [
     { icon: MessageSquare, title: "Unlimited Messaging", description: "Send and receive private messages" },
     { icon: Users, title: "Group Chats", description: "Create and join group conversations" },
@@ -64,6 +40,13 @@ export default function SubscriptionPage() {
     { icon: Shield, title: "Location Privacy", description: "Blur your exact location for safety" },
     { icon: Globe, title: "Multi-City Roaming", description: "Appear in multiple cities" },
     { icon: MapPin, title: "Full Map Access", description: "See all nearby members" },
+  ];
+
+  const platinumFeatures = [
+    { icon: Shirt, title: "Virtual Wardrobe", description: "Showcase your formal attire collection" },
+    { icon: Gavel, title: "Suit Auctions", description: "Buy and sell premium formal wear" },
+    { icon: Crown, title: "Priority Support", description: "Dedicated support channel" },
+    { icon: Calendar, title: "Exclusive Events", description: "Access to VIP-only gatherings" },
   ];
 
   if (isLoading) {
@@ -92,18 +75,18 @@ export default function SubscriptionPage() {
         {subscription?.isPremium ? (
           <Card className="border-accent">
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Crown className="h-5 w-5 text-accent" />
-                    {subscription.plan === "platinum" ? "The Krug Society" : "The Tailored Circle"}
+                    {subscription.tier === "platinum" ? "The Krug Society" : "The Tailored Circle"}
                   </CardTitle>
                   <CardDescription>
                     You have full access to all features
                   </CardDescription>
                 </div>
                 <Badge variant="outline" className="bg-accent/10 text-accent border-accent">
-                  {subscription.plan === "yearly" ? "Annual" : "Monthly"} Plan
+                  {subscription.tier === "platinum" ? "Platinum" : "Premium"} Member
                 </Badge>
               </div>
             </CardHeader>
@@ -116,15 +99,9 @@ export default function SubscriptionPage() {
                   Next billing: {new Date(subscription.endDate).toLocaleDateString()}
                 </p>
               )}
-              <Button 
-                variant="outline" 
-                onClick={handleManageSubscription}
-                disabled={isManaging}
-                data-testid="button-manage-subscription"
-              >
-                {isManaging ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Manage Subscription
-              </Button>
+              <p className="text-sm text-muted-foreground">
+                To manage your subscription, please visit the CCBill customer portal or contact support.
+              </p>
             </CardContent>
           </Card>
         ) : (
@@ -164,15 +141,21 @@ export default function SubscriptionPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-3xl font-bold">
-                    $9.99<span className="text-base font-normal text-muted-foreground">/month</span>
+                    $19.99<span className="text-base font-normal text-muted-foreground">/month</span>
                   </div>
+                  <ul className="text-sm text-muted-foreground space-y-2">
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> All free features</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Unlimited messaging</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> View member galleries</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Create events</li>
+                  </ul>
                   <Button 
-                    className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                    onClick={() => handleSubscribe(MONTHLY_PRICE_ID, "monthly")}
+                    className="w-full bg-accent text-accent-foreground border-accent-border"
+                    onClick={() => handleSubscribe('premium')}
                     disabled={isCheckingOut !== null}
-                    data-testid="button-subscribe-monthly"
+                    data-testid="button-subscribe-premium"
                   >
-                    {isCheckingOut === "monthly" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    {isCheckingOut === "premium" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                     Join The Tailored Circle
                   </Button>
                 </CardContent>
@@ -189,47 +172,83 @@ export default function SubscriptionPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-3xl font-bold">
-                    $12.99<span className="text-base font-normal text-muted-foreground">/month</span>
+                    $49.99<span className="text-base font-normal text-muted-foreground">/month</span>
                   </div>
+                  <ul className="text-sm text-muted-foreground space-y-2">
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> All Tailored Circle features</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Virtual wardrobe</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Suit auctions access</li>
+                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Exclusive events</li>
+                  </ul>
                   <Button 
-                    className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                    onClick={() => handleSubscribe(YEARLY_PRICE_ID, "yearly")}
+                    className="w-full bg-accent text-accent-foreground border-accent-border"
+                    onClick={() => handleSubscribe('platinum')}
                     disabled={isCheckingOut !== null}
-                    data-testid="button-subscribe-yearly"
+                    data-testid="button-subscribe-platinum"
                   >
-                    {isCheckingOut === "yearly" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    {isCheckingOut === "platinum" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                     Join The Krug Society
                   </Button>
                 </CardContent>
               </Card>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Membership Benefits</CardTitle>
-                <CardDescription>Everything included in paid tiers</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-4">
-                  {premiumFeatures.map((feature, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <div className="p-2 rounded-lg bg-accent/10 text-accent">
-                        <feature.icon className="h-5 w-5" />
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5 text-accent" />
+                    Tailored Circle Benefits
+                  </CardTitle>
+                  <CardDescription>Everything included in premium tier</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {premiumFeatures.map((feature, i) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-accent/10 text-accent">
+                          <feature.icon className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-foreground">{feature.title}</h4>
+                          <p className="text-sm text-muted-foreground">{feature.description}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-medium text-foreground">{feature.title}</h4>
-                        <p className="text-sm text-muted-foreground">{feature.description}</p>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-accent">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Crown className="h-5 w-5 text-accent" />
+                    Krug Society Extras
+                  </CardTitle>
+                  <CardDescription>Additional platinum-only features</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {platinumFeatures.map((feature, i) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-accent/10 text-accent">
+                          <feature.icon className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-foreground">{feature.title}</h4>
+                          <p className="text-sm text-muted-foreground">{feature.description}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </>
         )}
 
         <p className="text-center text-xs text-muted-foreground">
-          Cancel anytime. Subscription will continue until the end of the billing period.
+          Payments are processed securely through CCBill. Cancel anytime. Subscription will continue until the end of the billing period.
         </p>
       </div>
     </Layout>

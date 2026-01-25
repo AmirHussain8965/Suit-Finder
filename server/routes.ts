@@ -6,8 +6,7 @@ import { z } from "zod";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 import { authStorage } from "./replit_integrations/auth/storage";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { stripeService } from "./stripeService";
-import { getStripePublishableKey } from "./stripeClient";
+import { ccbillService } from "./ccbillService";
 import { insertAuctionSchema, insertBidSchema } from "@shared/schema";
 
 async function checkPlatinumTier(userId: string): Promise<boolean> {
@@ -793,15 +792,15 @@ export async function registerRoutes(
     }
   });
 
-  // === Subscription/Payment Routes ===
+  // === Subscription/Payment Routes (CCBill) ===
 
-  // Get Stripe publishable key
-  app.get("/api/stripe/config", async (req, res) => {
+  // Get payment config
+  app.get("/api/payment/config", async (req, res) => {
     try {
-      const publishableKey = await getStripePublishableKey();
-      res.json({ publishableKey });
+      const config = ccbillService.getConfig();
+      res.json(config);
     } catch (err) {
-      console.error("Error getting Stripe config:", err);
+      console.error("Error getting payment config:", err);
       res.status(500).json({ error: "Payment system unavailable" });
     }
   });
@@ -834,10 +833,39 @@ export async function registerRoutes(
     });
   });
 
-  // Get available prices
+  // Get available membership tiers/prices
   app.get("/api/prices", async (req, res) => {
     try {
-      const prices = await stripeService.listPrices();
+      const prices = [
+        {
+          id: 'premium',
+          name: 'The Tailored Circle',
+          price: 19.99,
+          currency: 'USD',
+          interval: 'month',
+          features: [
+            'Access to all member profiles',
+            'Unlimited messaging',
+            'View member galleries',
+            'Create events',
+            'Add favorites'
+          ]
+        },
+        {
+          id: 'platinum',
+          name: 'The Krug Society',
+          price: 49.99,
+          currency: 'USD',
+          interval: 'month',
+          features: [
+            'All Tailored Circle features',
+            'Virtual wardrobe access',
+            'Suit auctions access',
+            'Priority support',
+            'Exclusive events'
+          ]
+        }
+      ];
       res.json({ prices });
     } catch (err) {
       console.error("Error fetching prices:", err);
@@ -845,16 +873,16 @@ export async function registerRoutes(
     }
   });
 
-  // Create checkout session
+  // Create CCBill checkout URL
   app.post("/api/checkout", async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     const userId = (req.user as any).claims.sub;
-    const { priceId } = req.body;
+    const { tier } = req.body;
 
-    if (!priceId) {
-      return res.status(400).json({ error: "Price ID required" });
+    if (!tier || !['premium', 'platinum'].includes(tier)) {
+      return res.status(400).json({ error: "Valid tier required (premium or platinum)" });
     }
 
     try {
@@ -863,51 +891,75 @@ export async function registerRoutes(
         return res.status(400).json({ error: "User email required for payment" });
       }
 
-      let customerId = user.stripeCustomerId;
-      if (!customerId) {
-        const customer = await stripeService.createCustomer(user.email, userId);
-        await authStorage.updateUserStripeInfo(userId, { stripeCustomerId: customer.id });
-        customerId = customer.id;
+      if (!ccbillService.isConfigured()) {
+        return res.status(503).json({ 
+          error: "Payment system not configured",
+          message: "CCBill credentials are not set up. Please contact support."
+        });
       }
 
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const session = await stripeService.createCheckoutSession(
-        customerId,
-        priceId,
-        `${baseUrl}/subscription/success`,
-        `${baseUrl}/subscription/cancel`
-      );
+      const paymentUrl = ccbillService.generatePaymentUrl({
+        tier: tier as 'premium' | 'platinum',
+        userId,
+        email: user.email,
+      });
 
-      res.json({ url: session.url });
+      res.json({ url: paymentUrl });
     } catch (err) {
       console.error("Error creating checkout:", err);
       res.status(500).json({ error: "Could not create checkout session" });
     }
   });
 
-  // Create customer portal session (for managing subscription)
-  app.post("/api/customer-portal", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const userId = (req.user as any).claims.sub;
-
+  // CCBill webhook for payment notifications
+  app.post("/api/webhooks/ccbill", async (req, res) => {
     try {
-      const user = await authStorage.getUser(userId);
-      if (!user?.stripeCustomerId) {
-        return res.status(400).json({ error: "No subscription found" });
+      const { 
+        subscriptionId,
+        eventType,
+        clientAccnum,
+        clientSubacc,
+        'X-userId': userId,
+        'X-tier': tier,
+        timestamp,
+        responseDigest
+      } = req.body;
+
+      console.log("CCBill webhook received:", { eventType, userId, tier });
+
+      if (eventType === 'NewSaleSuccess' && userId && tier) {
+        const endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + 1);
+
+        await authStorage.updateUserSubscription(userId, {
+          subscriptionStatus: 'active',
+          subscriptionTier: tier,
+          subscriptionPlan: tier === 'platinum' ? 'The Krug Society' : 'The Tailored Circle',
+          subscriptionEndDate: endDate.toISOString(),
+          ccbillSubscriptionId: subscriptionId,
+        });
+
+        console.log(`Subscription activated for user ${userId}: ${tier}`);
+      } else if (eventType === 'Cancellation' && userId) {
+        await authStorage.updateUserSubscription(userId, {
+          subscriptionStatus: 'canceled',
+        });
+        console.log(`Subscription canceled for user ${userId}`);
+      } else if (eventType === 'RenewalSuccess' && userId) {
+        const endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + 1);
+        
+        await authStorage.updateUserSubscription(userId, {
+          subscriptionStatus: 'active',
+          subscriptionEndDate: endDate.toISOString(),
+        });
+        console.log(`Subscription renewed for user ${userId}`);
       }
 
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const session = await stripeService.createCustomerPortalSession(
-        user.stripeCustomerId,
-        `${baseUrl}/profile`
-      );
-
-      res.json({ url: session.url });
+      res.status(200).send('OK');
     } catch (err) {
-      console.error("Error creating portal session:", err);
-      res.status(500).json({ error: "Could not access subscription management" });
+      console.error("CCBill webhook error:", err);
+      res.status(500).send('Error processing webhook');
     }
   });
 

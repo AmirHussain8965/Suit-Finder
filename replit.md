@@ -98,6 +98,26 @@ Preferred communication style: Simple, everyday language.
   - GET /api/auth/user - Get current user
 - **Implementation**: Express sessions with Passport.js in `server/replit_integrations/auth/`
 
+### Payment Processing (CCBill)
+- **Provider**: CCBill payment processor (suitable for adult content sites)
+- **Integration Type**: FlexForms - hosted payment page
+- **Subscription Tiers**:
+  - The Tailored Circle (Premium): $19.99/month
+  - The Krug Society (Platinum): $49.99/month
+- **Webhook Handler**: POST /api/webhooks/ccbill for payment notifications
+- **Service File**: `server/ccbillService.ts`
+- **Required Environment Variables**:
+  - `CCBILL_ACCOUNT_NUMBER` - CCBill merchant account number (6 digits)
+  - `CCBILL_SUBACCOUNT_NUMBER` - CCBill sub-account number (4 digits)
+  - `CCBILL_FORM_NAME` - CCBill FlexForm name
+  - `CCBILL_SALT` - CCBill salt key for digest verification
+
+### Report System
+- **Purpose**: Allow users to flag inappropriate behavior
+- **Report Reasons**: harassment, inappropriate content, fake profile, underage, spam, threats, non-consensual, other
+- **Status Tracking**: pending, reviewed, resolved, dismissed
+- **API Endpoint**: POST /api/reports
+
 ### Key Design Patterns
 - **Shared Types**: Schema and route definitions in `shared/` directory enable type sharing between client and server
 - **Storage Interface**: `IStorage` interface in `server/storage.ts` abstracts database operations
@@ -108,11 +128,19 @@ Preferred communication style: Simple, everyday language.
 ### Database
 - **PostgreSQL**: Primary data store, connection via `DATABASE_URL` environment variable
 
+### Payment Services
+- **CCBill**: Payment processor for subscription billing
+- **Note**: Stripe has been removed as it does not accept adult content sites
+
 ### Authentication Services
 - **Email/Password**: Local authentication with bcrypt password hashing
 - **Required Environment Variables**:
   - `DATABASE_URL` - PostgreSQL connection string
   - `SESSION_SECRET` - Express session encryption key
+  - `CCBILL_ACCOUNT_NUMBER` - CCBill account number
+  - `CCBILL_SUBACCOUNT_NUMBER` - CCBill sub-account
+  - `CCBILL_FORM_NAME` - CCBill form name
+  - `CCBILL_SALT` - CCBill salt for security
 
 ### Frontend Services
 - **Google Fonts**: DM Sans and Playfair Display font families

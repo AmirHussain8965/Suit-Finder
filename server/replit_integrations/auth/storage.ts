@@ -12,6 +12,14 @@ export interface IAuthStorage {
   registerUser(email: string, password: string): Promise<User>;
   setPassword(userId: string, password: string): Promise<User | undefined>;
   validatePassword(email: string, password: string): Promise<User | null>;
+  updateUserSubscription(userId: string, subscriptionInfo: {
+    ccbillSubscriptionId?: string;
+    subscriptionStatus?: string;
+    subscriptionPlan?: string;
+    subscriptionTier?: string;
+    subscriptionEndDate?: string;
+  }): Promise<User | undefined>;
+  // Legacy Stripe method - kept for backwards compatibility
   updateUserStripeInfo(userId: string, stripeInfo: {
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
@@ -94,6 +102,27 @@ class AuthStorage implements IAuthStorage {
       .update(users)
       .set({
         ...stripeInfo,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async updateUserSubscription(userId: string, subscriptionInfo: {
+    ccbillSubscriptionId?: string;
+    subscriptionStatus?: string;
+    subscriptionPlan?: string;
+    subscriptionTier?: string;
+    subscriptionEndDate?: string;
+  }): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({
+        ...subscriptionInfo,
+        subscriptionEndDate: subscriptionInfo.subscriptionEndDate 
+          ? new Date(subscriptionInfo.subscriptionEndDate) 
+          : undefined,
         updatedAt: new Date(),
       })
       .where(eq(users.id, userId))
