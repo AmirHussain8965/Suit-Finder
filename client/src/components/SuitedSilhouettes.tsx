@@ -1,5 +1,5 @@
 import bgTuxedo from "../assets/images/bg-tuxedo.jpg";
-import bgDoubleBreasted from "../assets/images/bg-double-breasted.jpg";
+import bgDoubleBreasted from "../assets/images/bg-gallery-suits.png";
 import bgThreePiece from "../assets/images/bg-profile-suit.png";
 
 interface SuitedSilhouettesProps {
