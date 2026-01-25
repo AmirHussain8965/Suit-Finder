@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Map, User, Image, LogOut, MessageSquare, Calendar, Crown, Shirt, Gavel, Heart } from "lucide-react";
+import { Map, User, Image, LogOut, MessageSquare, Calendar, Crown, Shirt, Gavel, Heart, Info } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { usePremiumFeature } from "@/hooks/use-subscription";
@@ -55,6 +55,17 @@ export function Navigation() {
         </div>
 
         <div className="p-4 border-t border-border space-y-2">
+          <Link href="/about" className={`
+            flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-300
+            ${isActive("/about") 
+              ? "bg-primary/20 text-accent border-l-2 border-accent" 
+              : "text-muted-foreground hover:bg-white/5 hover:text-foreground"}
+          `}
+          data-testid="link-nav-about"
+          >
+            <Info size={20} />
+            <span className="font-medium">About</span>
+          </Link>
           <Link href="/subscription" className={`
             flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-300
             ${isPremium 

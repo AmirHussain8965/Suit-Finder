@@ -44,7 +44,7 @@ export default function Landing() {
             Connect, explore, and discover like-minded gentlemen nearby.
           </p>
 
-          <div className="pt-4">
+          <div className="pt-4 flex flex-col sm:flex-row gap-4 items-center justify-center">
             <Button 
               size="lg" 
               className="bg-accent text-accent-foreground hover:bg-accent/90 text-lg px-8 py-6 rounded-none font-serif tracking-wide"
@@ -52,6 +52,15 @@ export default function Landing() {
               data-testid="button-enter-lounge"
             >
               Enter the Lounge <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline"
+              className="text-lg px-8 py-6 rounded-none font-serif tracking-wide border-accent/50 hover:bg-accent/10"
+              onClick={() => setLocation("/about")}
+              data-testid="button-learn-more"
+            >
+              Learn More
             </Button>
           </div>
         </div>
