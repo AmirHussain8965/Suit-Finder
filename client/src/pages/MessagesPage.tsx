@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useNearbyProfiles } from "@/hooks/use-profiles";
 import { usePremiumFeature } from "@/hooks/use-subscription";
 import { PremiumGate } from "@/components/PremiumGate";
+import { Link } from "wouter";
 
 export default function MessagesPage() {
   const { user } = useAuth();
@@ -272,17 +273,38 @@ export default function MessagesPage() {
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
-                <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-primary/20 text-accent">
-                    {selectedConversation.isGroup ? <Users className="h-5 w-5" /> : getInitials(getConversationName(selectedConversation))}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="font-medium">{getConversationName(selectedConversation)}</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {selectedConversation.participants.length} participant{selectedConversation.participants.length !== 1 ? "s" : ""}
-                  </p>
-                </div>
+                {(() => {
+                  const otherParticipant = !selectedConversation.isGroup 
+                    ? selectedConversation.participants.find(p => p.userId !== currentUserId)
+                    : null;
+                  const conversationName = getConversationName(selectedConversation);
+                  
+                  return (
+                    <>
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback className="bg-primary/20 text-accent">
+                          {selectedConversation.isGroup ? <Users className="h-5 w-5" /> : getInitials(conversationName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        {otherParticipant ? (
+                          <Link 
+                            href={`/profile/${otherParticipant.userId}`}
+                            className="font-medium hover:text-accent hover:underline"
+                            data-testid="link-conversation-profile"
+                          >
+                            {conversationName}
+                          </Link>
+                        ) : (
+                          <h3 className="font-medium">{conversationName}</h3>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {selectedConversation.participants.length} participant{selectedConversation.participants.length !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Messages */}
@@ -302,10 +324,14 @@ export default function MessagesPage() {
                           data-testid={`message-${message.id}`}
                         >
                           <div className={`max-w-[70%] ${isOwn ? "order-2" : ""}`}>
-                            {!isOwn && (
-                              <p className="text-xs text-muted-foreground mb-1">
-                                {message.sender?.displayName || "Unknown"}
-                              </p>
+                            {!isOwn && message.sender && (
+                              <Link 
+                                href={`/profile/${message.senderId}`}
+                                className="text-xs text-muted-foreground mb-1 hover:text-accent hover:underline cursor-pointer block"
+                                data-testid={`link-sender-${message.senderId}`}
+                              >
+                                {message.sender.displayName || "Unknown"}
+                              </Link>
                             )}
                             <div
                               className={`p-3 rounded-lg ${
