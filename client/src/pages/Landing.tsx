@@ -34,6 +34,9 @@ export default function Landing() {
             <p className="text-2xl md:text-3xl font-serif text-accent italic tracking-wide">
               for men
             </p>
+            <p className="text-lg md:text-xl text-muted-foreground mt-4 tracking-wide">
+              Where presentation becomes personal
+            </p>
           </div>
           
           <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed font-light">
