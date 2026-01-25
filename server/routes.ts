@@ -246,6 +246,8 @@ export async function registerRoutes(
       hivStatus: viewerIsPremium ? profile.hivStatus : null,
       onPrep: viewerIsPremium ? profile.onPrep : null,
       lastStdScreening: viewerIsPremium ? profile.lastStdScreening?.toISOString() : null,
+      // Privacy settings
+      wardrobePublic: profile.wardrobePublic ?? false,
     });
   });
 

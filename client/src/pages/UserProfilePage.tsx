@@ -5,7 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Heart, MessageCircle, Loader2, ArrowLeft, User, Palette, Ruler, Activity } from "lucide-react";
+import { Heart, MessageCircle, Loader2, ArrowLeft, User, Palette, Ruler, Activity, Shirt } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 interface UserProfile {
@@ -27,6 +27,17 @@ interface UserProfile {
   hivStatus: string | null;
   onPrep: boolean | null;
   lastStdScreening: string | null;
+  wardrobePublic: boolean | null;
+}
+
+interface WardrobeItem {
+  id: number;
+  name: string;
+  category: string;
+  description: string | null;
+  brand: string | null;
+  color: string | null;
+  imageUrl: string | null;
 }
 
 export default function UserProfilePage() {
@@ -42,6 +53,11 @@ export default function UserProfilePage() {
 
   const { data: favorites = [] } = useQuery<{ userId: string }[]>({
     queryKey: ["/api/favorites"],
+  });
+
+  const { data: wardrobe = [] } = useQuery<WardrobeItem[]>({
+    queryKey: [`/api/profiles/${userId}/wardrobe`],
+    enabled: !!userId && profile?.wardrobePublic === true,
   });
 
   const isFavorited = favorites.some((f) => f.userId === userId);
@@ -306,6 +322,46 @@ export default function UserProfilePage() {
                     </div>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {profile.wardrobePublic && wardrobe.length > 0 && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg font-serif">
+                  <Shirt className="h-5 w-5 text-accent" />
+                  Wardrobe
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {wardrobe.slice(0, 6).map((item) => (
+                    <div 
+                      key={item.id} 
+                      className="bg-background rounded-lg border border-border p-3"
+                      data-testid={`wardrobe-item-${item.id}`}
+                    >
+                      {item.imageUrl && (
+                        <img 
+                          src={item.imageUrl} 
+                          alt={item.name}
+                          className="w-full h-24 object-cover rounded-md mb-2"
+                        />
+                      )}
+                      <p className="text-sm font-medium truncate">{item.name}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{item.category.replace(/_/g, ' ')}</p>
+                      {item.brand && (
+                        <p className="text-xs text-accent">{item.brand}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {wardrobe.length > 6 && (
+                  <p className="text-sm text-muted-foreground text-center mt-4">
+                    +{wardrobe.length - 6} more items
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}
