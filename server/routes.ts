@@ -494,6 +494,28 @@ export async function registerRoutes(
     res.json(photo);
   });
 
+  // Reorder photos
+  app.post(api.photos.reorder.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    
+    try {
+      const input = api.photos.reorder.input.parse(req.body);
+      await storage.reorderPhotos(userId, input.photoIds);
+      res.json({ message: "Photos reordered" });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
   // === Conversations ===
 
   // List all conversations

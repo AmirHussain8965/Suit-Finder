@@ -184,6 +184,17 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    reorder: {
+      method: 'POST' as const,
+      path: '/api/photos/reorder',
+      input: z.object({
+        photoIds: z.array(z.number()),
+      }),
+      responses: {
+        200: z.object({ message: z.string() }),
+        400: errorSchemas.validation,
+      },
+    },
   },
   conversations: {
     list: {

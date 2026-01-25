@@ -39,7 +39,7 @@ import {
   type Report,
   type InsertReport,
 } from "@shared/schema";
-import { eq, sql, and, desc, inArray, gte, or } from "drizzle-orm";
+import { eq, sql, and, desc, asc, inArray, gte, or } from "drizzle-orm";
 
 // Fuzz location within approximately 500 feet (~150m) for privacy
 // Uses haversine-based destination point formula for accuracy
@@ -98,6 +98,7 @@ export interface IStorage {
   updatePhoto(userId: string, photoId: number, updates: Partial<InsertPhoto>): Promise<Photo>;
   deletePhoto(userId: string, photoId: number): Promise<void>;
   setProfilePhoto(userId: string, photoId: number): Promise<Photo>;
+  reorderPhotos(userId: string, photoIds: number[]): Promise<void>;
   
   // Conversations
   getConversations(userId: string): Promise<ConversationWithParticipants[]>;
@@ -324,13 +325,13 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(photos)
         .where(eq(photos.userId, userId))
-        .orderBy(desc(photos.createdAt));
+        .orderBy(asc(photos.displayOrder), desc(photos.createdAt));
     }
     return await db
       .select()
       .from(photos)
       .where(and(eq(photos.userId, userId), eq(photos.isPublic, true)))
-      .orderBy(desc(photos.createdAt));
+      .orderBy(asc(photos.displayOrder), desc(photos.createdAt));
   }
 
   async getProfilePhoto(userId: string): Promise<Photo | undefined> {
@@ -378,6 +379,16 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(photos.id, photoId), eq(photos.userId, userId)))
       .returning();
     return updated;
+  }
+
+  async reorderPhotos(userId: string, photoIds: number[]): Promise<void> {
+    // Update display order for each photo
+    for (let i = 0; i < photoIds.length; i++) {
+      await db
+        .update(photos)
+        .set({ displayOrder: i })
+        .where(and(eq(photos.id, photoIds[i]), eq(photos.userId, userId)));
+    }
   }
 
   // Conversation methods
