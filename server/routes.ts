@@ -348,6 +348,11 @@ export async function registerRoutes(
     const viewerId = (req.user as any).claims.sub;
     const ownerId = req.params.userId;
     
+    // Owner always has access to their own wardrobe
+    if (viewerId === ownerId) {
+      return res.json({ hasAccess: true });
+    }
+    
     const hasAccess = await storage.hasWardrobeAccess(ownerId, viewerId);
     res.json({ hasAccess });
   });

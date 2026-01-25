@@ -28,7 +28,6 @@ interface UserProfile {
   hivStatus: string | null;
   onPrep: boolean | null;
   lastStdScreening: string | null;
-  wardrobePublic: boolean | null;
 }
 
 interface WardrobeItem {
@@ -56,9 +55,16 @@ export default function UserProfilePage() {
     queryKey: ["/api/favorites"],
   });
 
+  const { data: wardrobeAccessStatus } = useQuery<{ hasAccess: boolean }>({
+    queryKey: [`/api/wardrobe-access/check/${userId}`],
+    enabled: !!userId,
+  });
+
+  const hasWardrobeAccess = wardrobeAccessStatus?.hasAccess === true;
+
   const { data: wardrobe = [] } = useQuery<WardrobeItem[]>({
     queryKey: [`/api/profiles/${userId}/wardrobe`],
-    enabled: !!userId && profile?.wardrobePublic === true,
+    enabled: !!userId && hasWardrobeAccess,
   });
 
   const isFavorited = favorites.some((f) => f.userId === userId);
@@ -330,7 +336,7 @@ export default function UserProfilePage() {
             </Card>
           )}
 
-          {profile.wardrobePublic && wardrobe.length > 0 && (
+          {hasWardrobeAccess && wardrobe.length > 0 && (
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg font-serif">

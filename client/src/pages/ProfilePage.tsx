@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertProfileSchema } from "@shared/schema";
@@ -12,19 +12,71 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Users, X, Plus, Lock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 // Schema for the form - allow partial updates
 const profileFormSchema = insertProfileSchema.partial();
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
+
+type WardrobeAccessUser = {
+  id: number;
+  grantedUserId: string;
+  displayName: string;
+  profileImageUrl: string | null;
+  createdAt: string;
+};
+
+type FavoriteUser = {
+  userId: string;
+  displayName: string;
+  profileImageUrl: string | null;
+};
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const { data: profile, isLoading: isProfileLoading } = useProfile();
   const { mutate: updateProfile, isPending: isSaving } = useUpdateProfile();
   const { toast } = useToast();
+  const [wardrobeDialogOpen, setWardrobeDialogOpen] = useState(false);
+
+  // Wardrobe access queries
+  const { data: wardrobeAccessList = [] } = useQuery<WardrobeAccessUser[]>({
+    queryKey: ["/api/wardrobe-access"],
+  });
+
+  const { data: favorites = [] } = useQuery<FavoriteUser[]>({
+    queryKey: ["/api/favorites"],
+  });
+
+  const grantAccessMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return apiRequest("POST", `/api/wardrobe-access/${userId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wardrobe-access"] });
+      toast({ title: "Access granted" });
+    },
+  });
+
+  const revokeAccessMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return apiRequest("DELETE", `/api/wardrobe-access/${userId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wardrobe-access"] });
+      toast({ title: "Access revoked" });
+    },
+  });
+
+  // Get favorites that don't already have access
+  const availableToGrant = favorites.filter(
+    (fav) => !wardrobeAccessList.some((access) => access.grantedUserId === fav.userId)
+  );
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -37,7 +89,6 @@ export default function ProfilePage() {
       categories: [],
       isVisible: true,
       isTraveling: false,
-      wardrobePublic: false,
       hairColor: "",
       eyeColor: "",
       build: "",
@@ -63,7 +114,6 @@ export default function ProfilePage() {
         categories: profile.categories || [],
         isVisible: profile.isVisible ?? true,
         isTraveling: profile.isTraveling ?? false,
-        wardrobePublic: profile.wardrobePublic ?? false,
         hairColor: profile.hairColor || "",
         eyeColor: profile.eyeColor || "",
         build: profile.build || "",
@@ -337,17 +387,106 @@ export default function ProfilePage() {
 
                 <div className="flex items-center justify-between p-4 rounded-lg bg-background border border-border">
                   <div className="space-y-0.5">
-                    <Label className="text-base">Share Wardrobe</Label>
+                    <Label className="text-base flex items-center gap-2">
+                      <Lock className="w-4 h-4 text-accent" />
+                      Wardrobe Access
+                    </Label>
                     <p className="text-xs text-muted-foreground">
-                      Allow other members to view your wardrobe
+                      {wardrobeAccessList.length === 0 
+                        ? "No one has access to your wardrobe"
+                        : `${wardrobeAccessList.length} member${wardrobeAccessList.length !== 1 ? 's' : ''} can view`}
                     </p>
                   </div>
-                  <Switch 
-                    checked={form.watch("wardrobePublic")}
-                    onCheckedChange={(checked) => form.setValue("wardrobePublic", checked)}
-                    className="data-[state=checked]:bg-accent"
-                    data-testid="switch-wardrobe-public"
-                  />
+                  <Dialog open={wardrobeDialogOpen} onOpenChange={setWardrobeDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" data-testid="button-manage-wardrobe-access">
+                        <Users className="w-4 h-4 mr-1" />
+                        Manage
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="font-serif text-accent">Wardrobe Access</DialogTitle>
+                        <DialogDescription>
+                          Choose who can view your virtual wardrobe. Only selected members will have access.
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      <div className="space-y-4">
+                        {wardrobeAccessList.length > 0 && (
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">Members with Access</Label>
+                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                              {wardrobeAccessList.map((access) => (
+                                <div 
+                                  key={access.id}
+                                  className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Avatar className="h-8 w-8">
+                                      <AvatarImage src={access.profileImageUrl || undefined} />
+                                      <AvatarFallback className="bg-accent/20 text-accent text-xs">
+                                        {access.displayName?.charAt(0)?.toUpperCase() || "?"}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span className="text-sm">{access.displayName}</span>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => revokeAccessMutation.mutate(access.grantedUserId)}
+                                    disabled={revokeAccessMutation.isPending}
+                                    data-testid={`button-revoke-access-${access.grantedUserId}`}
+                                  >
+                                    <X className="w-4 h-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {availableToGrant.length > 0 && (
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">Add from Favorites</Label>
+                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                              {availableToGrant.map((fav) => (
+                                <div 
+                                  key={fav.userId}
+                                  className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Avatar className="h-8 w-8">
+                                      <AvatarImage src={fav.profileImageUrl || undefined} />
+                                      <AvatarFallback className="bg-accent/20 text-accent text-xs">
+                                        {fav.displayName?.charAt(0)?.toUpperCase() || "?"}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span className="text-sm">{fav.displayName}</span>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => grantAccessMutation.mutate(fav.userId)}
+                                    disabled={grantAccessMutation.isPending}
+                                    data-testid={`button-grant-access-${fav.userId}`}
+                                  >
+                                    <Plus className="w-4 h-4 text-accent" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {wardrobeAccessList.length === 0 && availableToGrant.length === 0 && (
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            Add members to your favorites first to grant them wardrobe access.
+                          </p>
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
 
               </CardContent>
