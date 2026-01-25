@@ -3,9 +3,10 @@ import bgDoubleBreasted from "../assets/images/bg-gallery-suits.png";
 import bgThreePiece from "../assets/images/bg-profile-suit.png";
 import bgAuction from "../assets/images/bg-auction-tuxedo.png";
 import bgWardrobe from "../assets/images/bg-wardrobe-suits.png";
+import bgEvents from "../assets/images/bg-events-suits.png";
 
 interface SuitedSilhouettesProps {
-  variant?: "tuxedo" | "double-breasted" | "three-piece" | "auction" | "wardrobe";
+  variant?: "tuxedo" | "double-breasted" | "three-piece" | "auction" | "wardrobe" | "events";
 }
 
 const backgrounds = {
@@ -14,6 +15,7 @@ const backgrounds = {
   "three-piece": bgThreePiece,
   "auction": bgAuction,
   "wardrobe": bgWardrobe,
+  "events": bgEvents,
 };
 
 export function SuitedSilhouettes({ variant = "tuxedo" }: SuitedSilhouettesProps) {
