@@ -5,7 +5,7 @@ import { SuitedSilhouettes } from "./SuitedSilhouettes";
 interface LayoutProps {
   children: ReactNode;
   hideSilhouettes?: boolean;
-  backgroundVariant?: "tuxedo" | "double-breasted" | "three-piece" | "auction";
+  backgroundVariant?: "tuxedo" | "double-breasted" | "three-piece" | "auction" | "wardrobe";
 }
 
 export function Layout({ children, hideSilhouettes = false, backgroundVariant = "tuxedo" }: LayoutProps) {
