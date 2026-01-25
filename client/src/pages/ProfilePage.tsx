@@ -79,7 +79,7 @@ export default function ProfilePage() {
   }, [profile, user, form]);
 
   const suitCategories = [
-    "wet", "gunging", "ripping", "touching", "shoe worship", 
+    "wet", "gunging", "ripping", "touching", "shoe worship", "sock/foot play",
     "fully clothed sex", "watersports", "bukkake", "simple meet and greet",
     "butler"
   ];
