@@ -81,3 +81,16 @@ export function useSetProfilePhoto() {
     },
   });
 }
+
+export function useReorderPhotos() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (photoIds: number[]) => {
+      const res = await apiRequest(api.photos.reorder.method, api.photos.reorder.path, { photoIds });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.photos.myPhotos.path] });
+    },
+  });
+}

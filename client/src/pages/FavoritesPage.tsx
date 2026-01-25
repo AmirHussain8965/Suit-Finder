@@ -85,20 +85,27 @@ export default function FavoritesPage() {
               {favorites.map((favorite) => (
                 <Card 
                   key={favorite.userId} 
-                  className="p-4 flex items-center gap-4"
+                  className="p-4 flex items-center gap-4 hover-elevate"
                   data-testid={`card-favorite-${favorite.userId}`}
                 >
-                  <Avatar className="h-14 w-14 border-2 border-accent">
-                    <AvatarImage src={favorite.profileImageUrl || undefined} />
-                    <AvatarFallback className="bg-primary/20 text-accent font-serif">
-                      {favorite.displayName?.[0] || "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-serif font-semibold text-foreground truncate">
-                      {favorite.displayName || "Unknown"}
-                    </h3>
+                  <div 
+                    className="flex items-center gap-4 flex-1 min-w-0 cursor-pointer"
+                    onClick={() => setLocation(`/user/${favorite.userId}`)}
+                    data-testid={`link-favorite-profile-${favorite.userId}`}
+                  >
+                    <Avatar className="h-14 w-14 border-2 border-accent">
+                      <AvatarImage src={favorite.profileImageUrl || undefined} />
+                      <AvatarFallback className="bg-primary/20 text-accent font-serif">
+                        {favorite.displayName?.[0] || "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-serif font-semibold text-foreground truncate hover:text-accent transition-colors">
+                        {favorite.displayName || "Unknown"}
+                      </h3>
+                      <p className="text-xs text-muted-foreground">Click to view profile</p>
+                    </div>
                   </div>
                   
                   <div className="flex items-center gap-1">

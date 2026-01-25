@@ -1,13 +1,13 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Layout } from "@/components/Layout";
-import { useMyPhotos, useAddPhoto, useDeletePhoto, useSetProfilePhoto, useUpdatePhoto } from "@/hooks/use-photos";
+import { useMyPhotos, useAddPhoto, useDeletePhoto, useSetProfilePhoto, useUpdatePhoto, useReorderPhotos } from "@/hooks/use-photos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Plus, Trash2, Star, Lock, Globe, Image as ImageIcon, Upload, Camera } from "lucide-react";
+import { Loader2, Plus, Trash2, Star, Lock, Globe, Image as ImageIcon, Upload, Camera, GripVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Photo } from "@shared/schema";
 import { useUpload } from "@/hooks/use-upload";
@@ -18,6 +18,7 @@ export default function GalleryPage() {
   const { mutate: deletePhoto, isPending: isDeleting } = useDeletePhoto();
   const { mutate: setProfilePhoto, isPending: isSettingProfile } = useSetProfilePhoto();
   const { mutate: updatePhoto } = useUpdatePhoto();
+  const { mutate: reorderPhotos, isPending: isReordering } = useReorderPhotos();
   const { toast } = useToast();
   const { uploadFile, isUploading, progress } = useUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -27,10 +28,63 @@ export default function GalleryPage() {
   const [newPhotoCaption, setNewPhotoCaption] = useState("");
   const [newPhotoIsPublic, setNewPhotoIsPublic] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [draggedPhotoId, setDraggedPhotoId] = useState<number | null>(null);
+  const [dragOverPhotoId, setDragOverPhotoId] = useState<number | null>(null);
 
   const publicPhotos = photos?.filter((p: Photo) => p.isPublic) || [];
   const privatePhotos = photos?.filter((p: Photo) => !p.isPublic) || [];
   const profilePhoto = photos?.find((p: Photo) => p.isProfilePhoto);
+
+  const handleDragStart = useCallback((e: React.DragEvent, photoId: number) => {
+    setDraggedPhotoId(photoId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", photoId.toString());
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, photoId: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (dragOverPhotoId !== photoId) {
+      setDragOverPhotoId(photoId);
+    }
+  }, [dragOverPhotoId]);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedPhotoId(null);
+    setDragOverPhotoId(null);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent, targetPhotoId: number, photoList: Photo[]) => {
+    e.preventDefault();
+    if (draggedPhotoId === null || draggedPhotoId === targetPhotoId) {
+      handleDragEnd();
+      return;
+    }
+    
+    const draggedIndex = photoList.findIndex(p => p.id === draggedPhotoId);
+    const targetIndex = photoList.findIndex(p => p.id === targetPhotoId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) {
+      handleDragEnd();
+      return;
+    }
+
+    const newPhotoList = [...photoList];
+    const [draggedPhoto] = newPhotoList.splice(draggedIndex, 1);
+    newPhotoList.splice(targetIndex, 0, draggedPhoto);
+    
+    const newPhotoIds = newPhotoList.map(p => p.id);
+    reorderPhotos(newPhotoIds, {
+      onSuccess: () => {
+        toast({ title: "Photos Reordered", description: "Your gallery order has been updated." });
+      },
+      onError: () => {
+        toast({ title: "Error", description: "Failed to reorder photos", variant: "destructive" });
+      }
+    });
+    
+    handleDragEnd();
+  }, [draggedPhotoId, reorderPhotos, toast, handleDragEnd]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -118,19 +172,34 @@ export default function GalleryPage() {
     );
   }
 
-  const PhotoCard = ({ photo, showActions = true }: { photo: Photo; showActions?: boolean }) => (
-    <div className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-card">
+  const PhotoCard = ({ photo, showActions = true, photoList, isDragging, isDragOver }: { photo: Photo; showActions?: boolean; photoList?: Photo[]; isDragging?: boolean; isDragOver?: boolean }) => (
+    <div 
+      className={`relative group aspect-square rounded-lg overflow-hidden border bg-card transition-all cursor-grab active:cursor-grabbing ${
+        isDragging ? 'opacity-50 scale-95' : ''
+      } ${isDragOver ? 'border-accent border-2 scale-105' : 'border-border'}`}
+      draggable={showActions}
+      onDragStart={(e) => handleDragStart(e, photo.id)}
+      onDragOver={(e) => handleDragOver(e, photo.id)}
+      onDragEnd={handleDragEnd}
+      onDrop={(e) => photoList && handleDrop(e, photo.id, photoList)}
+      data-testid={`photo-card-${photo.id}`}
+    >
+      <div className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="bg-black/60 p-1 rounded">
+          <GripVertical className="h-4 w-4 text-white" />
+        </div>
+      </div>
       <img 
         src={photo.url} 
         alt={photo.caption || "Gallery photo"} 
-        className="w-full h-full object-cover"
+        className="w-full h-full object-cover pointer-events-none"
         onError={(e) => {
           (e.target as HTMLImageElement).src = "https://api.dicebear.com/7.x/shapes/svg?seed=" + photo.id;
         }}
       />
       
       {photo.isProfilePhoto && (
-        <div className="absolute top-2 left-2 bg-accent text-accent-foreground px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+        <div className="absolute top-2 left-8 bg-accent text-accent-foreground px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
           <Star className="h-3 w-3" />
           Profile
         </div>
@@ -341,9 +410,20 @@ export default function GalleryPage() {
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {publicPhotos.map((photo: Photo) => (
-                    <PhotoCard key={photo.id} photo={photo} />
+                    <PhotoCard 
+                      key={photo.id} 
+                      photo={photo} 
+                      photoList={publicPhotos}
+                      isDragging={draggedPhotoId === photo.id}
+                      isDragOver={dragOverPhotoId === photo.id}
+                    />
                   ))}
                 </div>
+              )}
+              {publicPhotos.length > 1 && (
+                <p className="text-xs text-muted-foreground mt-4 text-center">
+                  Drag photos to reorder them
+                </p>
               )}
             </CardContent>
           </Card>
@@ -365,9 +445,20 @@ export default function GalleryPage() {
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {privatePhotos.map((photo: Photo) => (
-                    <PhotoCard key={photo.id} photo={photo} />
+                    <PhotoCard 
+                      key={photo.id} 
+                      photo={photo} 
+                      photoList={privatePhotos}
+                      isDragging={draggedPhotoId === photo.id}
+                      isDragOver={dragOverPhotoId === photo.id}
+                    />
                   ))}
                 </div>
+              )}
+              {privatePhotos.length > 1 && (
+                <p className="text-xs text-muted-foreground mt-4 text-center">
+                  Drag photos to reorder them
+                </p>
               )}
             </CardContent>
           </Card>
