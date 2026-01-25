@@ -7,7 +7,7 @@ export function SuitedSilhouettes({ variant = "default" }: SuitedSilhouettesProp
     return (
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
         <svg
-          className="absolute bottom-0 right-0 w-48 h-64 md:w-64 md:h-80 opacity-[0.03] dark:opacity-[0.05]"
+          className="absolute bottom-0 right-0 w-48 h-64 md:w-64 md:h-80 opacity-[0.08] dark:opacity-[0.12]"
           viewBox="0 0 200 280"
           fill="currentColor"
         >
@@ -27,7 +27,7 @@ export function SuitedSilhouettes({ variant = "default" }: SuitedSilhouettesProp
     return (
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
         <svg
-          className="absolute top-20 left-4 w-20 h-28 md:w-24 md:h-32 opacity-[0.02] dark:opacity-[0.04] rotate-[-10deg]"
+          className="absolute top-20 left-4 w-20 h-28 md:w-24 md:h-32 opacity-[0.06] dark:opacity-[0.10] rotate-[-10deg]"
           viewBox="0 0 100 140"
           fill="currentColor"
         >
@@ -42,7 +42,7 @@ export function SuitedSilhouettes({ variant = "default" }: SuitedSilhouettesProp
   return (
     <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
       <svg
-        className="absolute top-32 left-[-20px] w-32 h-44 md:w-40 md:h-56 opacity-[0.02] dark:opacity-[0.04] rotate-[-5deg]"
+        className="absolute top-32 left-[-20px] w-32 h-44 md:w-40 md:h-56 opacity-[0.08] dark:opacity-[0.12] rotate-[-5deg]"
         viewBox="0 0 160 220"
         fill="currentColor"
       >
@@ -55,7 +55,7 @@ export function SuitedSilhouettes({ variant = "default" }: SuitedSilhouettesProp
       </svg>
 
       <svg
-        className="absolute bottom-20 right-[-10px] w-36 h-48 md:w-44 md:h-60 opacity-[0.02] dark:opacity-[0.04] rotate-[8deg]"
+        className="absolute bottom-20 right-[-10px] w-36 h-48 md:w-44 md:h-60 opacity-[0.08] dark:opacity-[0.12] rotate-[8deg]"
         viewBox="0 0 180 240"
         fill="currentColor"
       >
@@ -69,7 +69,7 @@ export function SuitedSilhouettes({ variant = "default" }: SuitedSilhouettesProp
       </svg>
 
       <svg
-        className="absolute top-1/2 left-2 w-16 h-22 md:w-20 md:h-28 opacity-[0.015] dark:opacity-[0.03] -translate-y-1/2"
+        className="absolute top-1/2 left-2 w-16 h-22 md:w-20 md:h-28 opacity-[0.06] dark:opacity-[0.10] -translate-y-1/2"
         viewBox="0 0 80 110"
         fill="currentColor"
       >
