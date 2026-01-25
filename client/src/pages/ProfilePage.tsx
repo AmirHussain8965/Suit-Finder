@@ -96,9 +96,6 @@ export default function ProfilePage() {
       height: "",
       weight: "",
       bodyHair: "",
-      hivStatus: "",
-      onPrep: false,
-      lastStdScreening: null,
     },
   });
 
@@ -121,9 +118,6 @@ export default function ProfilePage() {
         height: profile.height || "",
         weight: profile.weight || "",
         bodyHair: profile.bodyHair || "",
-        hivStatus: profile.hivStatus || "",
-        onPrep: profile.onPrep ?? false,
-        lastStdScreening: profile.lastStdScreening || null,
       });
     }
   }, [profile, user, form]);
@@ -516,60 +510,6 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
 
-            {/* Health Info */}
-            <Card className="bg-card border-border shadow-lg">
-              <CardHeader>
-                <CardTitle className="font-serif text-accent">Health Information</CardTitle>
-                <CardDescription>Optional health details for safer connections.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="hivStatus">HIV Status</Label>
-                  <select
-                    id="hivStatus"
-                    value={form.watch("hivStatus") || ""}
-                    onChange={(e) => form.setValue("hivStatus", e.target.value)}
-                    className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    data-testid="select-hiv-status"
-                  >
-                    <option value="">Prefer not to say</option>
-                    <option value="Negative">Negative</option>
-                    <option value="Positive">Positive</option>
-                    <option value="Undetectable">Undetectable</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center justify-between p-4 rounded-lg bg-background border border-border">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">On PrEP</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Currently taking pre-exposure prophylaxis
-                    </p>
-                  </div>
-                  <Switch 
-                    checked={form.watch("onPrep") ?? false}
-                    onCheckedChange={(checked) => form.setValue("onPrep", checked)}
-                    className="data-[state=checked]:bg-accent"
-                    data-testid="switch-on-prep"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="lastStdScreening">Last STD Screening</Label>
-                  <Input 
-                    id="lastStdScreening" 
-                    type="date"
-                    value={form.watch("lastStdScreening") ? new Date(form.watch("lastStdScreening") as any).toISOString().split('T')[0] : ""}
-                    onChange={(e) => form.setValue("lastStdScreening", e.target.value ? new Date(e.target.value) : null)}
-                    className="bg-background border-input focus:border-accent"
-                    data-testid="input-last-std-screening"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    When was your most recent STD test?
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           <div className="flex justify-end pt-4">
