@@ -40,7 +40,7 @@ export default function Landing() {
           </div>
           
           <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed font-light">
-            A private social network for men who share a passion for formal attire and suit fetish. 
+            A private social network for men who share a passion for formal attire and sartorial style. 
             Connect, explore, and discover like-minded gentlemen nearby.
           </p>
 
@@ -78,7 +78,7 @@ export default function Landing() {
             {
               icon: Users,
               title: "Curated Community",
-              description: "Join a private network of men who share your appreciation for suits, ties, and formal fetish."
+              description: "Join a private network of men who share your appreciation for suits, ties, and formal style."
             },
             {
               icon: Shield,

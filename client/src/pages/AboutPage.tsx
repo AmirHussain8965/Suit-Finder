@@ -52,8 +52,8 @@ export default function AboutPage() {
             <p>
               Formal Findings is a location-based social platform designed exclusively for men 
               who share a passion for formal attire. Whether you're drawn to the elegance of 
-              a perfectly tailored suit, the sophistication of a tuxedo, or have deeper 
-              interests in suit fetish culture, this is your community.
+              a perfectly tailored suit, the sophistication of a tuxedo, or simply appreciate 
+              classic menswear style, this is your community.
             </p>
             <p>
               Our interactive map helps you discover like-minded gentlemen in your area, 
