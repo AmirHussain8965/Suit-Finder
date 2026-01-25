@@ -8,40 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Loader2, Plus, Calendar, MapPin, Users, Clock, Check, X, Eye, EyeOff, Trash2, ArrowLeft } from "lucide-react";
 import type { EventWithDetails } from "@shared/schema";
-import { eventCategories } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { format } from "date-fns";
 import { usePremiumFeature } from "@/hooks/use-subscription";
 import { PremiumGate } from "@/components/PremiumGate";
-
-const categoryLabels: Record<string, string> = {
-  drinks_only: "Drinks Only",
-  orgy: "Orgy",
-  social_dinner: "Social Dinner",
-  pump_and_dump: "Pump & Dump",
-  bukkake: "Bukkake",
-  side_event: "Side Event",
-  messy_meetup: "Messy Meetup",
-  bondage: "Bondage",
-};
-
-const categoryColors: Record<string, string> = {
-  drinks_only: "bg-blue-600 text-white border-blue-700",
-  orgy: "bg-red-600 text-white border-red-700",
-  social_dinner: "bg-green-600 text-white border-green-700",
-  pump_and_dump: "bg-orange-500 text-white border-orange-600",
-  bukkake: "bg-purple-600 text-white border-purple-700",
-  side_event: "bg-yellow-500 text-black border-yellow-600",
-  messy_meetup: "bg-pink-500 text-white border-pink-600",
-  bondage: "bg-gray-800 text-white border-gray-900",
-};
 
 export default function EventsPage() {
   const { user } = useAuth();
@@ -53,7 +29,6 @@ export default function EventsPage() {
   const [newEvent, setNewEvent] = useState({
     title: "",
     description: "",
-    category: "social_dinner" as string,
     eventDate: "",
     eventTime: "",
     location: "",
@@ -75,7 +50,6 @@ export default function EventsPage() {
       setNewEvent({
         title: "",
         description: "",
-        category: "social_dinner",
         eventDate: "",
         eventTime: "",
         location: "",
@@ -148,7 +122,7 @@ export default function EventsPage() {
     createEventMutation.mutate({
       title: newEvent.title,
       description: newEvent.description || null,
-      category: newEvent.category,
+      category: "social_dinner",
       eventDate: dateTime.toISOString(),
       location: newEvent.location || null,
       maxAttendees: newEvent.maxAttendees ? parseInt(newEvent.maxAttendees) : null,
@@ -197,9 +171,6 @@ export default function EventsPage() {
             <CardHeader>
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="space-y-2">
-                  <Badge className={categoryColors[selectedEvent.category] || ""}>
-                    {categoryLabels[selectedEvent.category] || selectedEvent.category}
-                  </Badge>
                   <CardTitle className="text-2xl font-serif">{selectedEvent.title}</CardTitle>
                   <CardDescription className="flex items-center gap-2">
                     <Avatar className="h-6 w-6">
@@ -403,25 +374,6 @@ export default function EventsPage() {
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Select 
-                    value={newEvent.category} 
-                    onValueChange={(v) => setNewEvent({ ...newEvent, category: v })}
-                  >
-                    <SelectTrigger data-testid="select-event-category">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {eventCategories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {categoryLabels[cat]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="date">Date</Label>
@@ -539,9 +491,6 @@ export default function EventsPage() {
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-1">
-                        <Badge className={categoryColors[event.category] || ""}>
-                          {categoryLabels[event.category] || event.category}
-                        </Badge>
                         <CardTitle className="text-lg font-serif">{event.title}</CardTitle>
                       </div>
                       {event.isAttending && (

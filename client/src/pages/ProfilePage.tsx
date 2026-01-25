@@ -128,12 +128,6 @@ export default function ProfilePage() {
     }
   }, [profile, user, form]);
 
-  const suitCategories = [
-    "wet", "gunging", "ripping", "touching", "shoe worship", "sock/foot play",
-    "fully clothed sex", "watersports", "bukkake", "simple meet and greet",
-    "butler", "toys", "bondage", "Dom/Sub"
-  ];
-
   const mainSuitTypes = ["Tuxedo", "Suit and Tie"];
 
   const onSubmit = (data: ProfileFormValues) => {
@@ -260,39 +254,6 @@ export default function ProfilePage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <select 
-                    id="role" 
-                    {...form.register("role")} 
-                    className="w-full h-9 px-3 rounded-md bg-background border border-input focus:border-accent text-sm"
-                    data-testid="select-role"
-                  >
-                    <option value="">Select role...</option>
-                    <option value="Top">Top</option>
-                    <option value="Bottom">Bottom</option>
-                    <option value="Vers">Vers</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="interestType">Interest (Styling only or Fetish)</Label>
-                  <div className="flex gap-4">
-                    {["Styling only", "Fetish"].map((type) => (
-                      <label key={type} className="flex items-center gap-2 cursor-pointer p-2 rounded-md border border-border bg-background/50 flex-1 justify-center hover-elevate">
-                        <input
-                          type="radio"
-                          value={type}
-                          checked={form.watch("interestType") === type}
-                          onChange={() => form.setValue("interestType", type)}
-                          className="h-4 w-4 text-accent border-gray-300 focus:ring-accent"
-                        />
-                        <span className="text-sm font-medium">{type}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
                 <div className="space-y-3">
                   <Label>Primary Focus</Label>
                   <div className="flex gap-4">
@@ -314,42 +275,6 @@ export default function ProfilePage() {
                             className="h-4 w-4 rounded border-gray-300 text-accent focus:ring-accent"
                           />
                           <span className="text-sm font-medium">{type}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <Label>Suit Desire Categories</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {suitCategories.map((category) => {
-                      const watchedCategories = form.watch("categories");
-                      const currentCategories = (Array.isArray(watchedCategories) ? watchedCategories : []) as Array<{name: string}>;
-                      const isChecked = currentCategories.some((c) => c.name === category);
-
-                      return (
-                        <label 
-                          key={category} 
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
-                            isChecked 
-                              ? 'border-accent bg-accent/20 text-accent-foreground' 
-                              : 'border-border bg-background/50 hover:border-accent/50'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                form.setValue("categories", [...currentCategories, { name: category }]);
-                              } else {
-                                form.setValue("categories", currentCategories.filter((c) => c.name !== category));
-                              }
-                            }}
-                            className="h-4 w-4 rounded border-gray-300 text-accent focus:ring-accent"
-                          />
-                          <span className="text-sm font-medium capitalize">{category}</span>
                         </label>
                       );
                     })}
