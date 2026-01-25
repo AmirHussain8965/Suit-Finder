@@ -226,6 +226,84 @@ export default function AboutPage() {
           </CardContent>
         </Card>
 
+        <Card className="bg-card/80 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-2xl font-serif">Code of Conduct</CardTitle>
+            <CardDescription>Our community standards for a respectful experience</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <h3 className="font-semibold text-foreground">Respect & Consent</h3>
+                <p className="text-sm text-muted-foreground">
+                  All interactions must be consensual. No means no. Respect boundaries at all times, 
+                  both online and at in-person events. Harassment, stalking, or unwanted contact will 
+                  result in immediate removal from the platform.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="font-semibold text-foreground">Age Requirement</h3>
+                <p className="text-sm text-muted-foreground">
+                  All members must be 21 years of age or older. Age verification is required upon 
+                  registration. Any attempt to circumvent age verification or involve minors will 
+                  result in permanent ban and may be reported to authorities.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="font-semibold text-foreground">Authentic Profiles</h3>
+                <p className="text-sm text-muted-foreground">
+                  Use only your own photos. Catfishing, impersonation, or misrepresentation is 
+                  prohibited. Profile photos should accurately represent you.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="font-semibold text-foreground">Privacy & Discretion</h3>
+                <p className="text-sm text-muted-foreground">
+                  Do not share other members' photos, messages, or personal information outside the 
+                  platform without their explicit consent. What happens in Formal Findings stays in 
+                  Formal Findings.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="font-semibold text-foreground">No Commercial Activity</h3>
+                <p className="text-sm text-muted-foreground">
+                  This is a social platform, not a marketplace for services. Solicitation of any 
+                  kind is prohibited. The auction feature is for pre-owned formal attire only.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="font-semibold text-foreground">Safe Meetups</h3>
+                <p className="text-sm text-muted-foreground">
+                  When meeting in person, choose public locations for first meetings. Inform a 
+                  trusted friend of your plans. Trust your instincts—if something feels off, leave. 
+                  Practice safer sex and communicate openly about boundaries and health status.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="font-semibold text-foreground">Reporting Violations</h3>
+                <p className="text-sm text-muted-foreground">
+                  If you experience or witness any violation of this code of conduct, please report 
+                  it immediately. All reports are taken seriously and investigated promptly. We 
+                  reserve the right to remove any member who violates these standards.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-border">
+              <p className="text-xs text-muted-foreground italic">
+                By using Formal Findings, you agree to abide by this Code of Conduct. Violations may 
+                result in warnings, suspension, or permanent removal from the platform at our sole discretion.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="text-center space-y-4">
           <p className="text-muted-foreground">
             Ready to join the community?
