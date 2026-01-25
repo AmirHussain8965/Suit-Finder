@@ -16,6 +16,8 @@ import EventsPage from "@/pages/EventsPage";
 import WardrobePage from "@/pages/WardrobePage";
 import AuctionPage from "@/pages/AuctionPage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
+import FavoritesPage from "@/pages/FavoritesPage";
+import UserProfilePage from "@/pages/UserProfilePage";
 import { AgeVerification } from "@/components/AgeVerification";
 import { Loader2 } from "lucide-react";
 
@@ -80,6 +82,10 @@ function Router() {
       <Route path="/map">
         <ProtectedRoute component={MapPage} />
       </Route>
+
+      <Route path="/favorites">
+        <ProtectedRoute component={FavoritesPage} />
+      </Route>
       
       <Route path="/gallery">
         <ProtectedRoute component={GalleryPage} />
@@ -87,6 +93,10 @@ function Router() {
 
       <Route path="/profile">
         <ProtectedRoute component={ProfilePage} />
+      </Route>
+
+      <Route path="/profile/:userId">
+        <ProtectedRoute component={UserProfilePage} />
       </Route>
 
       <Route path="/messages">

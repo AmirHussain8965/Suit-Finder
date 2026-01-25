@@ -206,6 +206,49 @@ export async function registerRoutes(
     res.json(enrichedProfiles);
   });
 
+  // Get a specific user's profile (for viewing other users)
+  app.get(api.profiles.getUser.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const targetUserId = req.params.userId as string;
+    
+    const profile = await storage.getProfile(targetUserId);
+    if (!profile) {
+      return res.status(404).json({ message: "Profile not found" });
+    }
+
+    const user = await authStorage.getUser(targetUserId);
+    const profilePhoto = await storage.getProfilePhoto(targetUserId);
+
+    // Check if viewer is premium (health info only visible to premium members)
+    const viewerId = (req.user as any).claims.sub;
+    const viewer = await authStorage.getUser(viewerId);
+    const viewerIsPremium = viewer?.subscriptionStatus === 'active' || viewer?.subscriptionStatus === 'trialing';
+
+    res.json({
+      userId: profile.userId,
+      displayName: profile.displayName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : "Unknown"),
+      bio: profile.bio,
+      profileImageUrl: profilePhoto?.url || user?.profileImageUrl || null,
+      styleInterests: profile.styleInterests,
+      role: profile.role,
+      interestType: profile.interestType,
+      categories: profile.categories,
+      hairColor: profile.hairColor,
+      eyeColor: profile.eyeColor,
+      build: profile.build,
+      ethnicity: profile.ethnicity,
+      height: profile.height,
+      weight: profile.weight,
+      bodyHair: profile.bodyHair,
+      // Health info only visible to premium members
+      hivStatus: viewerIsPremium ? profile.hivStatus : null,
+      onPrep: viewerIsPremium ? profile.onPrep : null,
+      lastStdScreening: viewerIsPremium ? profile.lastStdScreening?.toISOString() : null,
+    });
+  });
+
   // === Favorites ===
 
   app.get(api.favorites.list.path, async (req, res) => {

@@ -78,6 +78,33 @@ export const api = {
         400: errorSchemas.validation,
       },
     },
+    getUser: {
+      method: 'GET' as const,
+      path: '/api/profiles/:userId',
+      responses: {
+        200: z.custom<{
+          userId: string;
+          displayName: string | null;
+          bio: string | null;
+          profileImageUrl: string | null;
+          styleInterests: string | null;
+          role: string | null;
+          interestType: string | null;
+          categories: unknown;
+          hairColor: string | null;
+          eyeColor: string | null;
+          build: string | null;
+          ethnicity: string | null;
+          height: string | null;
+          weight: string | null;
+          bodyHair: string | null;
+          hivStatus: string | null;
+          onPrep: boolean | null;
+          lastStdScreening: string | null;
+        }>(),
+        404: errorSchemas.notFound,
+      },
+    },
   },
   favorites: {
     list: {

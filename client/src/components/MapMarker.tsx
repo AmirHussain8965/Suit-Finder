@@ -1,7 +1,11 @@
 import { Marker, Popup } from "react-leaflet";
 import { Icon } from "leaflet";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Plane } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Plane, Heart, MessageCircle } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 
 // Custom marker icons
 const userIcon = new Icon({
@@ -34,6 +38,58 @@ interface MapMarkerProps {
 }
 
 export function MapMarker({ user, isSelf = false }: MapMarkerProps) {
+  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+
+  const { data: favorites = [] } = useQuery<{ userId: string }[]>({
+    queryKey: ["/api/favorites"],
+  });
+
+  const isFavorited = favorites.some((f) => f.userId === user.userId);
+
+  const addFavoriteMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", `/api/favorites/${user.userId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
+    },
+  });
+
+  const removeFavoriteMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", `/api/favorites/${user.userId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
+    },
+  });
+
+  const startConversationMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/conversations/direct/${user.userId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      setLocation("/messages");
+    },
+  });
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isFavorited) {
+      removeFavoriteMutation.mutate();
+    } else {
+      addFavoriteMutation.mutate();
+    }
+  };
+
+  const handleMessageClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    startConversationMutation.mutate();
+  };
+
   if (!user.latitude || !user.longitude) return null;
 
   return (
@@ -65,9 +121,39 @@ export function MapMarker({ user, isSelf = false }: MapMarkerProps) {
           </div>
           
           {!isSelf && (
-            <button className="text-xs uppercase tracking-widest text-accent font-semibold mt-2 hover:underline">
-              View Profile
-            </button>
+            <div className="flex flex-col items-center gap-2 mt-2">
+              <div className="flex items-center gap-2">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={handleFavoriteClick}
+                  disabled={addFavoriteMutation.isPending || removeFavoriteMutation.isPending}
+                  data-testid={`button-favorite-${user.userId}`}
+                >
+                  <Heart 
+                    className={`h-5 w-5 ${isFavorited ? "fill-red-500 text-red-500" : "text-muted-foreground"}`} 
+                  />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={handleMessageClick}
+                  disabled={startConversationMutation.isPending}
+                  data-testid={`button-message-${user.userId}`}
+                >
+                  <MessageCircle className="h-5 w-5 text-accent" />
+                </Button>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs uppercase tracking-widest text-accent font-semibold"
+                onClick={() => setLocation(`/profile/${user.userId}`)}
+                data-testid={`button-view-profile-${user.userId}`}
+              >
+                View Profile
+              </Button>
+            </div>
           )}
         </div>
       </Popup>
