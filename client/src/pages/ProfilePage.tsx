@@ -37,6 +37,7 @@ export default function ProfilePage() {
       categories: [],
       isVisible: true,
       isTraveling: false,
+      wardrobePublic: false,
       hairColor: "",
       eyeColor: "",
       build: "",
@@ -62,6 +63,7 @@ export default function ProfilePage() {
         categories: profile.categories || [],
         isVisible: profile.isVisible ?? true,
         isTraveling: profile.isTraveling ?? false,
+        wardrobePublic: profile.wardrobePublic ?? false,
         hairColor: profile.hairColor || "",
         eyeColor: profile.eyeColor || "",
         build: profile.build || "",
@@ -329,6 +331,22 @@ export default function ProfilePage() {
                     checked={form.watch("isVisible")}
                     onCheckedChange={(checked) => form.setValue("isVisible", checked)}
                     className="data-[state=checked]:bg-accent"
+                    data-testid="switch-visible-on-map"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-lg bg-background border border-border">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Share Wardrobe</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Allow other members to view your wardrobe
+                    </p>
+                  </div>
+                  <Switch 
+                    checked={form.watch("wardrobePublic")}
+                    onCheckedChange={(checked) => form.setValue("wardrobePublic", checked)}
+                    className="data-[state=checked]:bg-accent"
+                    data-testid="switch-wardrobe-public"
                   />
                 </div>
 
