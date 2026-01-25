@@ -1,6 +1,6 @@
 import bgTuxedo from "../assets/images/bg-tuxedo.jpg";
 import bgDoubleBreasted from "../assets/images/bg-double-breasted.jpg";
-import bgThreePiece from "../assets/images/bg-three-piece.jpg";
+import bgThreePiece from "../assets/images/bg-profile-suit.png";
 
 interface SuitedSilhouettesProps {
   variant?: "tuxedo" | "double-breasted" | "three-piece";
