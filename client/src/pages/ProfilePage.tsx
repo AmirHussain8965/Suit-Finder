@@ -81,7 +81,7 @@ export default function ProfilePage() {
   const suitCategories = [
     "wet", "gunging", "ripping", "touching", "shoe worship", "sock/foot play",
     "fully clothed sex", "watersports", "bukkake", "simple meet and greet",
-    "butler", "toys"
+    "butler", "toys", "bondage"
   ];
 
   const mainSuitTypes = ["Tuxedo", "Suit and Tie"];
