@@ -273,15 +273,83 @@ export async function registerRoutes(
       return res.status(404).json({ message: "User not found" });
     }
     
-    // Check if target user has made their wardrobe public
-    const targetProfile = await storage.getProfile(targetUserId);
-    if (!targetProfile?.wardrobePublic) {
-      return res.status(403).json({ message: "This user's wardrobe is private" });
+    // Check if viewer has been granted access to this wardrobe
+    const hasAccess = await storage.hasWardrobeAccess(targetUserId, viewerId);
+    if (!hasAccess) {
+      return res.status(403).json({ message: "You don't have access to this wardrobe" });
     }
     
     // Return wardrobe items
     const items = await storage.getWardrobeItems(targetUserId);
     res.json(items);
+  });
+
+  // Wardrobe Access Management
+  app.get("/api/wardrobe-access", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    const accessList = await storage.getWardrobeAccessList(userId);
+    
+    // Enrich with user info
+    const enriched = await Promise.all(accessList.map(async (access) => {
+      const user = await authStorage.getUser(access.grantedUserId);
+      const profile = await storage.getProfile(access.grantedUserId);
+      return {
+        id: access.id,
+        grantedUserId: access.grantedUserId,
+        displayName: profile?.displayName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : "Unknown"),
+        profileImageUrl: user?.profileImageUrl || null,
+        createdAt: access.createdAt,
+      };
+    }));
+    
+    res.json(enriched);
+  });
+
+  app.post("/api/wardrobe-access/:userId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const ownerId = (req.user as any).claims.sub;
+    const grantedUserId = req.params.userId;
+    
+    // Can't grant access to yourself
+    if (ownerId === grantedUserId) {
+      return res.status(400).json({ message: "Cannot grant access to yourself" });
+    }
+    
+    // Check if target user exists
+    const targetUser = await authStorage.getUser(grantedUserId);
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    const access = await storage.grantWardrobeAccess(ownerId, grantedUserId);
+    res.json(access);
+  });
+
+  app.delete("/api/wardrobe-access/:userId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const ownerId = (req.user as any).claims.sub;
+    const grantedUserId = req.params.userId;
+    
+    await storage.revokeWardrobeAccess(ownerId, grantedUserId);
+    res.json({ success: true });
+  });
+
+  app.get("/api/wardrobe-access/check/:userId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const viewerId = (req.user as any).claims.sub;
+    const ownerId = req.params.userId;
+    
+    const hasAccess = await storage.hasWardrobeAccess(ownerId, viewerId);
+    res.json({ hasAccess });
   });
 
   // === Favorites ===
