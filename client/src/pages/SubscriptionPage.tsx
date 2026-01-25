@@ -68,7 +68,7 @@ export default function SubscriptionPage() {
 
   if (isLoading) {
     return (
-      <Layout>
+      <Layout backgroundVariant="three-piece">
         <div className="flex h-full items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-accent" />
         </div>
@@ -77,7 +77,7 @@ export default function SubscriptionPage() {
   }
 
   return (
-    <Layout>
+    <Layout backgroundVariant="three-piece">
       <div className="p-6 max-w-4xl mx-auto space-y-8">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-serif font-bold text-foreground flex items-center justify-center gap-2">

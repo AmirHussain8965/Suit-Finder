@@ -160,7 +160,7 @@ export default function EventsPage() {
 
   if (isLoading || isPremiumLoading) {
     return (
-      <Layout>
+      <Layout backgroundVariant="tuxedo">
         <div className="flex items-center justify-center h-[60vh]">
           <Loader2 className="h-10 w-10 animate-spin text-accent" />
         </div>
@@ -170,7 +170,7 @@ export default function EventsPage() {
 
   if (!isPremium) {
     return (
-      <Layout>
+      <Layout backgroundVariant="tuxedo">
         <PremiumGate featureName="events">
           <div />
         </PremiumGate>
@@ -182,7 +182,7 @@ export default function EventsPage() {
     const canSeeDetails = selectedEvent.isAttending || isHost(selectedEvent);
     
     return (
-      <Layout>
+      <Layout backgroundVariant="tuxedo">
         <div className="max-w-4xl mx-auto p-4 space-y-6">
           <Button 
             variant="ghost" 
@@ -371,7 +371,7 @@ export default function EventsPage() {
   }
 
   return (
-    <Layout>
+    <Layout backgroundVariant="tuxedo">
       <div className="max-w-4xl mx-auto p-4 space-y-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>

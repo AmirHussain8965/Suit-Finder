@@ -110,7 +110,7 @@ export default function GalleryPage() {
 
   if (isLoading) {
     return (
-      <Layout>
+      <Layout backgroundVariant="double-breasted">
         <div className="flex h-full items-center justify-center p-8">
           <Loader2 className="h-8 w-8 animate-spin text-accent" />
         </div>
@@ -186,7 +186,7 @@ export default function GalleryPage() {
   );
 
   return (
-    <Layout>
+    <Layout backgroundVariant="double-breasted">
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-6xl mx-auto p-6 md:p-12 space-y-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border pb-6">

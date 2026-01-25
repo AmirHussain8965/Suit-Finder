@@ -126,7 +126,7 @@ export default function MessagesPage() {
 
   if (isLoadingConversations || isPremiumLoading) {
     return (
-      <Layout>
+      <Layout backgroundVariant="tuxedo">
         <div className="flex h-full items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-accent" />
         </div>
@@ -136,7 +136,7 @@ export default function MessagesPage() {
 
   if (!isPremium) {
     return (
-      <Layout>
+      <Layout backgroundVariant="tuxedo">
         <PremiumGate featureName="messaging">
           <div />
         </PremiumGate>
@@ -145,7 +145,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <Layout>
+    <Layout backgroundVariant="tuxedo">
       <div className="flex h-full w-full no-screenshot">
         {/* Conversation List - hide on mobile when conversation selected */}
         <div className={`w-full md:w-80 border-r border-border flex flex-col bg-card ${selectedConversationId ? 'hidden md:flex' : 'flex'}`}>

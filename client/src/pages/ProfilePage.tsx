@@ -156,7 +156,7 @@ export default function ProfilePage() {
 
   if (isProfileLoading) {
     return (
-      <Layout>
+      <Layout backgroundVariant="three-piece">
         <div className="flex h-full items-center justify-center p-8">
           <Loader2 className="h-8 w-8 animate-spin text-accent" />
         </div>
@@ -165,7 +165,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <Layout>
+    <Layout backgroundVariant="three-piece">
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto p-6 md:p-12 space-y-8 animate-in fade-in duration-500">
         

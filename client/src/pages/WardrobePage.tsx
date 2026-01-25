@@ -229,7 +229,7 @@ export default function WardrobePage() {
 
   if (isLoading || isPlatinumLoading) {
     return (
-      <Layout>
+      <Layout backgroundVariant="double-breasted">
         <div className="flex items-center justify-center h-[60vh]">
           <Loader2 className="h-10 w-10 animate-spin text-accent" />
         </div>
@@ -239,7 +239,7 @@ export default function WardrobePage() {
 
   if (!isPlatinum) {
     return (
-      <Layout>
+      <Layout backgroundVariant="double-breasted">
         <PlatinumGate featureName="Virtual Wardrobe">
           <div />
         </PlatinumGate>
@@ -248,7 +248,7 @@ export default function WardrobePage() {
   }
 
   return (
-    <Layout>
+    <Layout backgroundVariant="double-breasted">
       <div className="flex flex-col h-full">
         <div className="p-4 md:p-6 border-b border-border bg-card">
           <div className="flex items-center justify-between gap-4 flex-wrap">
