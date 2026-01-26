@@ -168,8 +168,18 @@ export function registerAuthRoutes(app: Express): void {
 
   // Logout (works for both auth methods)
   app.post("/api/auth/logout", (req, res) => {
-    req.logout(() => {
-      res.json({ message: "Logged out successfully" });
+    req.logout((err) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      req.session.destroy((sessionErr) => {
+        if (sessionErr) {
+          console.error("Session destroy error:", sessionErr);
+        }
+        res.clearCookie("connect.sid");
+        res.json({ message: "Logged out successfully" });
+      });
     });
   });
 
