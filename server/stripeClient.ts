@@ -4,6 +4,15 @@ import Stripe from 'stripe';
 let connectionSettings: any;
 
 async function getCredentials() {
+  // First, check for environment variable (takes priority)
+  if (process.env.STRIPE_SECRET_KEY) {
+    return {
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
+      secretKey: process.env.STRIPE_SECRET_KEY,
+    };
+  }
+
+  // Fall back to Replit Connector API
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY
     ? 'repl ' + process.env.REPL_IDENTITY
@@ -12,7 +21,7 @@ async function getCredentials() {
       : null;
 
   if (!xReplitToken) {
-    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
+    throw new Error('STRIPE_SECRET_KEY environment variable not found');
   }
 
   const connectorName = 'stripe';
