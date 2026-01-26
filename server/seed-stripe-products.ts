@@ -32,8 +32,7 @@ async function createProducts() {
         'Unlimited messaging',
         'View member galleries',
         'Create events',
-        'Add favorites',
-        'Virtual wardrobe access'
+        'Add favorites'
       ])
     }
   });
@@ -63,16 +62,16 @@ async function createProducts() {
   // Create The Krug Society product
   const krugSociety = await stripe.products.create({
     name: 'The Krug Society',
-    description: 'Platinum membership with exclusive access to auctions and premium features',
+    description: 'Platinum membership with exclusive access to wardrobes and auctions',
     metadata: {
       app: 'formal_findings',
       tier: 'platinum',
       features: JSON.stringify([
         'All Tailored Circle features',
+        'Virtual wardrobe access',
         'Suit auctions access',
         'Priority support',
-        'Exclusive events',
-        'Advanced wardrobe features'
+        'Exclusive events'
       ])
     }
   });
