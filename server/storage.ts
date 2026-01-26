@@ -157,6 +157,9 @@ export interface IStorage {
   updateLastActive(userId: string): Promise<void>;
   setUnderDressed(userId: string, isUnderDressed: boolean): Promise<Profile>;
   getOnlineUsers(minutesThreshold?: number): Promise<Profile[]>;
+  
+  // Account Management
+  deleteUserData(userId: string): Promise<void>;
 }
 
 export interface AuctionWithDetails extends Auction {
@@ -1229,6 +1232,62 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(desc(profiles.lastActiveAt));
+  }
+  
+  async deleteUserData(userId: string): Promise<void> {
+    // Delete all user data in the correct order to respect foreign key constraints
+    // Note: This only deletes data owned by the user, not the auth user record itself
+    
+    // Delete wardrobe access (both granted and received)
+    await db.delete(wardrobeAccess).where(
+      or(
+        eq(wardrobeAccess.ownerId, userId),
+        eq(wardrobeAccess.grantedUserId, userId)
+      )
+    );
+    
+    // Delete wardrobe items
+    await db.delete(wardrobeItems).where(eq(wardrobeItems.userId, userId));
+    
+    // Delete bids placed by user
+    await db.delete(bids).where(eq(bids.bidderId, userId));
+    
+    // Delete auctions created by user
+    await db.delete(auctions).where(eq(auctions.sellerId, userId));
+    
+    // Delete event attendees
+    await db.delete(eventAttendees).where(eq(eventAttendees.userId, userId));
+    
+    // Delete events hosted by user
+    await db.delete(events).where(eq(events.hostId, userId));
+    
+    // Delete messages sent by user
+    await db.delete(messages).where(eq(messages.senderId, userId));
+    
+    // Delete conversation participants
+    await db.delete(conversationParticipants).where(eq(conversationParticipants.userId, userId));
+    
+    // Delete photos
+    await db.delete(photos).where(eq(photos.userId, userId));
+    
+    // Delete favorites (both ways)
+    await db.delete(favorites).where(
+      or(
+        eq(favorites.userId, userId),
+        eq(favorites.targetUserId, userId)
+      )
+    );
+    
+    // Delete reports (both created by and against user)
+    await db.delete(reports).where(
+      or(
+        eq(reports.reporterId, userId),
+        eq(reports.reportedUserId, userId)
+      )
+    );
+    
+    // Finally, delete profile
+    await db.delete(profiles).where(eq(profiles.userId, userId));
   }
 }
 

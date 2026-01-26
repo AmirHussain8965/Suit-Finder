@@ -7,7 +7,18 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Check, Crown, Loader2, MapPin, MessageSquare, Calendar, Users, Shield, Globe, Shirt, Gavel, ExternalLink, LogOut } from "lucide-react";
+import { Check, Crown, Loader2, MapPin, MessageSquare, Calendar, Users, Shield, Globe, Shirt, Gavel, ExternalLink, LogOut, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
 
 type StripePrice = {
@@ -33,6 +44,7 @@ export default function SubscriptionPage() {
   const [isCheckingOut, setIsCheckingOut] = useState<string | null>(null);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -41,6 +53,26 @@ export default function SubscriptionPage() {
       window.location.href = "/";
     } catch (error) {
       setIsLoggingOut(false);
+    }
+  };
+  
+  const handleDeleteAccount = async () => {
+    setIsDeletingAccount(true);
+    try {
+      await apiRequest("DELETE", "/api/account");
+      toast({
+        title: "Account Deleted",
+        description: "Your account and all data have been permanently deleted.",
+      });
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Delete account error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete account. Please try again.",
+        variant: "destructive",
+      });
+      setIsDeletingAccount(false);
     }
   };
 
@@ -345,7 +377,7 @@ export default function SubscriptionPage() {
           </a>
         </p>
 
-        <div className="flex justify-center pt-4">
+        <div className="flex justify-center gap-4 pt-4">
           <Button
             variant="outline"
             onClick={handleLogout}
@@ -356,6 +388,40 @@ export default function SubscriptionPage() {
             {isLoggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
             Log Out
           </Button>
+          
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                disabled={isDeletingAccount}
+                data-testid="button-delete-account"
+              >
+                {isDeletingAccount ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                Delete Profile
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete your account
+                  and remove all your data including your profile, photos, messages, favorites,
+                  wardrobe items, and event participation.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteAccount}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  data-testid="button-confirm-delete"
+                >
+                  Delete Account
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </Layout>

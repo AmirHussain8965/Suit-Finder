@@ -35,6 +35,8 @@ export interface IAuthStorage {
   getValidPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
   deletePasswordResetToken(token: string): Promise<void>;
   resetPasswordWithToken(token: string, newPassword: string): Promise<User | undefined>;
+  // Account deletion
+  deleteUser(userId: string): Promise<void>;
 }
 
 class AuthStorage implements IAuthStorage {
@@ -204,6 +206,13 @@ class AuthStorage implements IAuthStorage {
     await this.deletePasswordResetToken(token);
     
     return user;
+  }
+  
+  async deleteUser(userId: string): Promise<void> {
+    // Delete password reset tokens first
+    await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, userId));
+    // Delete the user record
+    await db.delete(users).where(eq(users.id, userId));
   }
 }
 

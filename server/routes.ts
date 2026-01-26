@@ -265,6 +265,39 @@ export async function registerRoutes(
     });
   });
 
+  // Delete user account and all associated data
+  app.delete("/api/account", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    const userId = (req.user as any).claims.sub;
+    
+    try {
+      // Delete all user data from the database
+      await storage.deleteUserData(userId);
+      
+      // Delete the auth user record
+      await authStorage.deleteUser(userId);
+      
+      // Destroy the session
+      req.logout((err) => {
+        if (err) {
+          console.error("Logout error during account deletion:", err);
+        }
+        req.session.destroy((sessionErr) => {
+          if (sessionErr) {
+            console.error("Session destroy error during account deletion:", sessionErr);
+          }
+          res.json({ success: true, message: "Account deleted successfully" });
+        });
+      });
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      res.status(500).json({ message: "Failed to delete account" });
+    }
+  });
+
   // === View Other User's Wardrobe ===
   
   app.get(api.wardrobe.listByUser.path, async (req, res) => {
