@@ -14,6 +14,8 @@ interface SubscriptionStatus {
 export function useSubscription() {
   return useQuery<SubscriptionStatus>({
     queryKey: ["/api/subscription"],
+    staleTime: 0, // Always refetch subscription status to get fresh data
+    refetchOnWindowFocus: true, // Refetch when user returns to tab
   });
 }
 
