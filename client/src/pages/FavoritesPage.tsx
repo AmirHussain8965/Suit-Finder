@@ -90,7 +90,7 @@ export default function FavoritesPage() {
                 >
                   <div 
                     className="flex items-center gap-4 flex-1 min-w-0 cursor-pointer"
-                    onClick={() => setLocation(`/user/${favorite.userId}`)}
+                    onClick={() => setLocation(`/profile/${favorite.userId}`)}
                     data-testid={`link-favorite-profile-${favorite.userId}`}
                   >
                     <Avatar className="h-14 w-14 border-2 border-accent">

@@ -8,11 +8,46 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, Plus, Trash2, Star, Lock, Globe, Image as ImageIcon, Upload, Camera, GripVertical, Move, UserX } from "lucide-react";
+import { Loader2, Plus, Trash2, Star, Lock, Globe, Image as ImageIcon, Upload, Camera, GripVertical, Move, UserX, Crop, ZoomIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Photo } from "@shared/schema";
 import { useUpload } from "@/hooks/use-upload";
 import { useAuth } from "@/hooks/use-auth";
+import Cropper from 'react-easy-crop';
+import type { Area, Point } from 'react-easy-crop';
+
+// Helper function to create a cropped image from the crop area
+const createCroppedImage = async (imageSrc: string, pixelCrop: Area): Promise<Blob> => {
+  const image = new Image();
+  image.src = imageSrc;
+  await new Promise((resolve) => { image.onload = resolve; });
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('No 2d context');
+
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    pixelCrop.width,
+    pixelCrop.height
+  );
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error('Failed to create blob'));
+    }, 'image/jpeg', 0.95);
+  });
+};
 
 export default function GalleryPage() {
   const { user } = useAuth();
@@ -37,6 +72,13 @@ export default function GalleryPage() {
   const [positionEditPhoto, setPositionEditPhoto] = useState<Photo | null>(null);
   const [tempPositionX, setTempPositionX] = useState(50);
   const [tempPositionY, setTempPositionY] = useState(50);
+  
+  // Cropping state
+  const [showCropper, setShowCropper] = useState(false);
+  const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const [croppedPreviewUrl, setCroppedPreviewUrl] = useState<string | null>(null);
 
   const publicPhotos = photos?.filter((p: Photo) => p.isPublic) || [];
   const privatePhotos = photos?.filter((p: Photo) => !p.isPublic) || [];
@@ -105,8 +147,38 @@ export default function GalleryPage() {
         return;
       }
       setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setCroppedPreviewUrl(null);
+      setShowCropper(true);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
     }
+  };
+
+  const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleApplyCrop = async () => {
+    if (!previewUrl || !croppedAreaPixels) return;
+    try {
+      const croppedBlob = await createCroppedImage(previewUrl, croppedAreaPixels);
+      const croppedUrl = URL.createObjectURL(croppedBlob);
+      setCroppedPreviewUrl(croppedUrl);
+      // Create a new file from the cropped blob
+      const croppedFile = new File([croppedBlob], selectedFile?.name || 'cropped.jpg', { type: 'image/jpeg' });
+      setSelectedFile(croppedFile);
+      setShowCropper(false);
+    } catch (error) {
+      console.error("Crop failed:", error);
+      toast({ title: "Error", description: "Failed to crop image", variant: "destructive" });
+    }
+  };
+
+  const handleSkipCrop = () => {
+    setShowCropper(false);
+    setCroppedPreviewUrl(previewUrl);
   };
 
   const handleAddPhoto = async () => {
@@ -136,6 +208,10 @@ export default function GalleryPage() {
           setNewPhotoCaption("");
           setNewPhotoIsPublic(true);
           setNewPhotoIsFaceless(false);
+          setShowCropper(false);
+          setCroppedPreviewUrl(null);
+          setCrop({ x: 0, y: 0 });
+          setZoom(1);
           setDialogOpen(false);
         },
         onError: (err: Error) => {
@@ -353,26 +429,91 @@ export default function GalleryPage() {
                       className="hidden"
                       data-testid="input-photo-file"
                     />
-                    {previewUrl ? (
+                    {previewUrl && showCropper ? (
+                      <div className="space-y-4">
+                        <div className="relative h-64 bg-muted rounded-lg overflow-hidden">
+                          <Cropper
+                            image={previewUrl}
+                            crop={crop}
+                            zoom={zoom}
+                            aspect={1}
+                            onCropChange={setCrop}
+                            onCropComplete={onCropComplete}
+                            onZoomChange={setZoom}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <ZoomIn className="h-4 w-4 text-muted-foreground" />
+                            <Slider
+                              min={1}
+                              max={3}
+                              step={0.1}
+                              value={[zoom]}
+                              onValueChange={(v) => setZoom(v[0])}
+                              className="flex-1"
+                              data-testid="slider-zoom"
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground text-center">
+                            Drag to position, pinch or use slider to zoom
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            className="flex-1"
+                            onClick={handleSkipCrop}
+                            data-testid="button-skip-crop"
+                          >
+                            Use Original
+                          </Button>
+                          <Button
+                            className="flex-1 bg-accent text-accent-foreground"
+                            onClick={handleApplyCrop}
+                            data-testid="button-apply-crop"
+                          >
+                            <Crop className="h-4 w-4 mr-2" />
+                            Apply Crop
+                          </Button>
+                        </div>
+                      </div>
+                    ) : croppedPreviewUrl || previewUrl ? (
                       <div className="relative">
                         <img 
-                          src={previewUrl} 
+                          src={croppedPreviewUrl || previewUrl} 
                           alt="Preview" 
                           className="w-full h-48 object-cover rounded-lg border border-border"
                         />
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="absolute top-2 right-2"
-                          onClick={() => {
-                            setSelectedFile(null);
-                            setPreviewUrl(null);
-                            if (fileInputRef.current) fileInputRef.current.value = "";
-                          }}
-                          data-testid="button-remove-preview"
-                        >
-                          Change
-                        </Button>
+                        <div className="absolute top-2 right-2 flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              setShowCropper(true);
+                              setCrop({ x: 0, y: 0 });
+                              setZoom(1);
+                            }}
+                            data-testid="button-edit-crop"
+                          >
+                            <Crop className="h-3 w-3 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              setSelectedFile(null);
+                              setPreviewUrl(null);
+                              setCroppedPreviewUrl(null);
+                              setShowCropper(false);
+                              if (fileInputRef.current) fileInputRef.current.value = "";
+                            }}
+                            data-testid="button-remove-preview"
+                          >
+                            Change
+                          </Button>
+                        </div>
                       </div>
                     ) : (
                       <div 
