@@ -58,6 +58,9 @@ export default function EventsPage() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
     },
+    onError: (err: Error) => {
+      console.error("Failed to create event:", err);
+    },
   });
 
   const joinEventMutation = useMutation({
