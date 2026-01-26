@@ -449,13 +449,14 @@ export async function registerRoutes(
       const photo = await storage.addPhoto(userId, input);
       res.json(photo);
     } catch (err) {
+      console.error("Error adding photo:", err);
       if (err instanceof z.ZodError) {
         return res.status(400).json({
           message: err.errors[0].message,
           field: err.errors[0].path.join('.'),
         });
       }
-      throw err;
+      return res.status(500).json({ message: "Failed to add photo" });
     }
   });
 
@@ -470,15 +471,19 @@ export async function registerRoutes(
     try {
       const input = api.photos.update.input.parse(req.body);
       const photo = await storage.updatePhoto(userId, photoId, input);
+      if (!photo) {
+        return res.status(404).json({ message: "Photo not found" });
+      }
       res.json(photo);
     } catch (err) {
+      console.error("Error updating photo:", err);
       if (err instanceof z.ZodError) {
         return res.status(400).json({
           message: err.errors[0].message,
           field: err.errors[0].path.join('.'),
         });
       }
-      throw err;
+      return res.status(500).json({ message: "Failed to update photo" });
     }
   });
 

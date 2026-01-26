@@ -131,8 +131,9 @@ export default function GalleryPage() {
           setNewPhotoIsFaceless(false);
           setDialogOpen(false);
         },
-        onError: () => {
-          toast({ title: "Error", description: "Failed to save photo", variant: "destructive" });
+        onError: (err: Error) => {
+          console.error("Failed to save photo:", err);
+          toast({ title: "Error", description: err.message || "Failed to save photo", variant: "destructive" });
         },
       }
     );
