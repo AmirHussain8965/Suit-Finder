@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Loader2, Plus, Trash2, Star, Lock, Globe, Image as ImageIcon, Upload, Camera, GripVertical, Move, UserX, Crop, ZoomIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Photo } from "@shared/schema";
@@ -334,47 +335,71 @@ export default function GalleryPage() {
       </div>
 
       {showActions && (
-        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-2 pt-8 flex items-end justify-center gap-1">
           {!photo.isProfilePhoto && (
-            <Button 
-              size="icon" 
-              variant="secondary"
-              onClick={() => handleSetProfilePhoto(photo.id)}
-              disabled={isSettingProfile}
-              data-testid={`button-set-profile-${photo.id}`}
-            >
-              <Star className="h-4 w-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="icon" 
+                  variant="secondary"
+                  className="h-8 w-8"
+                  onClick={() => handleSetProfilePhoto(photo.id)}
+                  disabled={isSettingProfile}
+                  data-testid={`button-set-profile-${photo.id}`}
+                >
+                  <Star className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Set as Profile Photo</TooltipContent>
+            </Tooltip>
           )}
-          <Button 
-            size="icon" 
-            variant="secondary"
-            onClick={() => openPositionEditor(photo)}
-            data-testid={`button-adjust-position-${photo.id}`}
-          >
-            <Move className="h-4 w-4" />
-          </Button>
-          <Button 
-            size="icon" 
-            variant="secondary"
-            onClick={() => handleTogglePrivacy(photo)}
-            data-testid={`button-toggle-privacy-${photo.id}`}
-          >
-            {photo.isPublic ? <Lock className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
-          </Button>
-          <Button 
-            size="icon" 
-            variant="destructive"
-            onClick={() => handleDeletePhoto(photo.id)}
-            disabled={isDeleting}
-            data-testid={`button-delete-${photo.id}`}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="icon" 
+                variant="secondary"
+                className="h-8 w-8"
+                onClick={() => openPositionEditor(photo)}
+                data-testid={`button-adjust-position-${photo.id}`}
+              >
+                <Move className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Adjust Position</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="icon" 
+                variant="secondary"
+                className="h-8 w-8"
+                onClick={() => handleTogglePrivacy(photo)}
+                data-testid={`button-toggle-privacy-${photo.id}`}
+              >
+                {photo.isPublic ? <Lock className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{photo.isPublic ? "Make Private" : "Make Public"}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="icon" 
+                variant="destructive"
+                className="h-8 w-8"
+                onClick={() => handleDeletePhoto(photo.id)}
+                disabled={isDeleting}
+                data-testid={`button-delete-${photo.id}`}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Delete Photo</TooltipContent>
+          </Tooltip>
         </div>
       )}
 
-      {photo.caption && (
+      {photo.caption && !showActions && (
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
           <p className="text-white text-sm truncate">{photo.caption}</p>
         </div>
