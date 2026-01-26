@@ -506,7 +506,7 @@ export default function GalleryPage() {
                     ) : croppedPreviewUrl || previewUrl ? (
                       <div className="relative">
                         <img 
-                          src={croppedPreviewUrl || previewUrl} 
+                          src={croppedPreviewUrl || previewUrl || undefined} 
                           alt="Preview" 
                           className="w-full h-48 object-cover rounded-lg border border-border"
                         />
