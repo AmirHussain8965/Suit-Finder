@@ -52,6 +52,9 @@ export const profiles = pgTable("profiles", {
   lastStdScreening: timestamp("last_std_screening"),
   // Privacy settings
   wardrobePublic: boolean("wardrobe_public").default(false), // Allow others to view wardrobe
+  // Online status
+  lastActiveAt: timestamp("last_active_at"),
+  isUnderDressed: boolean("is_under_dressed").default(false), // Invisible mode - don't show as online
 });
 
 export const profilesRelations = relations(profiles, ({ one }) => ({
