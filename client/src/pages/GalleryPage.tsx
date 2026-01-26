@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, Plus, Trash2, Star, Lock, Globe, Image as ImageIcon, Upload, Camera, GripVertical, Move } from "lucide-react";
+import { Loader2, Plus, Trash2, Star, Lock, Globe, Image as ImageIcon, Upload, Camera, GripVertical, Move, UserX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Photo } from "@shared/schema";
 import { useUpload } from "@/hooks/use-upload";
@@ -28,6 +28,7 @@ export default function GalleryPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [newPhotoCaption, setNewPhotoCaption] = useState("");
   const [newPhotoIsPublic, setNewPhotoIsPublic] = useState(true);
+  const [newPhotoIsFaceless, setNewPhotoIsFaceless] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [draggedPhotoId, setDraggedPhotoId] = useState<number | null>(null);
   const [dragOverPhotoId, setDragOverPhotoId] = useState<number | null>(null);
@@ -119,7 +120,7 @@ export default function GalleryPage() {
     }
 
     addPhoto(
-      { url: uploadResponse.objectPath, caption: newPhotoCaption, isPublic: newPhotoIsPublic, isProfilePhoto: false },
+      { url: uploadResponse.objectPath, caption: newPhotoCaption, isPublic: newPhotoIsPublic, isFaceless: newPhotoIsFaceless, isProfilePhoto: false },
       {
         onSuccess: () => {
           toast({ title: "Photo Added", description: "Your photo has been added to your gallery." });
@@ -127,6 +128,7 @@ export default function GalleryPage() {
           setPreviewUrl(null);
           setNewPhotoCaption("");
           setNewPhotoIsPublic(true);
+          setNewPhotoIsFaceless(false);
           setDialogOpen(false);
         },
         onError: () => {
@@ -226,6 +228,13 @@ export default function GalleryPage() {
         <div className="absolute top-2 left-8 bg-accent text-accent-foreground px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
           <Star className="h-3 w-3" />
           Profile
+        </div>
+      )}
+
+      {photo.isFaceless && (
+        <div className="absolute bottom-2 left-2 bg-muted/80 text-muted-foreground px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+          <UserX className="h-3 w-3" />
+          Faceless
         </div>
       )}
       
@@ -377,6 +386,17 @@ export default function GalleryPage() {
                       checked={newPhotoIsPublic}
                       onCheckedChange={setNewPhotoIsPublic}
                       data-testid="switch-photo-public"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Faceless Photo</Label>
+                      <p className="text-xs text-muted-foreground">This photo does not show your face</p>
+                    </div>
+                    <Switch 
+                      checked={newPhotoIsFaceless}
+                      onCheckedChange={setNewPhotoIsFaceless}
+                      data-testid="switch-photo-faceless"
                     />
                   </div>
                   {isUploading && (

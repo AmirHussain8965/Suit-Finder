@@ -84,6 +84,7 @@ export const photos = pgTable("photos", {
   url: text("url").notNull(),
   isPublic: boolean("is_public").default(true),
   isProfilePhoto: boolean("is_profile_photo").default(false),
+  isFaceless: boolean("is_faceless").default(false),
   caption: text("caption"),
   displayOrder: integer("display_order").default(0),
   positionX: integer("position_x").default(50),
