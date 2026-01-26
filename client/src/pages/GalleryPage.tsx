@@ -329,6 +329,19 @@ export default function GalleryPage() {
                 <DialogHeader>
                   <DialogTitle className="font-serif text-accent">Add New Photo</DialogTitle>
                 </DialogHeader>
+                {!user && (
+                  <div className="bg-destructive/10 border border-destructive text-destructive rounded-lg p-4 text-center">
+                    <p className="font-medium">Session Expired</p>
+                    <p className="text-sm mt-1">Please log in again to upload photos.</p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      onClick={() => window.location.href = "/auth"}
+                    >
+                      Go to Login
+                    </Button>
+                  </div>
+                )}
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
                     <Label>Select Photo</Label>
@@ -431,7 +444,7 @@ export default function GalleryPage() {
                   </DialogClose>
                   <Button 
                     onClick={handleAddPhoto} 
-                    disabled={isAdding || isUploading || !selectedFile}
+                    disabled={isAdding || isUploading || !selectedFile || !user}
                     className="bg-accent text-accent-foreground"
                     data-testid="button-submit-photo"
                   >
