@@ -152,6 +152,11 @@ export interface IStorage {
   // Reports
   createReport(reporterId: string, data: InsertReport): Promise<Report>;
   getReportsByUser(reportedUserId: string): Promise<Report[]>;
+  
+  // Online Status
+  updateLastActive(userId: string): Promise<void>;
+  setUnderDressed(userId: string, isUnderDressed: boolean): Promise<Profile>;
+  getOnlineUsers(minutesThreshold?: number): Promise<Profile[]>;
 }
 
 export interface AuctionWithDetails extends Auction {
@@ -1183,6 +1188,47 @@ export class DatabaseStorage implements IStorage {
       .from(reports)
       .where(eq(reports.reportedUserId, reportedUserId))
       .orderBy(desc(reports.createdAt));
+  }
+
+  // Online Status
+  async updateLastActive(userId: string): Promise<void> {
+    const existing = await this.getProfile(userId);
+    if (existing) {
+      await db
+        .update(profiles)
+        .set({ lastActiveAt: new Date() })
+        .where(eq(profiles.userId, userId));
+    }
+  }
+
+  async setUnderDressed(userId: string, isUnderDressed: boolean): Promise<Profile> {
+    const existing = await this.getProfile(userId);
+    if (!existing) {
+      throw new Error("Profile not found");
+    }
+    
+    const [updated] = await db
+      .update(profiles)
+      .set({ isUnderDressed })
+      .where(eq(profiles.userId, userId))
+      .returning();
+    return updated;
+  }
+
+  async getOnlineUsers(minutesThreshold: number = 15): Promise<Profile[]> {
+    const thresholdTime = new Date(Date.now() - minutesThreshold * 60 * 1000);
+    
+    return await db
+      .select()
+      .from(profiles)
+      .where(
+        and(
+          gte(profiles.lastActiveAt, thresholdTime),
+          eq(profiles.isUnderDressed, false),
+          eq(profiles.ageVerified, true)
+        )
+      )
+      .orderBy(desc(profiles.lastActiveAt));
   }
 }
 

@@ -1371,5 +1371,55 @@ export async function registerRoutes(
     }
   });
 
+  // === Online Status ===
+
+  // Get online users (who's on)
+  app.get("/api/whos-on", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const onlineUsers = await storage.getOnlineUsers(15); // Active in last 15 minutes
+      res.json(onlineUsers);
+    } catch (err: any) {
+      console.error("Error fetching online users:", err);
+      res.status(500).json({ message: "Failed to fetch online users" });
+    }
+  });
+
+  // Update activity (heartbeat)
+  app.post("/api/activity", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    try {
+      await storage.updateLastActive(userId);
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("Error updating activity:", err);
+      res.status(500).json({ message: "Failed to update activity" });
+    }
+  });
+
+  // Toggle under dressed mode
+  app.patch("/api/under-dressed", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims.sub;
+    try {
+      const { isUnderDressed } = req.body;
+      if (typeof isUnderDressed !== "boolean") {
+        return res.status(400).json({ message: "isUnderDressed must be a boolean" });
+      }
+      const profile = await storage.setUnderDressed(userId, isUnderDressed);
+      res.json(profile);
+    } catch (err: any) {
+      console.error("Error toggling under dressed mode:", err);
+      res.status(500).json({ message: "Failed to update visibility" });
+    }
+  });
+
   return httpServer;
 }
