@@ -155,4 +155,15 @@ export function registerAuthRoutes(app: Express): void {
       res.json({ message: "Logged out successfully" });
     });
   });
+
+  // Debug session state (temporary)
+  app.get("/api/auth/debug", (req, res) => {
+    res.json({
+      isAuthenticated: req.isAuthenticated(),
+      hasSession: !!req.session,
+      sessionID: req.sessionID,
+      cookies: req.headers.cookie || 'none',
+      user: req.user ? 'present' : 'missing',
+    });
+  });
 }
