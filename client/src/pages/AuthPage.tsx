@@ -161,6 +161,17 @@ export default function AuthPage() {
                     {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                     Sign In
                   </Button>
+                  <div className="text-center">
+                    <Button 
+                      type="button"
+                      variant="ghost" 
+                      className="text-sm text-muted-foreground hover:text-accent"
+                      onClick={() => setLocation("/forgot-password")}
+                      data-testid="link-forgot-password"
+                    >
+                      Forgot your password?
+                    </Button>
+                  </div>
                 </form>
               </TabsContent>
 

@@ -20,6 +20,8 @@ import FavoritesPage from "@/pages/FavoritesPage";
 import UserProfilePage from "@/pages/UserProfilePage";
 import AboutPage from "@/pages/AboutPage";
 import RefundPolicyPage from "@/pages/RefundPolicyPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import { AgeVerification } from "@/components/AgeVerification";
 import { Loader2 } from "lucide-react";
 
@@ -75,6 +77,14 @@ function Router() {
       
       <Route path="/auth">
         {user ? <Redirect to="/map" /> : <AuthPage />}
+      </Route>
+
+      <Route path="/forgot-password">
+        {user ? <Redirect to="/map" /> : <ForgotPasswordPage />}
+      </Route>
+
+      <Route path="/reset-password">
+        {user ? <Redirect to="/map" /> : <ResetPasswordPage />}
       </Route>
 
       <Route path="/about">
