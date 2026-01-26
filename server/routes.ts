@@ -1505,6 +1505,50 @@ export async function registerRoutes(
     }
   });
 
+  // Update member subscription (admin only)
+  app.patch("/api/admin/members/:userId/subscription", async (req, res) => {
+    try {
+      if (!await isOwner(req)) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { userId } = req.params;
+      const { tier, status } = req.body;
+      
+      // Validate tier
+      const validTiers = ['free', 'premium', 'platinum'];
+      if (!validTiers.includes(tier)) {
+        return res.status(400).json({ message: "Invalid tier. Must be: free, premium, or platinum" });
+      }
+      
+      // Set subscription fields based on tier
+      let subscriptionStatus = status || 'active';
+      let subscriptionPlan = tier === 'free' ? null : 'monthly';
+      let subscriptionEndDate = tier === 'free' ? null : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year from now
+      
+      if (tier === 'free') {
+        subscriptionStatus = null;
+        subscriptionPlan = null;
+        subscriptionEndDate = null;
+      }
+      
+      await db.execute(sql`
+        UPDATE users 
+        SET subscription_tier = ${tier === 'free' ? null : tier},
+            subscription_status = ${subscriptionStatus},
+            subscription_plan = ${subscriptionPlan},
+            subscription_end_date = ${subscriptionEndDate},
+            updated_at = NOW()
+        WHERE id = ${userId}
+      `);
+      
+      res.json({ success: true, message: `User subscription updated to ${tier}` });
+    } catch (err) {
+      console.error("Error updating member subscription:", err);
+      res.status(500).json({ message: "Failed to update subscription" });
+    }
+  });
+
   // Get admin stats (admin only)
   app.get("/api/admin/stats", async (req, res) => {
     try {

@@ -1,12 +1,15 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, DollarSign, UserCheck, Crown, TrendingUp, Shield, ShieldX } from "lucide-react";
 import { Link } from "wouter";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface AdminStats {
   totalUsers: number;
@@ -32,6 +35,8 @@ interface Member {
 }
 
 export default function AdminPage() {
+  const { toast } = useToast();
+  
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
     retry: false,
@@ -40,6 +45,27 @@ export default function AdminPage() {
   const { data: members, isLoading: membersLoading, error: membersError } = useQuery<Member[]>({
     queryKey: ["/api/admin/members"],
     retry: false,
+  });
+
+  const updateSubscriptionMutation = useMutation({
+    mutationFn: async ({ userId, tier }: { userId: string; tier: string }) => {
+      await apiRequest("PATCH", `/api/admin/members/${userId}/subscription`, { tier });
+    },
+    onSuccess: (_, { tier }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({
+        title: "Subscription Updated",
+        description: `Member tier changed to ${tier}`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Could not update subscription",
+        variant: "destructive",
+      });
+    },
   });
 
   const isAccessDenied = (statsError as any)?.message?.includes("403") || 
@@ -234,7 +260,20 @@ export default function AdminPage() {
                             )}
                           </TableCell>
                           <TableCell>
-                            {getTierBadge(member.subscription_tier, member.subscription_status)}
+                            <Select
+                              value={member.subscription_status === 'active' && member.subscription_tier ? member.subscription_tier : 'free'}
+                              onValueChange={(value) => updateSubscriptionMutation.mutate({ userId: member.id, tier: value })}
+                              disabled={updateSubscriptionMutation.isPending}
+                            >
+                              <SelectTrigger className="w-[130px]" data-testid={`select-tier-${member.id}`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="free">Free</SelectItem>
+                                <SelectItem value="premium">Premium</SelectItem>
+                                <SelectItem value="platinum">Platinum</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {member.created_at ? formatDate(member.created_at) : 'Unknown'}
