@@ -12,16 +12,31 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Plus, Calendar, MapPin, Users, Clock, Check, X, Eye, EyeOff, Trash2, ArrowLeft } from "lucide-react";
-import type { EventWithDetails } from "@shared/schema";
+import type { EventWithDetails, EventCategory } from "@shared/schema";
+import { eventCategories } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { format } from "date-fns";
 import { usePremiumFeature } from "@/hooks/use-subscription";
 import { PremiumGate } from "@/components/PremiumGate";
+import { useToast } from "@/hooks/use-toast";
+
+const categoryLabels: Record<EventCategory, string> = {
+  drinks_only: "Drinks Only",
+  orgy: "Group Play",
+  social_dinner: "Social Dinner",
+  pump_and_dump: "Pump & Dump",
+  bukkake: "Bukkake",
+  side_event: "Side Event",
+  messy_meetup: "Messy Meetup",
+  bondage: "Bondage",
+};
 
 export default function EventsPage() {
   const { user } = useAuth();
   const currentUserId = user?.id;
+  const { toast } = useToast();
   const { isPremium, isLoading: isPremiumLoading } = usePremiumFeature();
   const [selectedEvent, setSelectedEvent] = useState<EventWithDetails | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -34,6 +49,7 @@ export default function EventsPage() {
     location: "",
     maxAttendees: "",
     isPublic: true,
+    category: "social_dinner" as EventCategory,
   });
 
   const { data: events, isLoading } = useQuery<EventWithDetails[]>({
@@ -55,11 +71,14 @@ export default function EventsPage() {
         location: "",
         maxAttendees: "",
         isPublic: true,
+        category: "social_dinner",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      toast({ title: "Event Created", description: "Your event has been created successfully." });
     },
     onError: (err: Error) => {
       console.error("Failed to create event:", err);
+      toast({ title: "Error", description: err.message || "Failed to create event", variant: "destructive" });
     },
   });
 
@@ -125,7 +144,7 @@ export default function EventsPage() {
     createEventMutation.mutate({
       title: newEvent.title,
       description: newEvent.description || null,
-      category: "social_dinner",
+      category: newEvent.category,
       eventDate: dateTime.toISOString(),
       location: newEvent.location || null,
       maxAttendees: newEvent.maxAttendees ? parseInt(newEvent.maxAttendees) : null,
@@ -375,6 +394,25 @@ export default function EventsPage() {
                     onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
                     data-testid="input-event-title"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="category">Event Type</Label>
+                  <Select 
+                    value={newEvent.category} 
+                    onValueChange={(v) => setNewEvent({ ...newEvent, category: v as EventCategory })}
+                  >
+                    <SelectTrigger data-testid="select-event-category">
+                      <SelectValue placeholder="Select event type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {eventCategories.map((cat) => (
+                        <SelectItem key={cat} value={cat} data-testid={`option-category-${cat}`}>
+                          {categoryLabels[cat]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
