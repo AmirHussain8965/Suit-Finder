@@ -86,6 +86,8 @@ export const photos = pgTable("photos", {
   isProfilePhoto: boolean("is_profile_photo").default(false),
   caption: text("caption"),
   displayOrder: integer("display_order").default(0),
+  positionX: integer("position_x").default(50),
+  positionY: integer("position_y").default(50),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

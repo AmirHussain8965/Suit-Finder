@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Plus, Trash2, Star, Lock, Globe, Image as ImageIcon, Upload, Camera, GripVertical } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Loader2, Plus, Trash2, Star, Lock, Globe, Image as ImageIcon, Upload, Camera, GripVertical, Move } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Photo } from "@shared/schema";
 import { useUpload } from "@/hooks/use-upload";
@@ -30,6 +31,9 @@ export default function GalleryPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [draggedPhotoId, setDraggedPhotoId] = useState<number | null>(null);
   const [dragOverPhotoId, setDragOverPhotoId] = useState<number | null>(null);
+  const [positionEditPhoto, setPositionEditPhoto] = useState<Photo | null>(null);
+  const [tempPositionX, setTempPositionX] = useState(50);
+  const [tempPositionY, setTempPositionY] = useState(50);
 
   const publicPhotos = photos?.filter((p: Photo) => p.isPublic) || [];
   const privatePhotos = photos?.filter((p: Photo) => !p.isPublic) || [];
@@ -162,6 +166,25 @@ export default function GalleryPage() {
     );
   };
 
+  const openPositionEditor = (photo: Photo) => {
+    setPositionEditPhoto(photo);
+    setTempPositionX(photo.positionX ?? 50);
+    setTempPositionY(photo.positionY ?? 50);
+  };
+
+  const handleSavePosition = () => {
+    if (!positionEditPhoto) return;
+    updatePhoto(
+      { photoId: positionEditPhoto.id, updates: { positionX: tempPositionX, positionY: tempPositionY } },
+      {
+        onSuccess: () => {
+          toast({ title: "Position Saved", description: "Your photo position has been updated." });
+          setPositionEditPhoto(null);
+        },
+      }
+    );
+  };
+
   if (isLoading) {
     return (
       <Layout backgroundVariant="double-breasted">
@@ -193,6 +216,7 @@ export default function GalleryPage() {
         src={photo.url} 
         alt={photo.caption || "Gallery photo"} 
         className="w-full h-full object-cover pointer-events-none"
+        style={{ objectPosition: `${photo.positionX ?? 50}% ${photo.positionY ?? 50}%` }}
         onError={(e) => {
           (e.target as HTMLImageElement).src = "https://api.dicebear.com/7.x/shapes/svg?seed=" + photo.id;
         }}
@@ -226,6 +250,14 @@ export default function GalleryPage() {
               <Star className="h-4 w-4" />
             </Button>
           )}
+          <Button 
+            size="icon" 
+            variant="secondary"
+            onClick={() => openPositionEditor(photo)}
+            data-testid={`button-adjust-position-${photo.id}`}
+          >
+            <Move className="h-4 w-4" />
+          </Button>
           <Button 
             size="icon" 
             variant="secondary"
@@ -464,6 +496,77 @@ export default function GalleryPage() {
           </Card>
         </div>
       </div>
+
+      <Dialog open={!!positionEditPhoto} onOpenChange={(open) => !open && setPositionEditPhoto(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-accent">Adjust Photo Position</DialogTitle>
+          </DialogHeader>
+          {positionEditPhoto && (
+            <div className="space-y-6 py-4">
+              <div className="relative aspect-square rounded-lg overflow-hidden border border-border bg-muted">
+                <img
+                  src={positionEditPhoto.url}
+                  alt="Position preview"
+                  className="w-full h-full object-cover"
+                  style={{ objectPosition: `${tempPositionX}% ${tempPositionY}%` }}
+                />
+                <div className="absolute inset-0 pointer-events-none border-2 border-dashed border-accent/50 rounded-lg" />
+              </div>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <Label>Horizontal Position</Label>
+                    <span className="text-sm text-muted-foreground">{tempPositionX}%</span>
+                  </div>
+                  <Slider
+                    value={[tempPositionX]}
+                    onValueChange={([val]) => setTempPositionX(val)}
+                    min={0}
+                    max={100}
+                    step={1}
+                    data-testid="slider-position-x"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Left</span>
+                    <span>Center</span>
+                    <span>Right</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <Label>Vertical Position</Label>
+                    <span className="text-sm text-muted-foreground">{tempPositionY}%</span>
+                  </div>
+                  <Slider
+                    value={[tempPositionY]}
+                    onValueChange={([val]) => setTempPositionY(val)}
+                    min={0}
+                    max={100}
+                    step={1}
+                    data-testid="slider-position-y"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Top</span>
+                    <span>Center</span>
+                    <span>Bottom</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setPositionEditPhoto(null)} data-testid="button-cancel-position">
+              Cancel
+            </Button>
+            <Button className="bg-accent text-accent-foreground" onClick={handleSavePosition} data-testid="button-save-position">
+              Save Position
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
