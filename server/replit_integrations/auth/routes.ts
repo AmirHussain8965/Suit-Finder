@@ -138,6 +138,14 @@ export function registerAuthRoutes(app: Express): void {
         }
         
         const { password, ...safeUser } = user;
+        
+        // Owner always gets platinum tier
+        const ownerEmail = process.env.OWNER_EMAIL;
+        if (ownerEmail && user.email === ownerEmail) {
+          safeUser.subscriptionTier = 'platinum';
+          safeUser.subscriptionStatus = 'active';
+        }
+        
         res.json(safeUser);
       });
     } catch (error) {
