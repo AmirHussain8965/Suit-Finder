@@ -11,13 +11,21 @@ import { sql } from "drizzle-orm";
 import { db } from "./db";
 import { insertAuctionSchema, insertBidSchema } from "@shared/schema";
 
+// Check if email is in comma-separated list of platinum emails
+function isPlatinumEmail(email: string): boolean {
+  const ownerEmail = process.env.OWNER_EMAIL;
+  if (ownerEmail && email === ownerEmail) return true;
+  
+  const platinumEmails = process.env.PLATINUM_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || [];
+  return platinumEmails.includes(email.toLowerCase());
+}
+
 async function checkPlatinumTier(userId: string): Promise<boolean> {
   const user = await authStorage.getUser(userId);
   if (!user) return false;
   
-  // Owner email always has platinum tier access
-  const ownerEmail = process.env.OWNER_EMAIL;
-  if (ownerEmail && user.email === ownerEmail) {
+  // Check if user email grants automatic platinum access
+  if (isPlatinumEmail(user.email)) {
     return true;
   }
   
@@ -29,9 +37,8 @@ async function checkPremiumTier(userId: string): Promise<boolean> {
   const user = await authStorage.getUser(userId);
   if (!user) return false;
   
-  // Owner email always has at least premium tier access
-  const ownerEmail = process.env.OWNER_EMAIL;
-  if (ownerEmail && user.email === ownerEmail) {
+  // Check if user email grants automatic premium/platinum access
+  if (isPlatinumEmail(user.email)) {
     return true;
   }
   
@@ -705,11 +712,10 @@ export async function registerRoutes(
     const FREE_DAILY_MESSAGE_LIMIT = 5;
     const user = await authStorage.getUser(userId);
     
-    // Determine user tier
-    const ownerEmail = process.env.OWNER_EMAIL;
-    const isOwner = ownerEmail && user?.email === ownerEmail;
-    const hasActiveSubscription = isOwner || user?.subscriptionStatus === 'active' || user?.subscriptionStatus === 'trialing';
-    const tier = isOwner ? 'platinum' : (hasActiveSubscription ? (user?.subscriptionTier || 'premium') : 'free');
+    // Determine user tier using centralized platinum email check
+    const hasPlatinumEmail = user?.email ? isPlatinumEmail(user.email) : false;
+    const hasActiveSubscription = hasPlatinumEmail || user?.subscriptionStatus === 'active' || user?.subscriptionStatus === 'trialing';
+    const tier = hasPlatinumEmail ? 'platinum' : (hasActiveSubscription ? (user?.subscriptionTier || 'premium') : 'free');
     
     if (tier === 'free') {
       // Count messages sent today by this user
@@ -925,16 +931,16 @@ export async function registerRoutes(
     }
 
     // Check if this is the owner email - they always get platinum access
-    const ownerEmail = process.env.OWNER_EMAIL;
-    const isOwner = ownerEmail && user.email === ownerEmail;
+    // Check if email grants automatic platinum access
+    const hasPlatinumEmail = isPlatinumEmail(user.email);
     
-    const hasActiveSubscription = isOwner || user.subscriptionStatus === 'active' || 
+    const hasActiveSubscription = hasPlatinumEmail || user.subscriptionStatus === 'active' || 
                                   user.subscriptionStatus === 'trialing';
-    const tier = isOwner ? 'platinum' : (hasActiveSubscription ? (user.subscriptionTier || 'premium') : 'free');
+    const tier = hasPlatinumEmail ? 'platinum' : (hasActiveSubscription ? (user.subscriptionTier || 'premium') : 'free');
     const isPremium = hasActiveSubscription;
-    const isPlatinum = isOwner || (hasActiveSubscription && user.subscriptionTier === 'platinum');
+    const isPlatinum = hasPlatinumEmail || (hasActiveSubscription && user.subscriptionTier === 'platinum');
 
-    console.log(`[Subscription Check] User: ${user.email}, Status: ${user.subscriptionStatus}, Tier: ${user.subscriptionTier}, isPlatinum: ${isPlatinum}`);
+    console.log(`[Subscription Check] User: ${user.email}, Status: ${user.subscriptionStatus}, Tier: ${user.subscriptionTier}, isPlatinum: ${isPlatinum}, hasPlatinumEmail: ${hasPlatinumEmail}`);
 
     // Calculate message limits for free tier
     const FREE_DAILY_MESSAGE_LIMIT = 5;
