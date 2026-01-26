@@ -171,149 +171,210 @@ export default function SubscriptionPage() {
           </p>
         </div>
 
-        {subscription?.isPremium ? (
-          <Card className="border-accent">
-            <CardHeader>
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Crown className="h-5 w-5 text-accent" />
-                    {subscription.tier === "platinum" ? "The Krug Society" : "The Tailored Circle"}
-                  </CardTitle>
-                  <CardDescription>
-                    You have full access to all features
-                  </CardDescription>
-                </div>
-                <Badge variant="outline" className="bg-accent/10 text-accent border-accent">
-                  {subscription.tier === "platinum" ? "Platinum" : "Premium"} Member
-                </Badge>
+        {/* Always show tier selection grid */}
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* Free Tier */}
+          <Card className={`relative ${!subscription?.isPremium ? 'border-accent' : ''}`}>
+            {!subscription?.isPremium && (
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <Badge className="bg-accent text-accent-foreground">Current</Badge>
               </div>
+            )}
+            <CardHeader>
+              <CardTitle>The Gentleman's Pass</CardTitle>
+              <CardDescription>Free basic access</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Status: <span className="text-foreground capitalize">{subscription.status}</span>
-              </p>
-              {subscription.endDate && (
-                <p className="text-sm text-muted-foreground">
-                  Next billing: {new Date(subscription.endDate).toLocaleDateString()}
-                </p>
+              <div className="text-3xl font-bold">
+                Free
+              </div>
+              <ul className="text-sm text-muted-foreground space-y-2">
+                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Browse profiles</li>
+                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> View map</li>
+                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Create profile</li>
+              </ul>
+              {!subscription?.isPremium ? (
+                <Button 
+                  variant="outline"
+                  className="w-full"
+                  disabled
+                  data-testid="button-current-plan-free"
+                >
+                  Current Plan
+                </Button>
+              ) : (
+                <Button 
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleManageSubscription}
+                  disabled={isOpeningPortal}
+                  data-testid="button-downgrade-free"
+                >
+                  {isOpeningPortal ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Manage Plan
+                </Button>
               )}
-              <Button
-                onClick={handleManageSubscription}
-                disabled={isOpeningPortal}
-                variant="outline"
-                className="gap-2"
-                data-testid="button-manage-subscription"
-              >
-                {isOpeningPortal ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-                Manage Subscription
-              </Button>
             </CardContent>
           </Card>
-        ) : (
-          <>
-            <div className="grid md:grid-cols-3 gap-6">
-              {/* Free Tier */}
-              <Card className="relative">
-                <CardHeader>
-                  <CardTitle>The Gentleman's Pass</CardTitle>
-                  <CardDescription>Free basic access</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="text-3xl font-bold">
-                    Free
-                  </div>
-                  <ul className="text-sm text-muted-foreground space-y-2">
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Browse profiles</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> View map</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Create profile</li>
-                  </ul>
-                  <Button 
-                    variant="outline"
-                    className="w-full"
-                    disabled
-                    data-testid="button-current-plan"
-                  >
-                    Current Plan
-                  </Button>
-                </CardContent>
-              </Card>
 
-              {/* Tailored Circle */}
-              <Card className="relative">
-                <CardHeader>
-                  <CardTitle>{premiumProduct?.name || "The Tailored Circle"}</CardTitle>
-                  <CardDescription>Full messaging and events</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="text-3xl font-bold">
-                    ${premiumProduct?.prices.find(p => p.interval === 'month' && p.amount === 999)?.amount 
-                      ? "9.99" 
-                      : premiumProduct?.prices.find(p => p.interval === 'month')?.amount 
-                        ? (premiumProduct.prices.find(p => p.interval === 'month')!.amount / 100).toFixed(2)
-                        : "9.99"}
-                    <span className="text-base font-normal text-muted-foreground">/month</span>
-                  </div>
-                  <ul className="text-sm text-muted-foreground space-y-2">
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> All free features</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Unlimited messaging</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> View member galleries</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Create events</li>
-                  </ul>
-                  <Button 
-                    className="w-full bg-accent text-accent-foreground border-accent-border"
-                    onClick={() => {
-                      const monthlyPrice = premiumProduct?.prices.find(p => p.interval === 'month' && p.amount === 999);
-                      if (monthlyPrice && premiumProduct) handleSubscribe(monthlyPrice.id, premiumProduct.id);
-                    }}
-                    disabled={isCheckingOut !== null || !premiumProduct?.prices.find(p => p.interval === 'month' && p.amount === 999)}
-                    data-testid="button-subscribe-premium"
-                  >
-                    {isCheckingOut === premiumProduct?.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                    Join The Tailored Circle
-                  </Button>
-                </CardContent>
-              </Card>
+          {/* Tailored Circle */}
+          <Card className={`relative ${subscription?.isPremium && subscription.tier === 'premium' ? 'border-accent' : ''}`}>
+            {subscription?.isPremium && subscription.tier === 'premium' && (
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <Badge className="bg-accent text-accent-foreground">Current</Badge>
+              </div>
+            )}
+            <CardHeader>
+              <CardTitle>{premiumProduct?.name || "The Tailored Circle"}</CardTitle>
+              <CardDescription>Full messaging and events</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-3xl font-bold">
+                $9.99
+                <span className="text-base font-normal text-muted-foreground">/month</span>
+              </div>
+              <ul className="text-sm text-muted-foreground space-y-2">
+                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> All free features</li>
+                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Unlimited messaging</li>
+                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> View member galleries</li>
+                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Create events</li>
+              </ul>
+              {subscription?.isPremium && subscription.tier === 'premium' ? (
+                <Button 
+                  variant="outline"
+                  className="w-full"
+                  disabled
+                  data-testid="button-current-plan-premium"
+                >
+                  Current Plan
+                </Button>
+              ) : subscription?.isPremium && subscription.tier === 'platinum' ? (
+                <Button 
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleManageSubscription}
+                  disabled={isOpeningPortal}
+                  data-testid="button-change-to-premium"
+                >
+                  {isOpeningPortal ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Manage Plan
+                </Button>
+              ) : (
+                <Button 
+                  className="w-full bg-accent text-accent-foreground border-accent-border"
+                  onClick={() => {
+                    const monthlyPrice = premiumProduct?.prices.find(p => p.interval === 'month' && p.amount === 999);
+                    if (monthlyPrice && premiumProduct) handleSubscribe(monthlyPrice.id, premiumProduct.id);
+                  }}
+                  disabled={isCheckingOut !== null || !premiumProduct?.prices.find(p => p.interval === 'month' && p.amount === 999)}
+                  data-testid="button-subscribe-premium"
+                >
+                  {isCheckingOut === premiumProduct?.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Join The Tailored Circle
+                </Button>
+              )}
+            </CardContent>
+          </Card>
 
-              {/* Krug Society */}
-              <Card className="relative border-accent">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-accent text-accent-foreground">Best Value</Badge>
+          {/* Krug Society */}
+          <Card className={`relative ${subscription?.isPremium && subscription.tier === 'platinum' ? 'border-accent' : !subscription?.isPremium ? 'border-accent/50' : ''}`}>
+            {subscription?.isPremium && subscription.tier === 'platinum' ? (
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <Badge className="bg-accent text-accent-foreground">Current</Badge>
+              </div>
+            ) : (
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <Badge className="bg-accent text-accent-foreground">Best Value</Badge>
+              </div>
+            )}
+            <CardHeader>
+              <CardTitle>{platinumProduct?.name || "The Krug Society"}</CardTitle>
+              <CardDescription>All features plus wardrobe and auctions</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-3xl font-bold">
+                $12.99
+                <span className="text-base font-normal text-muted-foreground">/month</span>
+              </div>
+              <ul className="text-sm text-muted-foreground space-y-2">
+                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> All Tailored Circle features</li>
+                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Virtual wardrobe</li>
+                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Suit auctions access</li>
+                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Exclusive events</li>
+              </ul>
+              {subscription?.isPremium && subscription.tier === 'platinum' ? (
+                <Button 
+                  variant="outline"
+                  className="w-full"
+                  disabled
+                  data-testid="button-current-plan-platinum"
+                >
+                  Current Plan
+                </Button>
+              ) : subscription?.isPremium && subscription.tier === 'premium' ? (
+                <Button 
+                  className="w-full bg-accent text-accent-foreground border-accent-border"
+                  onClick={() => {
+                    const monthlyPrice = platinumProduct?.prices.find(p => p.interval === 'month' && p.amount === 1299);
+                    if (monthlyPrice && platinumProduct) handleSubscribe(monthlyPrice.id, platinumProduct.id);
+                  }}
+                  disabled={isCheckingOut !== null || !platinumProduct?.prices.find(p => p.interval === 'month' && p.amount === 1299)}
+                  data-testid="button-upgrade-platinum"
+                >
+                  {isCheckingOut === platinumProduct?.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Upgrade to Krug Society
+                </Button>
+              ) : (
+                <Button 
+                  className="w-full bg-accent text-accent-foreground border-accent-border"
+                  onClick={() => {
+                    const monthlyPrice = platinumProduct?.prices.find(p => p.interval === 'month' && p.amount === 1299);
+                    if (monthlyPrice && platinumProduct) handleSubscribe(monthlyPrice.id, platinumProduct.id);
+                  }}
+                  disabled={isCheckingOut !== null || !platinumProduct?.prices.find(p => p.interval === 'month' && p.amount === 1299)}
+                  data-testid="button-subscribe-platinum"
+                >
+                  {isCheckingOut === platinumProduct?.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Join The Krug Society
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Subscription management section for existing subscribers */}
+        {subscription?.isPremium && (
+          <Card className="border-muted">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">
+                    Current plan: <span className="text-foreground font-medium">{subscription.tier === "platinum" ? "The Krug Society" : "The Tailored Circle"}</span>
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Status: <span className="text-foreground capitalize">{subscription.status}</span>
+                    {subscription.endDate && (
+                      <> • Next billing: {new Date(subscription.endDate).toLocaleDateString()}</>
+                    )}
+                  </p>
                 </div>
-                <CardHeader>
-                  <CardTitle>{platinumProduct?.name || "The Krug Society"}</CardTitle>
-                  <CardDescription>All features plus wardrobe and auctions</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="text-3xl font-bold">
-                    ${platinumProduct?.prices.find(p => p.interval === 'month' && p.amount === 1299)?.amount 
-                      ? "12.99" 
-                      : platinumProduct?.prices.find(p => p.interval === 'month')?.amount 
-                        ? (platinumProduct.prices.find(p => p.interval === 'month')!.amount / 100).toFixed(2)
-                        : "12.99"}
-                    <span className="text-base font-normal text-muted-foreground">/month</span>
-                  </div>
-                  <ul className="text-sm text-muted-foreground space-y-2">
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> All Tailored Circle features</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Virtual wardrobe</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Suit auctions access</li>
-                    <li className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> Exclusive events</li>
-                  </ul>
-                  <Button 
-                    className="w-full bg-accent text-accent-foreground border-accent-border"
-                    onClick={() => {
-                      const monthlyPrice = platinumProduct?.prices.find(p => p.interval === 'month' && p.amount === 1299);
-                      if (monthlyPrice && platinumProduct) handleSubscribe(monthlyPrice.id, platinumProduct.id);
-                    }}
-                    disabled={isCheckingOut !== null || !platinumProduct?.prices.find(p => p.interval === 'month' && p.amount === 1299)}
-                    data-testid="button-subscribe-platinum"
-                  >
-                    {isCheckingOut === platinumProduct?.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                    Join The Krug Society
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
+                <Button
+                  onClick={handleManageSubscription}
+                  disabled={isOpeningPortal}
+                  variant="outline"
+                  className="gap-2"
+                  data-testid="button-manage-subscription"
+                >
+                  {isOpeningPortal ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+                  Manage Subscription
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {!subscription?.isPremium && (
+          <>
 
             <div className="grid md:grid-cols-2 gap-6">
               <Card>
