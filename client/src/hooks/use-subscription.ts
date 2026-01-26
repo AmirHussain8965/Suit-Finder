@@ -9,6 +9,8 @@ interface SubscriptionStatus {
   status: string | null;
   plan: string | null;
   endDate: string | null;
+  messagesRemaining: number | null;
+  messageLimit: number | null;
 }
 
 export function useSubscription() {
@@ -20,7 +22,7 @@ export function useSubscription() {
 }
 
 export function usePremiumFeature() {
-  const { data: subscription, isLoading } = useSubscription();
+  const { data: subscription, isLoading, refetch } = useSubscription();
   
   return {
     isPremium: subscription?.isPremium ?? false,
@@ -29,6 +31,9 @@ export function usePremiumFeature() {
     isLoading,
     status: subscription?.status,
     plan: subscription?.plan,
+    messagesRemaining: subscription?.messagesRemaining,
+    messageLimit: subscription?.messageLimit,
+    refetch,
   };
 }
 

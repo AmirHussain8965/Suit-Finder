@@ -701,6 +701,38 @@ export async function registerRoutes(
       return res.status(403).json({ message: "You are not a member of this conversation" });
     }
     
+    // Check free tier message limit (5 messages per day)
+    const FREE_DAILY_MESSAGE_LIMIT = 5;
+    const user = await authStorage.getUser(userId);
+    
+    // Determine user tier
+    const ownerEmail = process.env.OWNER_EMAIL;
+    const isOwner = ownerEmail && user?.email === ownerEmail;
+    const hasActiveSubscription = isOwner || user?.subscriptionStatus === 'active' || user?.subscriptionStatus === 'trialing';
+    const tier = isOwner ? 'platinum' : (hasActiveSubscription ? (user?.subscriptionTier || 'premium') : 'free');
+    
+    if (tier === 'free') {
+      // Count messages sent today by this user
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      
+      const messageCountResult = await db.execute(sql`
+        SELECT COUNT(*) as count FROM messages 
+        WHERE sender_id = ${userId} 
+        AND created_at >= ${todayStart}
+      `);
+      const messagesSentToday = parseInt(messageCountResult.rows[0]?.count as string || '0');
+      
+      if (messagesSentToday >= FREE_DAILY_MESSAGE_LIMIT) {
+        return res.status(403).json({ 
+          message: `Free members can send ${FREE_DAILY_MESSAGE_LIMIT} messages per day. Upgrade to send unlimited messages.`,
+          code: 'MESSAGE_LIMIT_REACHED',
+          limit: FREE_DAILY_MESSAGE_LIMIT,
+          used: messagesSentToday
+        });
+      }
+    }
+    
     try {
       const input = api.messages.send.input.parse(req.body);
       
@@ -904,6 +936,25 @@ export async function registerRoutes(
 
     console.log(`[Subscription Check] User: ${user.email}, Status: ${user.subscriptionStatus}, Tier: ${user.subscriptionTier}, isPlatinum: ${isPlatinum}`);
 
+    // Calculate message limits for free tier
+    const FREE_DAILY_MESSAGE_LIMIT = 5;
+    let messagesRemaining = null;
+    let messageLimit = null;
+    
+    if (tier === 'free') {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      
+      const messageCountResult = await db.execute(sql`
+        SELECT COUNT(*) as count FROM messages 
+        WHERE sender_id = ${userId} 
+        AND created_at >= ${todayStart}
+      `);
+      const messagesSentToday = parseInt(messageCountResult.rows[0]?.count as string || '0');
+      messagesRemaining = Math.max(0, FREE_DAILY_MESSAGE_LIMIT - messagesSentToday);
+      messageLimit = FREE_DAILY_MESSAGE_LIMIT;
+    }
+
     res.json({
       isPremium,
       isPlatinum,
@@ -911,6 +962,8 @@ export async function registerRoutes(
       status: isOwner ? 'active' : user.subscriptionStatus,
       plan: user.subscriptionPlan,
       endDate: user.subscriptionEndDate,
+      messagesRemaining,
+      messageLimit,
     });
   });
 

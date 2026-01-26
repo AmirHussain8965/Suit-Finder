@@ -19,12 +19,13 @@ import { Link } from "wouter";
 export default function MessagesPage() {
   const { user } = useAuth();
   const currentUserId = user?.id;
-  const { isPremium, isLoading: isPremiumLoading } = usePremiumFeature();
+  const { isPremium, isLoading: isPremiumLoading, tier, messagesRemaining, messageLimit, refetch: refetchSubscription } = usePremiumFeature();
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
+  const [messageLimitError, setMessageLimitError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: conversations, isLoading: isLoadingConversations } = useQuery<ConversationWithParticipants[]>({
@@ -41,12 +42,23 @@ export default function MessagesPage() {
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
-      return apiRequest("POST", `/api/conversations/${selectedConversationId}/messages`, { content });
+      const response = await apiRequest("POST", `/api/conversations/${selectedConversationId}/messages`, { content });
+      return response;
     },
     onSuccess: () => {
       setNewMessage("");
+      setMessageLimitError(null);
       queryClient.invalidateQueries({ queryKey: ["/api/conversations", selectedConversationId, "messages"] });
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      // Refetch subscription to update remaining message count
+      if (tier === 'free') {
+        refetchSubscription();
+      }
+    },
+    onError: (error: any) => {
+      if (error?.code === 'MESSAGE_LIMIT_REACHED' || error?.message?.includes('Free members can send')) {
+        setMessageLimitError(error.message || 'Daily message limit reached. Upgrade for unlimited messaging.');
+      }
     },
   });
 
@@ -135,16 +147,7 @@ export default function MessagesPage() {
     );
   }
 
-  if (!isPremium) {
-    return (
-      <Layout backgroundVariant="tuxedo">
-        <PremiumGate featureName="messaging">
-          <div />
-        </PremiumGate>
-      </Layout>
-    );
-  }
-
+  
   return (
     <Layout backgroundVariant="tuxedo">
       <div className="flex h-full w-full no-screenshot">
@@ -368,9 +371,25 @@ export default function MessagesPage() {
 
               {/* Input */}
               <div className="p-4 border-t border-border bg-card">
+                {/* Free tier message limit warning */}
+                {tier === 'free' && messagesRemaining !== null && messagesRemaining !== undefined && (
+                  <div className={`mb-2 text-xs p-2 rounded ${messagesRemaining === 0 ? 'bg-destructive/10 text-destructive' : 'bg-accent/10 text-muted-foreground'}`}>
+                    {messagesRemaining === 0 ? (
+                      <span>Daily limit reached. <Link href="/membership" className="underline text-accent">Upgrade</Link> for unlimited messaging.</span>
+                    ) : (
+                      <span>{messagesRemaining} of {messageLimit} free messages remaining today</span>
+                    )}
+                  </div>
+                )}
+                {/* Message limit error */}
+                {messageLimitError && (
+                  <div className="mb-2 text-xs p-2 rounded bg-destructive/10 text-destructive">
+                    {messageLimitError} <Link href="/membership" className="underline text-accent">Upgrade now</Link>
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Type a message..."
+                    placeholder={tier === 'free' && messagesRemaining === 0 ? "Upgrade to send more messages..." : "Type a message..."}
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={(e) => {
@@ -379,13 +398,13 @@ export default function MessagesPage() {
                         handleSendMessage();
                       }
                     }}
-                    disabled={sendMessageMutation.isPending}
+                    disabled={sendMessageMutation.isPending || (tier === 'free' && messagesRemaining === 0)}
                     data-testid="input-message"
                   />
                   <Button
                     size="icon"
                     onClick={handleSendMessage}
-                    disabled={!newMessage.trim() || sendMessageMutation.isPending}
+                    disabled={!newMessage.trim() || sendMessageMutation.isPending || (tier === 'free' && messagesRemaining === 0)}
                     data-testid="button-send"
                   >
                     {sendMessageMutation.isPending ? (
