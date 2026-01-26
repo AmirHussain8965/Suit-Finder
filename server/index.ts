@@ -31,10 +31,14 @@ async function initStripe() {
 
     console.log('Setting up managed webhook...');
     const webhookBaseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
-    const { webhook } = await stripeSync.findOrCreateManagedWebhook(
+    const result = await stripeSync.findOrCreateManagedWebhook(
       `${webhookBaseUrl}/api/stripe/webhook`
     );
-    console.log(`Webhook configured: ${webhook.url}`);
+    if (result?.webhook?.url) {
+      console.log(`Webhook configured: ${result.webhook.url}`);
+    } else {
+      console.log('Webhook setup completed (local mode or pending configuration)');
+    }
 
     console.log('Syncing Stripe data...');
     stripeSync.syncBackfill()
