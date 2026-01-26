@@ -27,16 +27,22 @@ export function getSession() {
     ttl: sessionTtl,
     tableName: "sessions",
   });
+  
+  const isProduction = process.env.NODE_ENV === 'production';
+  
   return session({
+    name: 'ff.sid',
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: {
       httpOnly: true,
-      secure: true,
+      secure: isProduction,
       sameSite: 'lax',
       maxAge: sessionTtl,
+      path: '/',
     },
   });
 }
