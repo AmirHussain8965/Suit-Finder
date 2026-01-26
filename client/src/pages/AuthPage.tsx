@@ -37,7 +37,7 @@ export default function AuthPage() {
       
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({ title: "Welcome back!" });
-      setLocation("/map");
+      setLocation("/profile");
     } catch (error: any) {
       toast({
         title: "Login failed",
