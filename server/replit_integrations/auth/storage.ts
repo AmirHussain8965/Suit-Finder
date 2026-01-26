@@ -30,6 +30,11 @@ export interface IAuthStorage {
     subscriptionEndDate?: Date | null;
   }): Promise<User | undefined>;
   updateUserStripeCustomerId(userId: string, stripeCustomerId: string): Promise<User | undefined>;
+  // Password reset methods
+  createPasswordResetToken(userId: string): Promise<string>;
+  getValidPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
+  deletePasswordResetToken(token: string): Promise<void>;
+  resetPasswordWithToken(token: string, newPassword: string): Promise<User | undefined>;
 }
 
 class AuthStorage implements IAuthStorage {
@@ -141,6 +146,55 @@ class AuthStorage implements IAuthStorage {
       })
       .where(eq(users.id, userId))
       .returning();
+    return user;
+  }
+
+  async createPasswordResetToken(userId: string): Promise<string> {
+    // Delete any existing tokens for this user
+    await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, userId));
+    
+    // Create a secure random token
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour expiry
+    
+    await db.insert(passwordResetTokens).values({
+      userId,
+      token,
+      expiresAt,
+    });
+    
+    return token;
+  }
+
+  async getValidPasswordResetToken(token: string): Promise<PasswordResetToken | undefined> {
+    const [resetToken] = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(
+        and(
+          eq(passwordResetTokens.token, token),
+          gt(passwordResetTokens.expiresAt, new Date())
+        )
+      );
+    return resetToken;
+  }
+
+  async deletePasswordResetToken(token: string): Promise<void> {
+    await db.delete(passwordResetTokens).where(eq(passwordResetTokens.token, token));
+  }
+
+  async resetPasswordWithToken(token: string, newPassword: string): Promise<User | undefined> {
+    const resetToken = await this.getValidPasswordResetToken(token);
+    if (!resetToken) {
+      return undefined;
+    }
+    
+    // Update the user's password
+    const user = await this.setPassword(resetToken.userId, newPassword);
+    
+    // Delete the used token
+    await this.deletePasswordResetToken(token);
+    
     return user;
   }
 }
