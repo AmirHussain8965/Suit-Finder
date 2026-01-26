@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -373,13 +373,11 @@ export default function EventsPage() {
             <p className="text-muted-foreground">Discover and join formal gatherings</p>
           </div>
           
+          <Button onClick={() => setIsCreating(true)} data-testid="button-create-event">
+            <Plus className="w-4 h-4 mr-2" />
+            Create Event
+          </Button>
           <Dialog open={isCreating} onOpenChange={setIsCreating}>
-            <DialogTrigger asChild>
-              <Button data-testid="button-create-event">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Event
-              </Button>
-            </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Create a New Event</DialogTitle>
