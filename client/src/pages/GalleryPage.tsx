@@ -336,7 +336,7 @@ export default function GalleryPage() {
 
       {showActions && (
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-2 pt-8 flex items-end justify-center gap-1">
-          {!photo.isProfilePhoto && (
+          {!photo.isProfilePhoto ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 
@@ -351,6 +351,21 @@ export default function GalleryPage() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Set as Profile Photo</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="icon" 
+                  variant="default"
+                  className="h-8 w-8 bg-accent text-accent-foreground"
+                  disabled
+                  data-testid={`button-current-profile-${photo.id}`}
+                >
+                  <Star className="h-4 w-4 fill-current" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Current Profile Photo - tap another photo's star to change</TooltipContent>
             </Tooltip>
           )}
           <Tooltip>
