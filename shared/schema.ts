@@ -103,7 +103,10 @@ export const insertPhotoSchema = createInsertSchema(photos).omit({
   userId: true,
   createdAt: true,
 }).extend({
-  url: z.string().url("Must be a valid URL").max(2000, "URL too long"),
+  url: z.string().max(2000, "URL too long").refine(
+    (val) => val.startsWith('/objects/') || val.startsWith('http://') || val.startsWith('https://'),
+    { message: "Must be a valid URL or object storage path" }
+  ),
 });
 
 export type Photo = typeof photos.$inferSelect;
