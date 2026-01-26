@@ -183,6 +183,9 @@ export default function GalleryPage() {
           toast({ title: "Position Saved", description: "Your photo position has been updated." });
           setPositionEditPhoto(null);
         },
+        onError: (err: Error) => {
+          toast({ title: "Error", description: err.message || "Failed to save position", variant: "destructive" });
+        },
       }
     );
   };
