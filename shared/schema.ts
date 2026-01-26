@@ -275,13 +275,14 @@ export type MessageWithSender = Message & {
 // Event categories
 export const eventCategories = [
   "drinks_only",
-  "orgy", 
-  "social_dinner",
-  "pump_and_dump",
-  "bukkake",
-  "side_event",
-  "messy_meetup",
-  "bondage"
+  "dinner_cocktails", 
+  "side_enjoyment",
+  "tying_more_than_tie",
+  "black_tie_meetup",
+  "sock_enjoyment",
+  "suit_as_rag",
+  "one_suit_for_all",
+  "group_meeting"
 ] as const;
 
 export type EventCategory = typeof eventCategories[number];

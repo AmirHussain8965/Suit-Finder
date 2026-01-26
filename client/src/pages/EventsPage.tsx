@@ -24,13 +24,14 @@ import { useToast } from "@/hooks/use-toast";
 
 const categoryLabels: Record<EventCategory, string> = {
   drinks_only: "Drinks Only",
-  orgy: "Group Play",
-  social_dinner: "Social Dinner",
-  pump_and_dump: "Pump & Dump",
-  bukkake: "Bukkake",
-  side_event: "Side Event",
-  messy_meetup: "Messy Meetup",
-  bondage: "Bondage",
+  dinner_cocktails: "Dinner and Cocktails",
+  side_enjoyment: "Side Enjoyment",
+  tying_more_than_tie: "Tying More Than a Tie",
+  black_tie_meetup: "Black Tie Meet Up",
+  sock_enjoyment: "Sock Enjoyment",
+  suit_as_rag: "Suit as Rag",
+  one_suit_for_all: "One Suit for All",
+  group_meeting: "Group Meeting",
 };
 
 export default function EventsPage() {
@@ -49,7 +50,7 @@ export default function EventsPage() {
     location: "",
     maxAttendees: "",
     isPublic: true,
-    category: "social_dinner" as EventCategory,
+    category: "drinks_only" as EventCategory,
   });
 
   const { data: events, isLoading } = useQuery<EventWithDetails[]>({
@@ -71,7 +72,7 @@ export default function EventsPage() {
         location: "",
         maxAttendees: "",
         isPublic: true,
-        category: "social_dinner",
+        category: "drinks_only",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
       toast({ title: "Event Created", description: "Your event has been created successfully." });
