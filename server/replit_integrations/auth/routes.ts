@@ -35,6 +35,14 @@ export function registerAuthRoutes(app: Express): void {
       
       // Don't return password hash
       const { password, ...safeUser } = user;
+      
+      // Owner always gets platinum tier
+      const ownerEmail = process.env.OWNER_EMAIL;
+      if (ownerEmail && user.email === ownerEmail) {
+        safeUser.subscriptionTier = 'platinum';
+        safeUser.subscriptionStatus = 'active';
+      }
+      
       res.json(safeUser);
     } catch (error) {
       console.error("Error fetching user:", error);
