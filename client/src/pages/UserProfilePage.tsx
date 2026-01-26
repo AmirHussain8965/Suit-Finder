@@ -160,7 +160,7 @@ export default function UserProfilePage() {
           <Card className="mb-6">
             <CardContent className="pt-6">
               <div className="flex flex-col items-center text-center">
-                <Avatar className="h-24 w-24 border-4 border-accent mb-4">
+                <Avatar className="h-24 w-24 border-4 border-accent mb-4 no-screenshot">
                   <AvatarImage src={profile.profileImageUrl || undefined} />
                   <AvatarFallback className="bg-primary/20 text-accent text-2xl font-serif">
                     {profile.displayName?.[0] || "?"}
@@ -354,14 +354,14 @@ export default function UserProfilePage() {
                   {wardrobe.slice(0, 6).map((item) => (
                     <div 
                       key={item.id} 
-                      className="bg-background rounded-lg border border-border p-3"
+                      className="bg-background rounded-lg border border-border p-3 no-screenshot"
                       data-testid={`wardrobe-item-${item.id}`}
                     >
                       {item.imageUrl && (
                         <img 
                           src={item.imageUrl} 
                           alt={item.name}
-                          className="w-full h-24 object-cover rounded-md mb-2"
+                          className="w-full h-24 object-cover rounded-md mb-2 pointer-events-none"
                         />
                       )}
                       <p className="text-sm font-medium truncate">{item.name}</p>

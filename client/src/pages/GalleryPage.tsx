@@ -174,7 +174,7 @@ export default function GalleryPage() {
 
   const PhotoCard = ({ photo, showActions = true, photoList, isDragging, isDragOver }: { photo: Photo; showActions?: boolean; photoList?: Photo[]; isDragging?: boolean; isDragOver?: boolean }) => (
     <div 
-      className={`relative group aspect-square rounded-lg overflow-hidden border bg-card transition-all cursor-grab active:cursor-grabbing ${
+      className={`relative group aspect-square rounded-lg overflow-hidden border bg-card transition-all cursor-grab active:cursor-grabbing no-screenshot ${
         isDragging ? 'opacity-50 scale-95' : ''
       } ${isDragOver ? 'border-accent border-2 scale-105' : 'border-border'}`}
       draggable={showActions}

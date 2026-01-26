@@ -99,7 +99,7 @@ export function MapMarker({ user, isSelf = false }: MapMarkerProps) {
     >
       <Popup className="bg-card text-foreground border-border">
         <div className="flex flex-col items-center gap-2 p-2 min-w-[150px]">
-          <Avatar className="h-12 w-12 border-2 border-accent">
+          <Avatar className="h-12 w-12 border-2 border-accent no-screenshot">
             <AvatarImage src={user.profileImageUrl || undefined} />
             <AvatarFallback>{user.displayName?.[0] || "?"}</AvatarFallback>
           </Avatar>
