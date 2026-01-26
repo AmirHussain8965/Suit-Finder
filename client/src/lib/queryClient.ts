@@ -3,6 +3,27 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
+    
+    // Try to extract message from JSON response
+    try {
+      const json = JSON.parse(text);
+      if (json.message) {
+        // Special handling for auth errors
+        if (res.status === 401) {
+          throw new Error("Your session has expired. Please log in again.");
+        }
+        throw new Error(json.message);
+      }
+    } catch (e) {
+      // If not JSON, use raw text
+      if (e instanceof Error && e.message !== text) {
+        throw e;
+      }
+    }
+    
+    if (res.status === 401) {
+      throw new Error("Your session has expired. Please log in again.");
+    }
     throw new Error(`${res.status}: ${text}`);
   }
 }
