@@ -13,6 +13,7 @@ import {
   auctions,
   bids,
   reports,
+  users,
   type Profile,
   type InsertProfile,
   type UpdateProfileRequest,
@@ -386,6 +387,15 @@ export class DatabaseStorage implements IStorage {
       .set({ isProfilePhoto: true })
       .where(and(eq(photos.id, photoId), eq(photos.userId, userId)))
       .returning();
+    
+    // Also update the user's profileImageUrl so it shows in the avatar
+    if (updated && updated.url) {
+      await db
+        .update(users)
+        .set({ profileImageUrl: updated.url })
+        .where(eq(users.id, userId));
+    }
+    
     return updated;
   }
 

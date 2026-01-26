@@ -78,6 +78,8 @@ export function useSetProfilePhoto() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.photos.myPhotos.path] });
+      // Also refresh user data so profile image updates in the avatar
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
     },
   });
 }
