@@ -902,6 +902,8 @@ export async function registerRoutes(
     const isPremium = hasActiveSubscription;
     const isPlatinum = isOwner || (hasActiveSubscription && user.subscriptionTier === 'platinum');
 
+    console.log(`[Subscription Check] User: ${user.email}, Status: ${user.subscriptionStatus}, Tier: ${user.subscriptionTier}, isPlatinum: ${isPlatinum}`);
+
     res.json({
       isPremium,
       isPlatinum,
