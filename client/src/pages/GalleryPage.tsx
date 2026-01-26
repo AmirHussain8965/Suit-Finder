@@ -12,8 +12,10 @@ import { Loader2, Plus, Trash2, Star, Lock, Globe, Image as ImageIcon, Upload, C
 import { useToast } from "@/hooks/use-toast";
 import type { Photo } from "@shared/schema";
 import { useUpload } from "@/hooks/use-upload";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function GalleryPage() {
+  const { user } = useAuth();
   const { data: photos, isLoading } = useMyPhotos();
   const { mutate: addPhoto, isPending: isAdding } = useAddPhoto();
   const { mutate: deletePhoto, isPending: isDeleting } = useDeletePhoto();
@@ -108,6 +110,11 @@ export default function GalleryPage() {
   };
 
   const handleAddPhoto = async () => {
+    if (!user) {
+      toast({ title: "Session Expired", description: "Please log in again to upload photos", variant: "destructive" });
+      return;
+    }
+    
     if (!selectedFile) {
       toast({ title: "Error", description: "Please select a photo to upload", variant: "destructive" });
       return;
