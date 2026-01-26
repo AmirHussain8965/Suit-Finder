@@ -440,14 +440,15 @@ export class DatabaseStorage implements IStorage {
         .from(conversationParticipants)
         .where(eq(conversationParticipants.conversationId, convo.id));
 
-      // Get display names for participants
+      // Get display names and profile images for participants
       const participantDetails = await Promise.all(
         participants.map(async (p) => {
           const profile = await this.getProfile(p.userId);
+          const profilePhoto = await this.getProfilePhoto(p.userId);
           return {
             userId: p.userId,
             displayName: profile?.displayName || null,
-            profileImageUrl: null,
+            profileImageUrl: profilePhoto?.url || null,
           };
         })
       );
@@ -523,10 +524,11 @@ export class DatabaseStorage implements IStorage {
     const participantDetails = await Promise.all(
       participants.map(async (p) => {
         const profile = await this.getProfile(p.userId);
+        const profilePhoto = await this.getProfilePhoto(p.userId);
         return {
           userId: p.userId,
           displayName: profile?.displayName || null,
-          profileImageUrl: null,
+          profileImageUrl: profilePhoto?.url || null,
         };
       })
     );
@@ -642,11 +644,12 @@ export class DatabaseStorage implements IStorage {
     const result: MessageWithSender[] = await Promise.all(
       msgs.map(async (msg) => {
         const profile = await this.getProfile(msg.senderId);
+        const profilePhoto = await this.getProfilePhoto(msg.senderId);
         return {
           ...msg,
           sender: {
             displayName: profile?.displayName || null,
-            profileImageUrl: null,
+            profileImageUrl: profilePhoto?.url || null,
           },
         };
       })

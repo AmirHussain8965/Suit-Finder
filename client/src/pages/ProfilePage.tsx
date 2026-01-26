@@ -162,7 +162,7 @@ export default function ProfilePage() {
           <Avatar className="h-32 w-32 border-4 border-card shadow-xl ring-2 ring-accent/50">
             <AvatarImage src={user?.profileImageUrl || undefined} />
             <AvatarFallback className="text-4xl bg-primary text-accent">
-              {user?.firstName?.[0]}
+              {profile?.displayName?.[0] || user?.firstName?.[0] || "?"}
             </AvatarFallback>
           </Avatar>
           
