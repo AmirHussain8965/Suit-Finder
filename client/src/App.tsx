@@ -23,7 +23,9 @@ import RefundPolicyPage from "@/pages/RefundPolicyPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
+import WhosOnPage from "@/pages/WhosOnPage";
 import { AgeVerification } from "@/components/AgeVerification";
+import { useActivityTracking } from "@/hooks/use-activity";
 import { Loader2 } from "lucide-react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -111,6 +113,10 @@ function Router() {
       <Route path="/favorites">
         <ProtectedRoute component={FavoritesPage} />
       </Route>
+
+      <Route path="/whos-on">
+        <ProtectedRoute component={WhosOnPage} />
+      </Route>
       
       <Route path="/gallery">
         <ProtectedRoute component={GalleryPage} />
@@ -157,10 +163,16 @@ function Router() {
   );
 }
 
+function ActivityTracker() {
+  useActivityTracking();
+  return null;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <ActivityTracker />
         <Toaster />
         <Router />
       </TooltipProvider>
