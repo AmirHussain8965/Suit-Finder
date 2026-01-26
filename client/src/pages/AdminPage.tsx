@@ -49,14 +49,16 @@ export default function AdminPage() {
 
   const updateSubscriptionMutation = useMutation({
     mutationFn: async ({ userId, tier }: { userId: string; tier: string }) => {
-      await apiRequest("PATCH", `/api/admin/members/${userId}/subscription`, { tier });
+      const response = await apiRequest("PATCH", `/api/admin/members/${userId}/subscription`, { tier });
+      return response.json();
     },
-    onSuccess: (_, { tier }) => {
+    onSuccess: (data, { tier }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      const userInfo = data?.user ? ` (${data.user.email}: ${data.user.subscription_tier})` : '';
       toast({
         title: "Subscription Updated",
-        description: `Member tier changed to ${tier}`,
+        description: `Member tier changed to ${tier}${userInfo}`,
       });
     },
     onError: (error: any) => {

@@ -1585,7 +1585,9 @@ export async function registerRoutes(
         subscriptionEndDate = null;
       }
       
-      await db.execute(sql`
+      console.log(`[Admin] Updating user ${userId} subscription to tier: ${tier}, status: ${subscriptionStatus}`);
+      
+      const result = await db.execute(sql`
         UPDATE users 
         SET subscription_tier = ${tier === 'free' ? null : tier},
             subscription_status = ${subscriptionStatus},
@@ -1593,9 +1595,20 @@ export async function registerRoutes(
             subscription_end_date = ${subscriptionEndDate},
             updated_at = NOW()
         WHERE id = ${userId}
+        RETURNING id, email, subscription_tier, subscription_status
       `);
       
-      res.json({ success: true, message: `User subscription updated to ${tier}` });
+      console.log(`[Admin] Update result:`, result.rows[0]);
+      
+      if (result.rowCount === 0) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json({ 
+        success: true, 
+        message: `User subscription updated to ${tier}`,
+        user: result.rows[0]
+      });
     } catch (err) {
       console.error("Error updating member subscription:", err);
       res.status(500).json({ message: "Failed to update subscription" });
