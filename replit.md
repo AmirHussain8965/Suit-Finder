@@ -120,8 +120,8 @@ Preferred communication style: Simple, everyday language.
 - **Provider**: Stripe payment processor
 - **Integration Type**: Stripe Checkout with Customer Portal
 - **Subscription Tiers**:
-  - The Tailored Circle (Premium): $19.99/month
-  - The Krug Society (Platinum): $49.99/month
+  - The Tailored Circle (Premium): $9.99/month or $99/year
+  - The Krug Society (Platinum): $12.99/month
 - **API Endpoints**:
   - GET /api/prices - List available products and prices
   - POST /api/checkout - Create Stripe Checkout session

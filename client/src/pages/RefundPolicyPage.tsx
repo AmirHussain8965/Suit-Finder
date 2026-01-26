@@ -89,8 +89,8 @@ export default function RefundPolicyPage() {
               This policy applies to all subscription tiers:
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-              <li><strong>The Tailored Circle (Premium):</strong> $19.99/month</li>
-              <li><strong>The Krug Society (Platinum):</strong> $49.99/month</li>
+              <li><strong>The Tailored Circle (Premium):</strong> $9.99/month or $99/year</li>
+              <li><strong>The Krug Society (Platinum):</strong> $12.99/month</li>
             </ul>
           </section>
 
