@@ -7,7 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Check, Crown, Loader2, MapPin, MessageSquare, Calendar, Users, Shield, Globe, Shirt, Gavel, ExternalLink } from "lucide-react";
+import { Check, Crown, Loader2, MapPin, MessageSquare, Calendar, Users, Shield, Globe, Shirt, Gavel, ExternalLink, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 type StripePrice = {
   id: string;
@@ -27,9 +28,21 @@ type StripeProduct = {
 
 export default function SubscriptionPage() {
   const { data: subscription, isLoading } = useSubscription();
+  const { logout } = useAuth();
   const { toast } = useToast();
   const [isCheckingOut, setIsCheckingOut] = useState<string | null>(null);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      window.location.href = "/";
+    } catch (error) {
+      setIsLoggingOut(false);
+    }
+  };
 
   const { data: pricesData } = useQuery<{ prices: StripeProduct[] }>({
     queryKey: ['/api/prices'],
@@ -308,6 +321,19 @@ export default function SubscriptionPage() {
             View Refund & Cancellation Policy
           </a>
         </p>
+
+        <div className="flex justify-center pt-4">
+          <Button
+            variant="outline"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="gap-2"
+            data-testid="button-logout"
+          >
+            {isLoggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+            Log Out
+          </Button>
+        </div>
       </div>
     </Layout>
   );
