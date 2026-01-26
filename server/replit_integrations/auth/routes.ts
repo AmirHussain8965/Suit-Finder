@@ -207,9 +207,11 @@ export function registerAuthRoutes(app: Express): void {
         : `http://localhost:5000`;
       const resetUrl = `${baseUrl}/reset-password?token=${token}`;
       
-      // Log the reset link (in production, you would send an email)
-      console.log(`Password reset requested for ${input.email}`);
-      console.log(`Reset URL: ${resetUrl}`);
+      // In development, log the reset link for testing
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`Password reset requested for ${input.email}`);
+        console.log(`Reset URL: ${resetUrl}`);
+      }
       
       res.json({ 
         message: "If an account exists with this email, you will receive a password reset link.",

@@ -155,24 +155,30 @@ class AuthStorage implements IAuthStorage {
     
     // Create a secure random token
     const token = crypto.randomBytes(32).toString('hex');
+    // Hash the token for storage (security best practice)
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour expiry
     
     await db.insert(passwordResetTokens).values({
       userId,
-      token,
+      token: hashedToken,
       expiresAt,
     });
     
+    // Return unhashed token to send to user
     return token;
   }
 
   async getValidPasswordResetToken(token: string): Promise<PasswordResetToken | undefined> {
+    // Hash the incoming token to compare with stored hash
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    
     const [resetToken] = await db
       .select()
       .from(passwordResetTokens)
       .where(
         and(
-          eq(passwordResetTokens.token, token),
+          eq(passwordResetTokens.token, hashedToken),
           gt(passwordResetTokens.expiresAt, new Date())
         )
       );
@@ -180,7 +186,9 @@ class AuthStorage implements IAuthStorage {
   }
 
   async deletePasswordResetToken(token: string): Promise<void> {
-    await db.delete(passwordResetTokens).where(eq(passwordResetTokens.token, token));
+    // Hash the token to match stored hash
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    await db.delete(passwordResetTokens).where(eq(passwordResetTokens.token, hashedToken));
   }
 
   async resetPasswordWithToken(token: string, newPassword: string): Promise<User | undefined> {

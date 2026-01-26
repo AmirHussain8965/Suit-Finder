@@ -99,7 +99,7 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
-      <SuitedSilhouettes variant="corner" />
+      <SuitedSilhouettes variant="tuxedo" />
       <Button 
         variant="ghost" 
         className="absolute top-4 left-4"

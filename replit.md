@@ -96,6 +96,13 @@ Preferred communication style: Simple, everyday language.
   - POST /api/auth/login - User login
   - POST /api/auth/logout - User logout
   - GET /api/auth/user - Get current user
+  - POST /api/auth/forgot-password - Request password reset (email required)
+  - GET /api/auth/validate-reset-token - Validate a reset token
+  - POST /api/auth/reset-password - Reset password with token
+- **Password Reset**: 
+  - Tokens are SHA-256 hashed before storage (security best practice)
+  - Tokens expire after 1 hour
+  - Single-use tokens (deleted after successful reset)
 - **Implementation**: Express sessions with Passport.js in `server/replit_integrations/auth/`
 
 ### Payment Processing (Stripe)
