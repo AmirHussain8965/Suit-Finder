@@ -43,6 +43,7 @@ export function useAuth() {
   });
 
   const logout = useCallback(() => {
+    console.log("Logout function called");
     logoutMutation.mutate();
   }, [logoutMutation]);
 
