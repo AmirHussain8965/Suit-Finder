@@ -88,8 +88,17 @@ export default function SubscriptionPage() {
     }
   };
 
-  const premiumProduct = pricesData?.prices?.find(p => p.tier === 'premium');
-  const platinumProduct = pricesData?.prices?.find(p => p.tier === 'platinum');
+  // Find the correct products by tier and price (The Tailored Circle should be $9.99, Krug Society should be $12.99)
+  const premiumProduct = pricesData?.prices?.find(p => 
+    p.tier === 'premium' && 
+    p.name === 'The Tailored Circle' && 
+    p.prices.some(pr => pr.amount === 999 && pr.interval === 'month')
+  );
+  const platinumProduct = pricesData?.prices?.find(p => 
+    p.tier === 'platinum' && 
+    p.name === 'The Krug Society' && 
+    p.prices.some(pr => pr.amount === 1299 && pr.interval === 'month')
+  );
 
   const premiumFeatures = [
     { icon: MessageSquare, title: "Unlimited Messaging", description: "Send and receive private messages" },
@@ -206,7 +215,11 @@ export default function SubscriptionPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-3xl font-bold">
-                    ${premiumProduct?.prices[0] ? (premiumProduct.prices[0].amount / 100).toFixed(2) : "19.99"}
+                    ${premiumProduct?.prices.find(p => p.interval === 'month' && p.amount === 999)?.amount 
+                      ? "9.99" 
+                      : premiumProduct?.prices.find(p => p.interval === 'month')?.amount 
+                        ? (premiumProduct.prices.find(p => p.interval === 'month')!.amount / 100).toFixed(2)
+                        : "9.99"}
                     <span className="text-base font-normal text-muted-foreground">/month</span>
                   </div>
                   <ul className="text-sm text-muted-foreground space-y-2">
@@ -217,8 +230,11 @@ export default function SubscriptionPage() {
                   </ul>
                   <Button 
                     className="w-full bg-accent text-accent-foreground border-accent-border"
-                    onClick={() => premiumProduct?.prices[0] && handleSubscribe(premiumProduct.prices[0].id, premiumProduct.id)}
-                    disabled={isCheckingOut !== null || !premiumProduct?.prices[0]}
+                    onClick={() => {
+                      const monthlyPrice = premiumProduct?.prices.find(p => p.interval === 'month' && p.amount === 999);
+                      if (monthlyPrice && premiumProduct) handleSubscribe(monthlyPrice.id, premiumProduct.id);
+                    }}
+                    disabled={isCheckingOut !== null || !premiumProduct?.prices.find(p => p.interval === 'month' && p.amount === 999)}
                     data-testid="button-subscribe-premium"
                   >
                     {isCheckingOut === premiumProduct?.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
@@ -238,7 +254,11 @@ export default function SubscriptionPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-3xl font-bold">
-                    ${platinumProduct?.prices[0] ? (platinumProduct.prices[0].amount / 100).toFixed(2) : "49.99"}
+                    ${platinumProduct?.prices.find(p => p.interval === 'month' && p.amount === 1299)?.amount 
+                      ? "12.99" 
+                      : platinumProduct?.prices.find(p => p.interval === 'month')?.amount 
+                        ? (platinumProduct.prices.find(p => p.interval === 'month')!.amount / 100).toFixed(2)
+                        : "12.99"}
                     <span className="text-base font-normal text-muted-foreground">/month</span>
                   </div>
                   <ul className="text-sm text-muted-foreground space-y-2">
@@ -249,8 +269,11 @@ export default function SubscriptionPage() {
                   </ul>
                   <Button 
                     className="w-full bg-accent text-accent-foreground border-accent-border"
-                    onClick={() => platinumProduct?.prices[0] && handleSubscribe(platinumProduct.prices[0].id, platinumProduct.id)}
-                    disabled={isCheckingOut !== null || !platinumProduct?.prices[0]}
+                    onClick={() => {
+                      const monthlyPrice = platinumProduct?.prices.find(p => p.interval === 'month' && p.amount === 1299);
+                      if (monthlyPrice && platinumProduct) handleSubscribe(monthlyPrice.id, platinumProduct.id);
+                    }}
+                    disabled={isCheckingOut !== null || !platinumProduct?.prices.find(p => p.interval === 'month' && p.amount === 1299)}
                     data-testid="button-subscribe-platinum"
                   >
                     {isCheckingOut === platinumProduct?.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
