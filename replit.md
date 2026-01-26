@@ -39,6 +39,7 @@ Preferred communication style: Simple, everyday language.
     - Style preferences (styleInterests, role, interestType, categories)
     - Physical description (hairColor, eyeColor, build, ethnicity, height, weight, bodyHair)
     - Health info (hivStatus, onPrep, lastStdScreening)
+    - Online status (lastActiveAt, isUnderDressed)
   - `photos` - User photo gallery with public/private visibility
   - `favorites` - User-to-user favorites relationship
   - `conversations` - Chat conversations (direct and group)
@@ -75,9 +76,19 @@ Preferred communication style: Simple, everyday language.
 - **Security**: Route-level membership verification on all message endpoints
 - **Screenshot Prevention**: CSS-based deterrent (user-select: none, print media hiding)
 
+### Who's On Feature
+- **Real-time Presence**: Shows members active in the last 15 minutes
+- **Activity Tracking**: Heartbeat updates every 60 seconds for logged-in users
+- **Under Dressed Mode**: Users can browse invisibly without appearing online
+- **API Endpoints**:
+  - GET /api/whos-on - Get online users (excludes those in Under Dressed mode)
+  - POST /api/activity - Update last active timestamp (heartbeat)
+  - PATCH /api/under-dressed - Toggle visibility mode
+
 ### Privacy Features
 - **Location Fuzzing**: User locations are randomized within ~500 feet (~150m) using geodesic calculation
 - **Photo Upload**: Direct file uploads via presigned URLs to object storage
+- **Under Dressed Mode**: Browse the app without appearing in the "Who's On" list
 
 ### Legal Compliance
 - **Age Verification**: Mandatory 21+ age gate with server-side validation
