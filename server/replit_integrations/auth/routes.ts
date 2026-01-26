@@ -13,6 +13,15 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Reset token is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
 // Register auth-specific routes
 export function registerAuthRoutes(app: Express): void {
   // Get current authenticated user
@@ -173,5 +182,86 @@ export function registerAuthRoutes(app: Express): void {
       cookies: req.headers.cookie || 'none',
       user: req.user ? 'present' : 'missing',
     });
+  });
+
+  // Request password reset
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const input = forgotPasswordSchema.parse(req.body);
+      
+      const user = await authStorage.getUserByEmail(input.email);
+      
+      // Always return success to prevent email enumeration attacks
+      if (!user) {
+        return res.json({ 
+          message: "If an account exists with this email, you will receive a password reset link." 
+        });
+      }
+      
+      // Create reset token
+      const token = await authStorage.createPasswordResetToken(user.id);
+      
+      // Build reset URL
+      const baseUrl = process.env.NODE_ENV === 'production' 
+        ? 'https://formalfindings.com' 
+        : `http://localhost:5000`;
+      const resetUrl = `${baseUrl}/reset-password?token=${token}`;
+      
+      // Log the reset link (in production, you would send an email)
+      console.log(`Password reset requested for ${input.email}`);
+      console.log(`Reset URL: ${resetUrl}`);
+      
+      res.json({ 
+        message: "If an account exists with this email, you will receive a password reset link.",
+        // In development, include the token for testing
+        ...(process.env.NODE_ENV !== 'production' && { resetUrl })
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
+      console.error("Forgot password error:", error);
+      res.status(500).json({ message: "Failed to process request" });
+    }
+  });
+
+  // Validate reset token
+  app.get("/api/auth/validate-reset-token", async (req, res) => {
+    try {
+      const token = req.query.token as string;
+      if (!token) {
+        return res.status(400).json({ valid: false, message: "Token is required" });
+      }
+      
+      const resetToken = await authStorage.getValidPasswordResetToken(token);
+      if (!resetToken) {
+        return res.json({ valid: false, message: "Invalid or expired reset link" });
+      }
+      
+      res.json({ valid: true });
+    } catch (error) {
+      console.error("Token validation error:", error);
+      res.status(500).json({ valid: false, message: "Failed to validate token" });
+    }
+  });
+
+  // Reset password with token
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const input = resetPasswordSchema.parse(req.body);
+      
+      const user = await authStorage.resetPasswordWithToken(input.token, input.password);
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired reset link" });
+      }
+      
+      res.json({ message: "Password reset successfully. You can now login with your new password." });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
+      console.error("Reset password error:", error);
+      res.status(500).json({ message: "Failed to reset password" });
+    }
   });
 }
