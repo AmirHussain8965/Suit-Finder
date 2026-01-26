@@ -1421,5 +1421,133 @@ export async function registerRoutes(
     }
   });
 
+  // ========== ADMIN ROUTES ==========
+  
+  // Helper to check if user is owner
+  async function isOwner(req: Request): Promise<boolean> {
+    if (!req.isAuthenticated()) return false;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
+    if (!userId) return false;
+    const user = await authStorage.getUser(userId);
+    if (!user) return false;
+    const ownerEmail = process.env.OWNER_EMAIL;
+    return !!(ownerEmail && user.email === ownerEmail);
+  }
+
+  // Get all members (admin only)
+  app.get("/api/admin/members", async (req, res) => {
+    try {
+      if (!await isOwner(req)) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const result = await db.execute(sql`
+        SELECT 
+          u.id, 
+          u.email, 
+          u.first_name, 
+          u.last_name, 
+          u.subscription_status, 
+          u.subscription_plan, 
+          u.subscription_tier,
+          u.created_at,
+          p.display_name,
+          p.age_verified
+        FROM users u
+        LEFT JOIN profiles p ON u.id = p.user_id
+        ORDER BY u.created_at DESC
+      `);
+      
+      res.json(result.rows);
+    } catch (err) {
+      console.error("Error fetching admin members:", err);
+      res.status(500).json({ message: "Failed to fetch members" });
+    }
+  });
+
+  // Get admin stats (admin only)
+  app.get("/api/admin/stats", async (req, res) => {
+    try {
+      if (!await isOwner(req)) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      // Get total users
+      const totalUsersResult = await db.execute(sql`SELECT COUNT(*) as count FROM users`);
+      const totalUsers = parseInt(totalUsersResult.rows[0]?.count as string || '0');
+      
+      // Get verified profiles
+      const verifiedResult = await db.execute(sql`SELECT COUNT(*) as count FROM profiles WHERE age_verified = true`);
+      const verifiedProfiles = parseInt(verifiedResult.rows[0]?.count as string || '0');
+      
+      // Get subscription counts by tier (include both active and trialing)
+      const premiumResult = await db.execute(sql`
+        SELECT COUNT(*) as count FROM users 
+        WHERE (subscription_status = 'active' OR subscription_status = 'trialing') 
+        AND subscription_tier = 'premium'
+      `);
+      const premiumSubscribers = parseInt(premiumResult.rows[0]?.count as string || '0');
+      
+      const platinumResult = await db.execute(sql`
+        SELECT COUNT(*) as count FROM users 
+        WHERE (subscription_status = 'active' OR subscription_status = 'trialing') 
+        AND subscription_tier = 'platinum'
+      `);
+      const platinumSubscribers = parseInt(platinumResult.rows[0]?.count as string || '0');
+      
+      // Get detailed subscription breakdown by plan for revenue calculation
+      const subscriptionDetails = await db.execute(sql`
+        SELECT subscription_tier, subscription_plan, COUNT(*) as count 
+        FROM users 
+        WHERE subscription_status = 'active' OR subscription_status = 'trialing'
+        GROUP BY subscription_tier, subscription_plan
+      `);
+      
+      // Calculate estimated monthly revenue
+      // Monthly prices: Premium: $9.99/month, Platinum: $12.99/month
+      // Yearly prices: Premium: $99/year (~$8.25/month), Platinum: $129/year (~$10.75/month)
+      let estimatedMonthlyRevenue = 0;
+      for (const row of subscriptionDetails.rows) {
+        const count = parseInt(row.count as string || '0');
+        const tier = row.subscription_tier as string;
+        const plan = row.subscription_plan as string;
+        
+        if (tier === 'premium') {
+          if (plan && plan.toLowerCase().includes('year')) {
+            estimatedMonthlyRevenue += count * (99 / 12); // Yearly premium
+          } else {
+            estimatedMonthlyRevenue += count * 9.99; // Monthly premium
+          }
+        } else if (tier === 'platinum') {
+          if (plan && plan.toLowerCase().includes('year')) {
+            estimatedMonthlyRevenue += count * (129 / 12); // Yearly platinum
+          } else {
+            estimatedMonthlyRevenue += count * 12.99; // Monthly platinum
+          }
+        }
+      }
+      
+      // Get new users this month
+      const newUsersResult = await db.execute(sql`
+        SELECT COUNT(*) as count FROM users 
+        WHERE created_at >= date_trunc('month', CURRENT_DATE)
+      `);
+      const newUsersThisMonth = parseInt(newUsersResult.rows[0]?.count as string || '0');
+      
+      res.json({
+        totalUsers,
+        verifiedProfiles,
+        premiumSubscribers,
+        platinumSubscribers,
+        totalPaidSubscribers: premiumSubscribers + platinumSubscribers,
+        estimatedMonthlyRevenue: Math.round(estimatedMonthlyRevenue * 100) / 100,
+        newUsersThisMonth
+      });
+    } catch (err) {
+      console.error("Error fetching admin stats:", err);
+      res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
   return httpServer;
 }

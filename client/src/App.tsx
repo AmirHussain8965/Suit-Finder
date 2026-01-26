@@ -24,6 +24,7 @@ import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
 import WhosOnPage from "@/pages/WhosOnPage";
+import AdminPage from "@/pages/AdminPage";
 import { AgeVerification } from "@/components/AgeVerification";
 import { useActivityTracking } from "@/hooks/use-activity";
 import { Loader2 } from "lucide-react";
@@ -156,6 +157,10 @@ function Router() {
 
       <Route path="/subscription/cancel">
         <ProtectedRoute component={SubscriptionPage} />
+      </Route>
+
+      <Route path="/admin">
+        <ProtectedRoute component={AdminPage} />
       </Route>
 
       <Route component={NotFound} />

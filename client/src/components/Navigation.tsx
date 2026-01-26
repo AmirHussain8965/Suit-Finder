@@ -1,13 +1,15 @@
 import { Link, useLocation } from "wouter";
-import { Map, User, Image, LogOut, MessageSquare, Calendar, Crown, Shirt, Gavel, Heart, Info, Users } from "lucide-react";
+import { Map, User, Image, LogOut, MessageSquare, Calendar, Crown, Shirt, Gavel, Heart, Info, Users, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { usePremiumFeature } from "@/hooks/use-subscription";
 
 export function Navigation() {
   const [location] = useLocation();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { isPremium } = usePremiumFeature();
+  
+  const isOwner = user?.email === import.meta.env.VITE_OWNER_EMAIL;
 
   const isActive = (path: string) => location === path;
 
@@ -67,6 +69,19 @@ export function Navigation() {
             <Info size={20} />
             <span className="font-medium">About</span>
           </Link>
+          {isOwner && (
+            <Link href="/admin" className={`
+              flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-300
+              ${isActive("/admin") 
+                ? "bg-primary/20 text-accent border-l-2 border-accent" 
+                : "text-amber-500 hover:bg-amber-500/10"}
+            `}
+            data-testid="link-nav-admin"
+            >
+              <Shield size={20} />
+              <span className="font-medium">Admin</span>
+            </Link>
+          )}
           <Link href="/subscription" className={`
             flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-300
             ${isPremium 

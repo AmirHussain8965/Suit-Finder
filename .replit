@@ -45,3 +45,4 @@ integrations = ["javascript_log_in_with_replit:2.0.0", "javascript_object_storag
 
 [userenv.shared]
 OWNER_EMAIL = "djkiokio88@gmail.com"
+VITE_OWNER_EMAIL = "djkiokio88@gmail.com"
