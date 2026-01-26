@@ -14,6 +14,13 @@ import { insertAuctionSchema, insertBidSchema } from "@shared/schema";
 async function checkPlatinumTier(userId: string): Promise<boolean> {
   const user = await authStorage.getUser(userId);
   if (!user) return false;
+  
+  // Owner email always has platinum tier access
+  const ownerEmail = process.env.OWNER_EMAIL;
+  if (ownerEmail && user.email === ownerEmail) {
+    return true;
+  }
+  
   const hasActiveSubscription = user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing';
   return hasActiveSubscription && user.subscriptionTier === 'platinum';
 }
@@ -21,6 +28,13 @@ async function checkPlatinumTier(userId: string): Promise<boolean> {
 async function checkPremiumTier(userId: string): Promise<boolean> {
   const user = await authStorage.getUser(userId);
   if (!user) return false;
+  
+  // Owner email always has at least premium tier access
+  const ownerEmail = process.env.OWNER_EMAIL;
+  if (ownerEmail && user.email === ownerEmail) {
+    return true;
+  }
+  
   return user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing';
 }
 
@@ -224,8 +238,7 @@ export async function registerRoutes(
 
     // Check if viewer is premium (health info only visible to premium members)
     const viewerId = (req.user as any).claims.sub;
-    const viewer = await authStorage.getUser(viewerId);
-    const viewerIsPremium = viewer?.subscriptionStatus === 'active' || viewer?.subscriptionStatus === 'trialing';
+    const viewerIsPremium = await checkPremiumTier(viewerId);
 
     res.json({
       userId: profile.userId,
@@ -841,17 +854,21 @@ export async function registerRoutes(
       return res.status(404).json({ message: "User not found" });
     }
 
-    const hasActiveSubscription = user.subscriptionStatus === 'active' || 
+    // Check if this is the owner email - they always get platinum access
+    const ownerEmail = process.env.OWNER_EMAIL;
+    const isOwner = ownerEmail && user.email === ownerEmail;
+    
+    const hasActiveSubscription = isOwner || user.subscriptionStatus === 'active' || 
                                   user.subscriptionStatus === 'trialing';
-    const tier = hasActiveSubscription ? (user.subscriptionTier || 'premium') : 'free';
+    const tier = isOwner ? 'platinum' : (hasActiveSubscription ? (user.subscriptionTier || 'premium') : 'free');
     const isPremium = hasActiveSubscription;
-    const isPlatinum = hasActiveSubscription && user.subscriptionTier === 'platinum';
+    const isPlatinum = isOwner || (hasActiveSubscription && user.subscriptionTier === 'platinum');
 
     res.json({
       isPremium,
       isPlatinum,
       tier,
-      status: user.subscriptionStatus,
+      status: isOwner ? 'active' : user.subscriptionStatus,
       plan: user.subscriptionPlan,
       endDate: user.subscriptionEndDate,
     });
