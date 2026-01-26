@@ -515,11 +515,7 @@ export default function EventsPage() {
           <Card className="p-8 text-center">
             <Calendar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">No Events Yet</h3>
-            <p className="text-muted-foreground mb-4">Be the first to create a formal gathering</p>
-            <Button onClick={() => setIsCreating(true)} data-testid="button-create-first-event">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Event
-            </Button>
+            <p className="text-muted-foreground">Be the first to create a formal gathering using the button above.</p>
           </Card>
         ) : (
           <div className="space-y-4">
