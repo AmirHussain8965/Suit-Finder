@@ -371,10 +371,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addPhoto(userId: string, data: InsertPhoto): Promise<Photo> {
+    // If this is a profile photo, first unset any existing profile photos
+    if (data.isProfilePhoto) {
+      await db
+        .update(photos)
+        .set({ isProfilePhoto: false })
+        .where(and(eq(photos.userId, userId), eq(photos.isProfilePhoto, true)));
+    }
+    
     const [photo] = await db
       .insert(photos)
       .values({ ...data, userId })
       .returning();
+    
+    // If this is a profile photo, update the user's profileImageUrl
+    if (data.isProfilePhoto && photo.url) {
+      await db
+        .update(users)
+        .set({ profileImageUrl: photo.url })
+        .where(eq(users.id, userId));
+    }
+    
     return photo;
   }
 
