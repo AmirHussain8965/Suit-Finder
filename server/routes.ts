@@ -875,17 +875,22 @@ export async function registerRoutes(
 
   // Admin broadcast message to all users
   app.post("/api/admin/broadcast", async (req, res) => {
+    console.log("[Broadcast] Starting broadcast request");
     if (!req.isAuthenticated()) {
+      console.log("[Broadcast] Not authenticated");
       return res.status(401).json({ message: "Unauthorized" });
     }
     const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const user = await authStorage.getUser(userId);
+    console.log("[Broadcast] User:", user?.email, "Owner email:", process.env.OWNER_EMAIL);
     
     // Check if user is admin
     const ownerEmail = process.env.OWNER_EMAIL;
     if (!ownerEmail || user?.email !== ownerEmail) {
+      console.log("[Broadcast] Admin access denied - user email doesn't match owner email");
       return res.status(403).json({ message: "Admin access required" });
     }
+    console.log("[Broadcast] Admin access granted");
     
     const { content } = req.body;
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
