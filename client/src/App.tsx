@@ -18,6 +18,7 @@ import AuctionPage from "@/pages/AuctionPage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import FavoritesPage from "@/pages/FavoritesPage";
 import UserProfilePage from "@/pages/UserProfilePage";
+import UserClosetPage from "@/pages/UserClosetPage";
 import AboutPage from "@/pages/AboutPage";
 import RefundPolicyPage from "@/pages/RefundPolicyPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
@@ -129,6 +130,10 @@ function Router() {
 
       <Route path="/profile/:userId">
         <ProtectedRoute component={UserProfilePage} />
+      </Route>
+
+      <Route path="/closet/:userId">
+        <ProtectedRoute component={UserClosetPage} />
       </Route>
 
       <Route path="/messages">

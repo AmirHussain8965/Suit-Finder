@@ -6,7 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Heart, MessageCircle, Loader2, ArrowLeft, User, Palette, Ruler, Activity, Shirt } from "lucide-react";
+import { Heart, MessageCircle, Loader2, ArrowLeft, User, Palette, Ruler, Activity, Shirt, DoorOpen } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { ReportDialog } from "@/components/ReportDialog";
 
@@ -198,6 +198,16 @@ export default function UserProfilePage() {
                     <MessageCircle className="mr-2 h-4 w-4" />
                     Message
                   </Button>
+                  {hasWardrobeAccess && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setLocation(`/closet/${userId}`)}
+                      data-testid="button-enter-closet"
+                    >
+                      <DoorOpen className="mr-2 h-4 w-4" />
+                      Enter My Closet
+                    </Button>
+                  )}
                   <ReportDialog 
                     userId={userId!} 
                     userName={profile?.displayName || undefined} 
