@@ -11,6 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { useProfile } from "@/hooks/use-profiles";
 import type { Profile } from "@shared/schema";
+import whosOnHero from "@/assets/images/whos-on-hero.png";
 
 export default function WhosOnPage() {
   const [, setLocation] = useLocation();
@@ -63,16 +64,25 @@ export default function WhosOnPage() {
       <SuitedSilhouettes />
       
       <main className="md:ml-64 pb-20 md:pb-0">
-        <div className="p-6 max-w-4xl mx-auto">
-          <div className="mb-8">
+        <div className="relative h-48 md:h-64 overflow-hidden">
+          <img 
+            src={whosOnHero} 
+            alt="Elegant gentleman in three-piece suit" 
+            className="w-full h-full object-cover object-top"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-6">
             <h1 className="text-3xl font-serif font-bold text-foreground flex items-center gap-2">
               <Users className="h-8 w-8 text-accent" />
               Who's On
             </h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground mt-1">
               See who's currently browsing the club
             </p>
           </div>
+        </div>
+
+        <div className="p-6 max-w-4xl mx-auto">
 
           <Card className="p-4 mb-6">
             <div className="flex items-center justify-between gap-4 flex-wrap">
