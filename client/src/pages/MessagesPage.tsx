@@ -228,16 +228,24 @@ export default function MessagesPage() {
                   data-testid={`conversation-${conversation.id}`}
                 >
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-primary/20 text-accent">
-                        {conversation.isGroup ? <Users className="h-5 w-5" /> : getInitials(getConversationName(conversation))}
-                      </AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback className="bg-primary/20 text-accent">
+                          {conversation.isGroup ? <Users className="h-5 w-5" /> : getInitials(getConversationName(conversation))}
+                        </AvatarFallback>
+                      </Avatar>
+                      {(conversation.unreadCount ?? 0) > 0 && (
+                        <span 
+                          className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full border-2 border-card"
+                          data-testid={`unread-dot-${conversation.id}`}
+                        />
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium truncate">{getConversationName(conversation)}</span>
+                        <span className={`font-medium truncate ${(conversation.unreadCount ?? 0) > 0 ? 'text-foreground' : ''}`}>{getConversationName(conversation)}</span>
                         {(conversation.unreadCount ?? 0) > 0 && (
-                          <span className="bg-accent text-accent-foreground text-xs px-2 py-0.5 rounded-full">
+                          <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full min-w-[20px] text-center">
                             {conversation.unreadCount}
                           </span>
                         )}
