@@ -27,6 +27,7 @@ import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
 import WhosOnPage from "@/pages/WhosOnPage";
 import AdminPage from "@/pages/AdminPage";
 import { AgeVerification } from "@/components/AgeVerification";
+import { ProfileCompletion } from "@/components/ProfileCompletion";
 import { useActivityTracking } from "@/hooks/use-activity";
 import { Loader2 } from "lucide-react";
 
@@ -58,6 +59,16 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   // If no profile or not age verified, show age verification
   if (!profile || !profile.ageVerified || profileError) {
     return <AgeVerification />;
+  }
+
+  // Check if profile is complete (has display name and profile photo)
+  const hasDisplayName = profile.displayName && 
+    profile.displayName.trim().length >= 2 && 
+    profile.displayName.toLowerCase() !== "unknown";
+  const hasProfilePhoto = user?.profileImageUrl;
+
+  if (!hasDisplayName || !hasProfilePhoto) {
+    return <ProfileCompletion />;
   }
 
   return <Component />;

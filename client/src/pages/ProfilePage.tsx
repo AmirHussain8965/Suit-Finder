@@ -19,8 +19,15 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
-// Schema for the form - allow partial updates
-const profileFormSchema = insertProfileSchema.partial();
+// Schema for the form - allow partial updates but require displayName
+const profileFormSchema = insertProfileSchema.partial().extend({
+  displayName: z.string()
+    .min(2, "Display name must be at least 2 characters")
+    .refine(
+      (val) => val.toLowerCase() !== "unknown" && val !== "?",
+      "Please choose a proper display name"
+    ),
+});
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 type WardrobeAccessUser = {
