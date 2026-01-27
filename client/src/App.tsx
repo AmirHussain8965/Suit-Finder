@@ -25,6 +25,7 @@ import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
 import WhosOnPage from "@/pages/WhosOnPage";
+import SuitSoireePage from "@/pages/SuitSoireePage";
 import AdminPage from "@/pages/AdminPage";
 import { AgeVerification } from "@/components/AgeVerification";
 import { ProfileCompletion } from "@/components/ProfileCompletion";
@@ -149,6 +150,10 @@ function Router() {
 
       <Route path="/messages">
         <ProtectedRoute component={MessagesPage} />
+      </Route>
+
+      <Route path="/soiree">
+        <ProtectedRoute component={SuitSoireePage} />
       </Route>
 
       <Route path="/events">
