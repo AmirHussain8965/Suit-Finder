@@ -566,3 +566,33 @@ export const insertReportSchema = createInsertSchema(reports).omit({
 
 export type Report = typeof reports.$inferSelect;
 export type InsertReport = z.infer<typeof insertReportSchema>;
+
+// Suit Soiree - Public Chat Room
+export const soireeMessages = pgTable("soiree_messages", {
+  id: serial("id").primaryKey(),
+  senderId: text("sender_id").notNull().references(() => authUsers.id),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const soireeMessagesRelations = relations(soireeMessages, ({ one }) => ({
+  sender: one(authUsers, {
+    fields: [soireeMessages.senderId],
+    references: [authUsers.id],
+  }),
+}));
+
+export const insertSoireeMessageSchema = createInsertSchema(soireeMessages).omit({
+  id: true,
+  senderId: true,
+  createdAt: true,
+});
+
+export type SoireeMessage = typeof soireeMessages.$inferSelect;
+export type InsertSoireeMessage = z.infer<typeof insertSoireeMessageSchema>;
+
+// Soiree message with sender info
+export interface SoireeMessageWithSender extends SoireeMessage {
+  senderName: string | null;
+  senderProfileImageUrl: string | null;
+}
