@@ -37,7 +37,7 @@ interface UserProfile {
 
 interface Photo {
   id: number;
-  imageUrl: string;
+  url: string;
   caption: string | null;
   isPublic: boolean;
   isProfilePhoto: boolean;
@@ -392,7 +392,7 @@ export default function UserProfilePage() {
                       data-testid={`photo-${photo.id}`}
                     >
                       <img 
-                        src={photo.imageUrl} 
+                        src={photo.url} 
                         alt={photo.caption || "Photo"}
                         className="w-full h-full object-contain bg-black/20"
                       />
@@ -436,7 +436,7 @@ export default function UserProfilePage() {
               <div className="flex flex-col">
                 <div className="relative max-h-[80vh] flex items-center justify-center p-4">
                   <img
-                    src={selectedPhoto.imageUrl}
+                    src={selectedPhoto.url}
                     alt={selectedPhoto.caption || "Photo"}
                     className="max-w-full max-h-[75vh] object-contain rounded-md no-screenshot"
                   />

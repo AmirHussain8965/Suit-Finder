@@ -21,9 +21,9 @@ export function ProfileCompletion() {
   const { uploadFile, isUploading, progress } = useUpload();
 
   const addPhotoMutation = useMutation({
-    mutationFn: async (data: { imageUrl: string }) => {
+    mutationFn: async (data: { url: string }) => {
       const response = await apiRequest("POST", "/api/photos", {
-        imageUrl: data.imageUrl,
+        url: data.url,
         isPublic: true,
         isProfilePhoto: true,
         caption: "",
@@ -91,7 +91,7 @@ export function ProfileCompletion() {
         return;
       }
       
-      await addPhotoMutation.mutateAsync({ imageUrl: uploadResponse.objectPath });
+      await addPhotoMutation.mutateAsync({ url: uploadResponse.objectPath });
       
       await updateProfileMutation.mutateAsync({ displayName: trimmedName });
     } catch (err: any) {
