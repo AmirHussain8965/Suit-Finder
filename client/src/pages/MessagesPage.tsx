@@ -23,9 +23,6 @@ export default function MessagesPage() {
   const currentUserId = user?.id;
   const { isPremium, isAdmin, isLoading: isPremiumLoading, tier, messagesRemaining, messageLimit, refetch: refetchSubscription } = usePremiumFeature();
   const { toast } = useToast();
-  
-  // Debug admin status
-  console.log('[MessagesPage] isAdmin:', isAdmin, 'isPremiumLoading:', isPremiumLoading, 'user:', user?.email);
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
@@ -107,15 +104,8 @@ export default function MessagesPage() {
 
   const broadcastMutation = useMutation({
     mutationFn: async (content: string) => {
-      console.log('[Broadcast] Sending broadcast with content:', content);
-      try {
-        const response = await apiRequest("POST", "/api/admin/broadcast", { content });
-        console.log('[Broadcast] Response received:', response);
-        return response.json();
-      } catch (err) {
-        console.error('[Broadcast] Error:', err);
-        throw err;
-      }
+      const response = await apiRequest("POST", "/api/admin/broadcast", { content });
+      return response.json();
     },
     onSuccess: (data: { message: string; sentCount: number }) => {
       setIsBroadcastOpen(false);
@@ -194,8 +184,8 @@ export default function MessagesPage() {
           <div className="p-4 border-b border-border flex items-center justify-between gap-2">
             <h2 className="text-lg font-serif font-semibold text-accent">Messages</h2>
             <div className="flex items-center gap-1">
-              {/* Admin broadcast button - temporarily always visible for testing */}
-              <Dialog open={isBroadcastOpen} onOpenChange={setIsBroadcastOpen}>
+              {isAdmin && (
+                <Dialog open={isBroadcastOpen} onOpenChange={setIsBroadcastOpen}>
                   <DialogTrigger asChild>
                     <Button 
                       size="sm" 
@@ -243,6 +233,7 @@ export default function MessagesPage() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+              )}
               <Dialog open={isCreatingGroup} onOpenChange={setIsCreatingGroup}>
                 <DialogTrigger asChild>
                   <Button size="icon" variant="ghost" data-testid="button-new-group">
