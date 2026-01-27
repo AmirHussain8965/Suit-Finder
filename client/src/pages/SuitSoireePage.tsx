@@ -7,18 +7,21 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Send, Wine, Users } from "lucide-react";
+import { Loader2, Send, Wine, Users, MessageCircle } from "lucide-react";
 import type { SoireeMessageWithSender, Profile } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 
 export default function SuitSoireePage() {
   const { user } = useAuth();
   const currentUserId = user?.id;
+  const [, setLocation] = useLocation();
   const [newMessage, setNewMessage] = useState("");
+  const [hoveredUserId, setHoveredUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const { data: messages, isLoading: isLoadingMessages } = useQuery<SoireeMessageWithSender[]>({
     queryKey: ["/api/soiree/messages"],
@@ -39,6 +42,23 @@ export default function SuitSoireePage() {
       queryClient.invalidateQueries({ queryKey: ["/api/soiree/messages"] });
     },
   });
+
+  const startDirectChatMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await apiRequest("POST", `/api/conversations/direct/${userId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      setLocation("/messages");
+    },
+  });
+
+  const handleMentionUser = (displayName: string | null) => {
+    const mention = `@${displayName || "Unknown"} `;
+    setNewMessage(prev => prev + mention);
+    inputRef.current?.focus();
+  };
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -149,6 +169,7 @@ export default function SuitSoireePage() {
                 className="flex gap-2"
               >
                 <Input
+                  ref={inputRef}
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -190,24 +211,44 @@ export default function SuitSoireePage() {
               {onlineUsers && onlineUsers.length > 0 ? (
                 <div className="space-y-1">
                   {onlineUsers.map((profile) => (
-                    <Link 
-                      key={profile.userId} 
-                      href={`/profile/${profile.userId}`}
-                      className="flex items-center gap-2 p-2 rounded-md hover-elevate cursor-pointer"
+                    <div 
+                      key={profile.userId}
+                      className="flex items-center gap-2 p-2 rounded-md hover-elevate cursor-pointer group relative"
+                      onMouseEnter={() => setHoveredUserId(profile.userId)}
+                      onMouseLeave={() => setHoveredUserId(null)}
+                      onClick={() => handleMentionUser(profile.displayName)}
                       data-testid={`online-user-${profile.userId}`}
                     >
-                      <div className="relative">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-accent/20 text-accent text-xs">
-                            {getInitials(profile.displayName)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-card" />
-                      </div>
-                      <span className="text-sm text-foreground truncate">
+                      <Link href={`/profile/${profile.userId}`} onClick={(e) => e.stopPropagation()}>
+                        <div className="relative">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="bg-accent/20 text-accent text-xs">
+                              {getInitials(profile.displayName)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-card" />
+                        </div>
+                      </Link>
+                      <span className="text-sm text-foreground truncate flex-1">
                         {profile.displayName || "Unknown"}
                       </span>
-                    </Link>
+                      {hoveredUserId === profile.userId && profile.userId !== currentUserId && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 absolute right-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startDirectChatMutation.mutate(profile.userId);
+                          }}
+                          disabled={startDirectChatMutation.isPending}
+                          data-testid={`button-private-chat-${profile.userId}`}
+                          title="Start private chat"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   ))}
                 </div>
               ) : (
