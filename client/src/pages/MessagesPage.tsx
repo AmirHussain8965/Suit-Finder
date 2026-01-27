@@ -107,8 +107,15 @@ export default function MessagesPage() {
 
   const broadcastMutation = useMutation({
     mutationFn: async (content: string) => {
-      const response = await apiRequest("POST", "/api/admin/broadcast", { content });
-      return response.json();
+      console.log('[Broadcast] Sending broadcast with content:', content);
+      try {
+        const response = await apiRequest("POST", "/api/admin/broadcast", { content });
+        console.log('[Broadcast] Response received:', response);
+        return response.json();
+      } catch (err) {
+        console.error('[Broadcast] Error:', err);
+        throw err;
+      }
     },
     onSuccess: (data: { message: string; sentCount: number }) => {
       setIsBroadcastOpen(false);
