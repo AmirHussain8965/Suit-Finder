@@ -23,6 +23,9 @@ export default function MessagesPage() {
   const currentUserId = user?.id;
   const { isPremium, isAdmin, isLoading: isPremiumLoading, tier, messagesRemaining, messageLimit, refetch: refetchSubscription } = usePremiumFeature();
   const { toast } = useToast();
+  
+  // Debug admin status
+  console.log('[MessagesPage] isAdmin:', isAdmin, 'isPremiumLoading:', isPremiumLoading, 'user:', user?.email);
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
