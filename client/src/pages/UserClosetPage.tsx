@@ -6,7 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, ArrowLeft, Shirt, Briefcase, Watch, Gem, Package, Star, Lock } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Loader2, ArrowLeft, Shirt, Briefcase, Watch, Gem, Package, Star, Lock, X, ZoomIn } from "lucide-react";
 import type { WardrobeItem } from "@shared/schema";
 import { wardrobeCategories } from "@shared/schema";
 import { useState } from "react";
@@ -62,6 +63,7 @@ export default function UserClosetPage() {
   const [, setLocation] = useLocation();
   const userId = params?.userId;
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<WardrobeItem | null>(null);
 
   const { data: profile, isLoading: profileLoading } = useQuery<UserProfile>({
     queryKey: [`/api/profiles/${userId}`],
@@ -181,20 +183,27 @@ export default function UserClosetPage() {
               <p className="text-muted-foreground">This member hasn't added any items yet.</p>
             </div>
           ) : (
+            <>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {filteredItems.map((item) => (
                 <Card 
                   key={item.id} 
-                  className="overflow-hidden group hover-elevate no-screenshot"
+                  className="overflow-hidden group hover-elevate no-screenshot cursor-pointer"
                   data-testid={`closet-item-${item.id}`}
+                  onClick={() => item.imageUrl && setSelectedItem(item)}
                 >
                   <div className="relative aspect-square bg-muted">
                     {item.imageUrl ? (
-                      <img 
-                        src={item.imageUrl} 
-                        alt={item.name}
-                        className="w-full h-full object-cover pointer-events-none"
-                      />
+                      <>
+                        <img 
+                          src={item.imageUrl} 
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                          <ZoomIn className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </>
                     ) : (
                       (() => {
                         const IconComponent = getCategoryIcon(item.category);
@@ -225,6 +234,53 @@ export default function UserClosetPage() {
                 </Card>
               ))}
             </div>
+
+            <Dialog open={!!selectedItem} onOpenChange={(open) => !open && setSelectedItem(null)}>
+              <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black/95 border-border">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-4 right-4 z-10 text-white hover:bg-white/20"
+                  onClick={() => setSelectedItem(null)}
+                  data-testid="button-close-lightbox"
+                >
+                  <X className="h-6 w-6" />
+                </Button>
+                {selectedItem && (
+                  <div className="flex flex-col">
+                    <div className="relative max-h-[70vh] flex items-center justify-center p-4">
+                      <img
+                        src={selectedItem.imageUrl || ""}
+                        alt={selectedItem.name}
+                        className="max-w-full max-h-[65vh] object-contain rounded-md no-screenshot"
+                      />
+                    </div>
+                    <div className="p-6 bg-card border-t border-border">
+                      <h2 className="text-xl font-serif font-bold text-foreground mb-2">
+                        {selectedItem.name}
+                      </h2>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        <Badge variant="secondary">
+                          {categoryLabels[selectedItem.category] || selectedItem.category}
+                        </Badge>
+                        {selectedItem.brand && (
+                          <Badge variant="outline">{selectedItem.brand}</Badge>
+                        )}
+                        {selectedItem.color && (
+                          <Badge variant="outline">{selectedItem.color}</Badge>
+                        )}
+                      </div>
+                      {selectedItem.description && (
+                        <p className="text-muted-foreground text-sm">
+                          {selectedItem.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+            </>
           )}
         </div>
       </div>
