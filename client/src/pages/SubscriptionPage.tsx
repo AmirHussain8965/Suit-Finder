@@ -84,16 +84,17 @@ export default function SubscriptionPage() {
     setIsCheckingOut(productId);
     try {
       const res = await apiRequest("POST", "/api/checkout", { priceId });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || data.message || "Failed to create checkout");
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL received");
       }
-      const { url } = await res.json();
-      window.location.href = url;
     } catch (error: any) {
+      console.error("Checkout error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to start checkout",
         variant: "destructive",
       });
       setIsCheckingOut(null);
@@ -162,6 +163,11 @@ export default function SubscriptionPage() {
     p.name === 'The Krug Society' && 
     p.prices.some(pr => pr.amount === 1299 && pr.interval === 'month')
   );
+
+  // Debug logging for prices
+  console.log("[Subscription] Prices data:", pricesData?.prices);
+  console.log("[Subscription] Premium product found:", premiumProduct);
+  console.log("[Subscription] Platinum product found:", platinumProduct);
 
   const premiumFeatures = [
     { icon: MessageSquare, title: "Unlimited Messaging", description: "Send and receive private messages" },

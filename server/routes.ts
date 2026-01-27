@@ -1124,11 +1124,14 @@ export async function registerRoutes(
 
   // Create Stripe checkout session
   app.post("/api/checkout", async (req, res) => {
+    console.log("[Checkout] Request received, authenticated:", req.isAuthenticated());
     if (!req.isAuthenticated()) {
+      console.log("[Checkout] Unauthorized - user not authenticated");
       return res.status(401).json({ message: "Unauthorized" });
     }
     const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const { priceId } = req.body;
+    console.log("[Checkout] User:", userId, "Price:", priceId);
 
     if (!priceId) {
       return res.status(400).json({ error: "Price ID required" });
