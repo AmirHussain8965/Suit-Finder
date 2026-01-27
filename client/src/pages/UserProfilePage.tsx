@@ -76,6 +76,13 @@ export default function UserProfilePage() {
 
   const hasWardrobeAccess = wardrobeAccessStatus?.hasAccess === true;
 
+  const { data: photoAccessStatus } = useQuery<{ hasAccess: boolean }>({
+    queryKey: [`/api/photo-access/check/${userId}`],
+    enabled: !!userId,
+  });
+
+  const hasPrivatePhotoAccess = photoAccessStatus?.hasAccess === true;
+
   const { data: wardrobe = [] } = useQuery<WardrobeItem[]>({
     queryKey: [`/api/profiles/${userId}/wardrobe`],
     enabled: !!userId && hasWardrobeAccess,
@@ -85,6 +92,9 @@ export default function UserProfilePage() {
     queryKey: [`/api/photos/user/${userId}`],
     enabled: !!userId && isPremium,
   });
+  
+  const publicPhotos = photos.filter(p => p.isPublic);
+  const privatePhotos = photos.filter(p => !p.isPublic);
 
   const isFavorited = favorites.some((f) => f.userId === userId);
 
@@ -375,6 +385,12 @@ export default function UserProfilePage() {
                 <CardTitle className="flex items-center gap-2 text-lg font-serif">
                   <Camera className="h-5 w-5 text-accent" />
                   Photos
+                  {hasPrivatePhotoAccess && privatePhotos.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      <Lock className="h-3 w-3 mr-1" />
+                      Private Access
+                    </Badge>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -391,6 +407,14 @@ export default function UserProfilePage() {
                         alt={photo.caption || "Photo"}
                         className="w-full h-full object-cover"
                       />
+                      {!photo.isPublic && (
+                        <div className="absolute top-2 left-2">
+                          <Badge variant="secondary" className="bg-black/70 text-white border-0">
+                            <Lock className="h-3 w-3 mr-1" />
+                            Private
+                          </Badge>
+                        </div>
+                      )}
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                         <ZoomIn className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>

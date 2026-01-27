@@ -540,13 +540,18 @@ export async function registerRoutes(
     res.json(photos);
   });
 
-  // Get another user's photos (public only)
+  // Get another user's photos (public, or include private if access granted)
   app.get(api.photos.userPhotos.path, async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
+    const viewerId = (req.user as any).claims?.sub || (req.user as any).userId;
     const targetUserId = req.params.userId;
-    const photos = await storage.getPhotos(targetUserId, false);
+    
+    // Check if viewer has access to private photos
+    const hasPrivateAccess = viewerId === targetUserId || await storage.hasPhotoAccess(targetUserId, viewerId);
+    
+    const photos = await storage.getPhotos(targetUserId, hasPrivateAccess);
     res.json(photos);
   });
 
