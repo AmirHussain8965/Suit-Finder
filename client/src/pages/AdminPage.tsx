@@ -132,20 +132,19 @@ export default function AdminPage() {
     <Layout backgroundVariant="double-breasted">
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto p-6 md:p-12 space-y-8">
-          <div className="flex items-center justify-between border-b border-border pb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-6">
             <div className="flex items-center gap-3">
               <Shield className="h-8 w-8 text-accent" />
               <div>
-                <h1 className="text-3xl font-serif font-bold text-foreground">Admin Dashboard</h1>
-                <p className="text-muted-foreground mt-1">
+                <h1 className="text-2xl sm:text-3xl font-serif font-bold text-foreground">Admin Dashboard</h1>
+                <p className="text-muted-foreground mt-1 text-sm">
                   View member activity and revenue statistics
                 </p>
               </div>
             </div>
             <Button 
-              variant="outline" 
+              variant="destructive" 
               onClick={() => logout()}
-              className="text-muted-foreground hover:text-red-400 hover:border-red-400"
               data-testid="button-admin-logout"
             >
               <LogOut className="h-4 w-4 mr-2" />
