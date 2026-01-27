@@ -666,6 +666,21 @@ export async function registerRoutes(
     res.json(conversations);
   });
 
+  // Get total unread message count
+  app.get("/api/messages/unread-count", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
+    try {
+      const count = await storage.getTotalUnreadCount(userId);
+      res.json({ count });
+    } catch (err: any) {
+      console.error("Error getting unread count:", err);
+      res.status(500).json({ message: "Failed to get unread count" });
+    }
+  });
+
   // Get a single conversation
   app.get(api.conversations.get.path, async (req, res) => {
     if (!req.isAuthenticated()) {

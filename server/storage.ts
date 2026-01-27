@@ -177,6 +177,9 @@ export interface IStorage {
   getSoireeMessages(limit?: number, offset?: number): Promise<SoireeMessageWithSender[]>;
   sendSoireeMessage(senderId: string, content: string): Promise<SoireeMessage>;
   deleteSoireeMessage(messageId: number, senderId: string): Promise<void>;
+  
+  // Unread Messages
+  getTotalUnreadCount(userId: string): Promise<number>;
 }
 
 export interface AuctionWithDetails extends Auction {
@@ -1427,6 +1430,50 @@ export class DatabaseStorage implements IStorage {
         eq(soireeMessages.senderId, senderId)
       )
     );
+  }
+
+  async getTotalUnreadCount(userId: string): Promise<number> {
+    // Get all conversations the user is part of
+    const userConversations = await db
+      .select({
+        conversationId: conversationParticipants.conversationId,
+        lastReadAt: conversationParticipants.lastReadAt,
+      })
+      .from(conversationParticipants)
+      .where(eq(conversationParticipants.userId, userId));
+
+    let totalUnread = 0;
+    
+    for (const convo of userConversations) {
+      if (convo.lastReadAt) {
+        // Count messages after last read that weren't sent by this user
+        const unread = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(messages)
+          .where(
+            and(
+              eq(messages.conversationId, convo.conversationId),
+              sql`${messages.createdAt} > ${convo.lastReadAt}`,
+              sql`${messages.senderId} != ${userId}`
+            )
+          );
+        totalUnread += Number(unread[0]?.count || 0);
+      } else {
+        // If never read, count all messages not sent by this user
+        const unread = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(messages)
+          .where(
+            and(
+              eq(messages.conversationId, convo.conversationId),
+              sql`${messages.senderId} != ${userId}`
+            )
+          );
+        totalUnread += Number(unread[0]?.count || 0);
+      }
+    }
+    
+    return totalUnread;
   }
 }
 
