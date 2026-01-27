@@ -46,6 +46,9 @@ export function Navigation() {
     { href: "/auctions", icon: Gavel, label: "Auctions" },
     { href: "/gallery", icon: Image, label: "Gallery" },
     { href: "/profile", icon: User, label: "Profile" },
+    { href: "/subscription", icon: Crown, label: isPremium ? "Membership" : "Upgrade" },
+    { href: "/about", icon: Info, label: "About" },
+    ...(isAdmin ? [{ href: "/admin", icon: Shield, label: "Admin" }] : []),
   ];
 
   // Secondary items shown in "More" menu on mobile
@@ -58,6 +61,7 @@ export function Navigation() {
     { href: "/gallery", icon: Image, label: "Gallery" },
     { href: "/subscription", icon: Crown, label: isPremium ? "Membership" : "Upgrade" },
     { href: "/about", icon: Info, label: "About" },
+    ...(isAdmin ? [{ href: "/admin", icon: Shield, label: "Admin" }] : []),
   ];
 
   const handleDeleteAccount = async () => {
@@ -115,40 +119,7 @@ export function Navigation() {
           ))}
         </div>
 
-        <div className="p-4 border-t border-border space-y-2">
-          <Link href="/about" className={`
-            flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-300
-            ${isActive("/about") 
-              ? "bg-primary/20 text-accent border-l-2 border-accent" 
-              : "text-muted-foreground hover:bg-white/5 hover:text-foreground"}
-          `}
-          data-testid="link-nav-about"
-          >
-            <Info size={20} />
-            <span className="font-medium">About</span>
-          </Link>
-          {isAdmin && (
-            <Link href="/admin" className={`
-              flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-300
-              ${isActive("/admin") 
-                ? "bg-primary/20 text-accent border-l-2 border-accent" 
-                : "text-amber-500 hover:bg-amber-500/10"}
-            `}
-            data-testid="link-nav-admin"
-            >
-              <Shield size={20} />
-              <span className="font-medium">Admin</span>
-            </Link>
-          )}
-          <Link href="/subscription" className={`
-            flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-300
-            ${isPremium 
-              ? "bg-accent/10 text-accent" 
-              : "text-accent hover:bg-accent/10"}
-          `}>
-            <Crown size={20} />
-            <span className="font-medium">{isPremium ? "Member" : "Upgrade"}</span>
-          </Link>
+        <div className="p-4 border-t border-border">
           <Button 
             variant="ghost" 
             className="w-full justify-start text-muted-foreground hover:text-red-400 hover:bg-red-400/10"
@@ -219,18 +190,6 @@ export function Navigation() {
                 <span className="font-medium">{item.label}</span>
               </Link>
             ))}
-            
-            {isAdmin && (
-              <Link
-                href="/admin"
-                onClick={() => setMoreMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-md transition-all text-amber-500 hover:bg-amber-500/10"
-                data-testid="link-mobile-more-admin"
-              >
-                <Shield size={20} />
-                <span className="font-medium">Admin</span>
-              </Link>
-            )}
 
             <div className="border-t border-border my-2" />
             
