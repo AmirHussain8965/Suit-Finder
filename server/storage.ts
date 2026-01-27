@@ -1331,17 +1331,23 @@ export class DatabaseStorage implements IStorage {
       )
       .orderBy(desc(profiles.lastActiveAt));
     
-    // Fetch profile photos for these users
+    // Fetch profile photos and user data for these users
     const userIds = onlineProfiles.map(p => p.userId);
-    const profilePhotos = userIds.length > 0
-      ? await db.select().from(photos).where(and(inArray(photos.userId, userIds), eq(photos.isProfilePhoto, true)))
-      : [];
+    const [profilePhotos, userRecords] = await Promise.all([
+      userIds.length > 0
+        ? db.select().from(photos).where(and(inArray(photos.userId, userIds), eq(photos.isProfilePhoto, true)))
+        : Promise.resolve([]),
+      userIds.length > 0
+        ? db.select().from(users).where(inArray(users.id, userIds))
+        : Promise.resolve([]),
+    ]);
     
     return onlineProfiles.map(profile => {
       const photo = profilePhotos.find(p => p.userId === profile.userId);
+      const userRecord = userRecords.find(u => u.id === profile.userId);
       return {
         ...profile,
-        profileImageUrl: photo?.url || null,
+        profileImageUrl: photo?.url || userRecord?.profileImageUrl || null,
       };
     });
   }
