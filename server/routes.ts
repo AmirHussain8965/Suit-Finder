@@ -63,7 +63,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const profile = await storage.getProfile(userId);
     
     // It's okay to return null/404 if profile doesn't exist yet, frontend should handle "Create Profile" UI
@@ -78,7 +78,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     
     try {
       const input = api.profiles.update.input.parse(req.body);
@@ -100,7 +100,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
 
     try {
       const input = api.profiles.location.input.parse(req.body);
@@ -128,7 +128,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
 
     try {
       const input = api.profiles.verifyAge.input.parse(req.body);
@@ -244,7 +244,7 @@ export async function registerRoutes(
     const profilePhoto = await storage.getProfilePhoto(targetUserId);
 
     // Check if viewer is premium (health info only visible to premium members)
-    const viewerId = (req.user as any).claims.sub;
+    const viewerId = (req.user as any).claims?.sub || (req.user as any).userId;
     const viewerIsPremium = await checkPremiumTier(viewerId);
 
     res.json({
@@ -278,7 +278,7 @@ export async function registerRoutes(
       return res.status(401).json({ message: "Unauthorized" });
     }
     
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     
     try {
       // Delete all user data from the database
@@ -312,7 +312,7 @@ export async function registerRoutes(
       return res.status(401).json({ message: "Unauthorized" });
     }
     
-    const viewerId = (req.user as any).claims.sub;
+    const viewerId = (req.user as any).claims?.sub || (req.user as any).userId;
     const targetUserId = req.params.userId;
     
     // Check if user is viewing their own wardrobe
@@ -343,7 +343,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const accessList = await storage.getWardrobeAccessList(userId);
     
     // Enrich with user info
@@ -366,7 +366,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const ownerId = (req.user as any).claims.sub;
+    const ownerId = (req.user as any).claims?.sub || (req.user as any).userId;
     const grantedUserId = req.params.userId;
     
     // Can't grant access to yourself
@@ -388,7 +388,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const ownerId = (req.user as any).claims.sub;
+    const ownerId = (req.user as any).claims?.sub || (req.user as any).userId;
     const grantedUserId = req.params.userId;
     
     await storage.revokeWardrobeAccess(ownerId, grantedUserId);
@@ -399,7 +399,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const viewerId = (req.user as any).claims.sub;
+    const viewerId = (req.user as any).claims?.sub || (req.user as any).userId;
     const ownerId = req.params.userId;
     
     // Owner always has access to their own wardrobe
@@ -417,7 +417,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const userFavorites = await storage.getFavorites(userId);
     
     const enrichedFavorites = await Promise.all(userFavorites.map(async (f) => {
@@ -437,7 +437,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const targetUserId = req.params.targetUserId;
     
     await storage.addFavorite(userId, targetUserId);
@@ -448,7 +448,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const targetUserId = req.params.targetUserId;
     
     await storage.removeFavorite(userId, targetUserId);
@@ -462,7 +462,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const photos = await storage.getPhotos(userId, true);
     res.json(photos);
   });
@@ -482,7 +482,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     
     try {
       const input = api.photos.add.input.parse(req.body);
@@ -505,7 +505,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const photoId = parseInt(req.params.photoId);
     
     try {
@@ -532,7 +532,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const photoId = parseInt(req.params.photoId);
     
     await storage.deletePhoto(userId, photoId);
@@ -544,7 +544,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const photoId = parseInt(req.params.photoId);
     
     const photo = await storage.setProfilePhoto(userId, photoId);
@@ -559,7 +559,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     
     try {
       const input = api.photos.reorder.input.parse(req.body);
@@ -583,7 +583,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const conversations = await storage.getConversations(userId);
     res.json(conversations);
   });
@@ -593,7 +593,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const conversationId = parseInt(req.params.conversationId);
     
     const conversation = await storage.getConversation(conversationId, userId);
@@ -608,7 +608,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     
     try {
       const input = api.conversations.create.input.parse(req.body);
@@ -635,7 +635,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const otherUserId = req.params.userId;
     
     const conversation = await storage.getOrCreateDirectConversation(userId, otherUserId);
@@ -647,7 +647,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const conversationId = parseInt(req.params.conversationId);
     
     // Verify user is a participant before allowing them to add others
@@ -678,7 +678,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const conversationId = parseInt(req.params.conversationId);
     
     // Verify user is a member of this conversation
@@ -699,7 +699,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const conversationId = parseInt(req.params.conversationId);
     
     // Verify user is a member of this conversation
@@ -764,7 +764,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const conversationId = parseInt(req.params.conversationId);
     
     // Verify user is a member of this conversation
@@ -784,7 +784,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const events = await storage.getEvents(userId);
     res.json(events);
   });
@@ -794,7 +794,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const eventId = parseInt(req.params.eventId);
     
     const event = await storage.getEvent(eventId, userId);
@@ -809,7 +809,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const hostId = req.params.userId;
     
     const events = await storage.getHostEvents(hostId, userId);
@@ -821,7 +821,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     
     try {
       const input = api.events.create.input.parse(req.body);
@@ -846,7 +846,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const eventId = parseInt(req.params.eventId);
     
     const attendee = await storage.joinEvent(eventId, userId);
@@ -858,7 +858,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const eventId = parseInt(req.params.eventId);
     
     await storage.leaveEvent(eventId, userId);
@@ -870,7 +870,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const hostId = (req.user as any).claims.sub;
+    const hostId = (req.user as any).claims?.sub || (req.user as any).userId;
     const eventId = parseInt(req.params.eventId);
     const targetUserId = req.params.userId;
     
@@ -891,7 +891,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const eventId = parseInt(req.params.eventId);
     
     try {
@@ -923,7 +923,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     
     const user = await authStorage.getUser(userId);
     if (!user) {
@@ -1031,7 +1031,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const { priceId } = req.body;
 
     if (!priceId) {
@@ -1079,7 +1079,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
 
     try {
       const user = await authStorage.getUser(userId);
@@ -1109,7 +1109,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const isPlatinum = await checkPlatinumTier(userId);
     if (!isPlatinum) {
       return res.status(403).json({ message: "Platinum subscription required" });
@@ -1130,7 +1130,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const isPlatinum = await checkPlatinumTier(userId);
     if (!isPlatinum) {
       return res.status(403).json({ message: "Platinum subscription required" });
@@ -1154,7 +1154,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const isPlatinum = await checkPlatinumTier(userId);
     if (!isPlatinum) {
       return res.status(403).json({ message: "Platinum subscription required" });
@@ -1175,7 +1175,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const isPlatinum = await checkPlatinumTier(userId);
     if (!isPlatinum) {
       return res.status(403).json({ message: "Platinum subscription required" });
@@ -1201,7 +1201,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const isPlatinum = await checkPlatinumTier(userId);
     if (!isPlatinum) {
       return res.status(403).json({ message: "Platinum subscription required" });
@@ -1226,7 +1226,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     const isPlatinum = await checkPlatinumTier(userId);
     if (!isPlatinum) {
       return res.status(403).json({ message: "Platinum subscription required" });
@@ -1252,7 +1252,7 @@ export async function registerRoutes(
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const userId = (req.user as any).claims.sub;
+      const userId = (req.user as any).claims?.sub || (req.user as any).userId;
       const isPlatinum = await checkPlatinumTier(userId);
       if (!isPlatinum) {
         return res.status(403).json({ message: "Platinum subscription required" });
@@ -1270,7 +1270,7 @@ export async function registerRoutes(
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const userId = (req.user as any).claims.sub;
+      const userId = (req.user as any).claims?.sub || (req.user as any).userId;
       const isPlatinum = await checkPlatinumTier(userId);
       if (!isPlatinum) {
         return res.status(403).json({ message: "Platinum subscription required" });
@@ -1306,7 +1306,7 @@ export async function registerRoutes(
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const userId = (req.user as any).claims.sub;
+      const userId = (req.user as any).claims?.sub || (req.user as any).userId;
       const isPlatinum = await checkPlatinumTier(userId);
       if (!isPlatinum) {
         return res.status(403).json({ message: "Platinum subscription required" });
@@ -1328,7 +1328,7 @@ export async function registerRoutes(
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const userId = (req.user as any).claims.sub;
+      const userId = (req.user as any).claims?.sub || (req.user as any).userId;
       const isPlatinum = await checkPlatinumTier(userId);
       if (!isPlatinum) {
         return res.status(403).json({ message: "Platinum subscription required" });
@@ -1350,7 +1350,7 @@ export async function registerRoutes(
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const userId = (req.user as any).claims.sub;
+      const userId = (req.user as any).claims?.sub || (req.user as any).userId;
       const isPlatinum = await checkPlatinumTier(userId);
       if (!isPlatinum) {
         return res.status(403).json({ message: "Platinum subscription required" });
@@ -1372,7 +1372,7 @@ export async function registerRoutes(
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const userId = (req.user as any).claims.sub;
+      const userId = (req.user as any).claims?.sub || (req.user as any).userId;
       const isPlatinum = await checkPlatinumTier(userId);
       if (!isPlatinum) {
         return res.status(403).json({ message: "Platinum subscription required" });
@@ -1394,7 +1394,7 @@ export async function registerRoutes(
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const userId = (req.user as any).claims.sub;
+      const userId = (req.user as any).claims?.sub || (req.user as any).userId;
       const isPlatinum = await checkPlatinumTier(userId);
       if (!isPlatinum) {
         return res.status(403).json({ message: "Platinum subscription required" });
@@ -1420,7 +1420,7 @@ export async function registerRoutes(
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const userId = (req.user as any).claims.sub;
+      const userId = (req.user as any).claims?.sub || (req.user as any).userId;
       const isPlatinum = await checkPlatinumTier(userId);
       if (!isPlatinum) {
         return res.status(403).json({ message: "Platinum subscription required" });
@@ -1495,7 +1495,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     try {
       await storage.updateLastActive(userId);
       res.json({ success: true });
@@ -1510,7 +1510,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const userId = (req.user as any).claims.sub;
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     try {
       const { isUnderDressed } = req.body;
       if (typeof isUnderDressed !== "boolean") {
