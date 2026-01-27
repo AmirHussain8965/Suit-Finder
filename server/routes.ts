@@ -411,6 +411,79 @@ export async function registerRoutes(
     res.json({ hasAccess });
   });
 
+  // Photo Access Management
+  app.get("/api/photo-access", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
+    const accessList = await storage.getPhotoAccessList(userId);
+    
+    // Enrich with user info
+    const enriched = await Promise.all(accessList.map(async (access) => {
+      const user = await authStorage.getUser(access.grantedUserId);
+      const profile = await storage.getProfile(access.grantedUserId);
+      return {
+        id: access.id,
+        grantedUserId: access.grantedUserId,
+        displayName: profile?.displayName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : "Unknown"),
+        profileImageUrl: user?.profileImageUrl || null,
+        createdAt: access.createdAt,
+      };
+    }));
+    
+    res.json(enriched);
+  });
+
+  app.post("/api/photo-access/:userId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const ownerId = (req.user as any).claims?.sub || (req.user as any).userId;
+    const grantedUserId = req.params.userId;
+    
+    // Can't grant access to yourself
+    if (ownerId === grantedUserId) {
+      return res.status(400).json({ message: "Cannot grant access to yourself" });
+    }
+    
+    // Check if target user exists
+    const targetUser = await authStorage.getUser(grantedUserId);
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    const access = await storage.grantPhotoAccess(ownerId, grantedUserId);
+    res.json(access);
+  });
+
+  app.delete("/api/photo-access/:userId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const ownerId = (req.user as any).claims?.sub || (req.user as any).userId;
+    const grantedUserId = req.params.userId;
+    
+    await storage.revokePhotoAccess(ownerId, grantedUserId);
+    res.json({ success: true });
+  });
+
+  app.get("/api/photo-access/check/:userId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const viewerId = (req.user as any).claims?.sub || (req.user as any).userId;
+    const ownerId = req.params.userId;
+    
+    // Owner always has access to their own photos
+    if (viewerId === ownerId) {
+      return res.json({ hasAccess: true });
+    }
+    
+    const hasAccess = await storage.hasPhotoAccess(ownerId, viewerId);
+    res.json({ hasAccess });
+  });
+
   // === Favorites ===
 
   app.get(api.favorites.list.path, async (req, res) => {
