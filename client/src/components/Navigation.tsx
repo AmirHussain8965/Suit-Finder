@@ -9,12 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 export function Navigation() {
   const [location] = useLocation();
   const { logout, user } = useAuth();
-  const { isPremium } = usePremiumFeature();
+  const { isPremium, isAdmin } = usePremiumFeature();
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  
-  const isOwner = user?.email === import.meta.env.VITE_OWNER_EMAIL;
 
   const isActive = (path: string) => location === path;
 
@@ -112,7 +110,7 @@ export function Navigation() {
             <Info size={20} />
             <span className="font-medium">About</span>
           </Link>
-          {isOwner && (
+          {isAdmin && (
             <Link href="/admin" className={`
               flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-300
               ${isActive("/admin") 
@@ -198,7 +196,7 @@ export function Navigation() {
               </Link>
             ))}
             
-            {isOwner && (
+            {isAdmin && (
               <Link
                 href="/admin"
                 onClick={() => setMoreMenuOpen(false)}

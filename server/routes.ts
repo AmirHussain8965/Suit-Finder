@@ -930,9 +930,12 @@ export async function registerRoutes(
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check if this is the owner email - they always get platinum access
     // Check if email grants automatic platinum access
     const hasPlatinumEmail = isPlatinumEmail(user.email);
+    
+    // Check if user is admin (owner)
+    const ownerEmail = process.env.OWNER_EMAIL;
+    const isAdmin = !!(ownerEmail && user.email === ownerEmail);
     
     const hasActiveSubscription = hasPlatinumEmail || user.subscriptionStatus === 'active' || 
                                   user.subscriptionStatus === 'trialing';
@@ -940,7 +943,7 @@ export async function registerRoutes(
     const isPremium = hasActiveSubscription;
     const isPlatinum = hasPlatinumEmail || (hasActiveSubscription && user.subscriptionTier === 'platinum');
 
-    console.log(`[Subscription Check] User: ${user.email}, Status: ${user.subscriptionStatus}, Tier: ${user.subscriptionTier}, isPlatinum: ${isPlatinum}, hasPlatinumEmail: ${hasPlatinumEmail}`);
+    console.log(`[Subscription Check] User: ${user.email}, Status: ${user.subscriptionStatus}, Tier: ${user.subscriptionTier}, isPlatinum: ${isPlatinum}, isAdmin: ${isAdmin}`);
 
     // Calculate message limits for free tier
     const FREE_DAILY_MESSAGE_LIMIT = 5;
@@ -964,8 +967,9 @@ export async function registerRoutes(
     res.json({
       isPremium,
       isPlatinum,
+      isAdmin,
       tier,
-      status: isOwner ? 'active' : user.subscriptionStatus,
+      status: hasPlatinumEmail ? 'active' : user.subscriptionStatus,
       plan: user.subscriptionPlan,
       endDate: user.subscriptionEndDate,
       messagesRemaining,
