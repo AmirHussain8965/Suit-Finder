@@ -95,7 +95,7 @@ export function Navigation() {
           </p>
         </div>
 
-        <div className="flex-1 px-4 space-y-2 overflow-y-auto">
+        <div className="flex-1 min-h-0 px-4 py-2 space-y-2 overflow-y-auto">
           {allNavItems.map((item) => (
             <Link 
               key={item.href} 
