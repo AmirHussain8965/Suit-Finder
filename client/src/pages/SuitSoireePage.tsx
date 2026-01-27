@@ -18,7 +18,6 @@ export default function SuitSoireePage() {
   const currentUserId = user?.id;
   const [, setLocation] = useLocation();
   const [newMessage, setNewMessage] = useState("");
-  const [hoveredUserId, setHoveredUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -213,9 +212,7 @@ export default function SuitSoireePage() {
                   {onlineUsers.map((profile) => (
                     <div 
                       key={profile.userId}
-                      className="flex items-center gap-2 p-2 rounded-md hover-elevate cursor-pointer group relative"
-                      onMouseEnter={() => setHoveredUserId(profile.userId)}
-                      onMouseLeave={() => setHoveredUserId(null)}
+                      className="flex items-center gap-2 p-2 rounded-md hover-elevate cursor-pointer"
                       onClick={() => handleMentionUser(profile.displayName)}
                       data-testid={`online-user-${profile.userId}`}
                     >
@@ -232,11 +229,11 @@ export default function SuitSoireePage() {
                       <span className="text-sm text-foreground truncate flex-1">
                         {profile.displayName || "Unknown"}
                       </span>
-                      {hoveredUserId === profile.userId && profile.userId !== currentUserId && (
+                      {profile.userId !== currentUserId && (
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-7 w-7 absolute right-1"
+                          className="h-6 w-6 flex-shrink-0"
                           onClick={(e) => {
                             e.stopPropagation();
                             startDirectChatMutation.mutate(profile.userId);
@@ -245,7 +242,7 @@ export default function SuitSoireePage() {
                           data-testid={`button-private-chat-${profile.userId}`}
                           title="Start private chat"
                         >
-                          <MessageCircle className="h-4 w-4" />
+                          <MessageCircle className="h-3.5 w-3.5" />
                         </Button>
                       )}
                     </div>
