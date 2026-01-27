@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Heart, MessageCircle, Loader2, ArrowLeft, User, Palette, Ruler, Activity, Shirt, DoorOpen, Camera, X, ZoomIn, Lock } from "lucide-react";
+import { Heart, MessageCircle, Loader2, ArrowLeft, User, Palette, Ruler, Activity, DoorOpen, Camera, X, ZoomIn, Lock } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { ReportDialog } from "@/components/ReportDialog";
 import { usePremiumFeature } from "@/hooks/use-subscription";
@@ -34,15 +34,6 @@ interface UserProfile {
   lastStdScreening: string | null;
 }
 
-interface WardrobeItem {
-  id: number;
-  name: string;
-  category: string;
-  description: string | null;
-  brand: string | null;
-  color: string | null;
-  imageUrl: string | null;
-}
 
 interface Photo {
   id: number;
@@ -83,14 +74,10 @@ export default function UserProfilePage() {
 
   const hasPrivatePhotoAccess = photoAccessStatus?.hasAccess === true;
 
-  const { data: wardrobe = [] } = useQuery<WardrobeItem[]>({
-    queryKey: [`/api/profiles/${userId}/wardrobe`],
-    enabled: !!userId && hasWardrobeAccess,
-  });
-
+  // Fetch public photos for all users, private photos only for those with access
   const { data: photos = [] } = useQuery<Photo[]>({
     queryKey: [`/api/photos/user/${userId}`],
-    enabled: !!userId && isPremium,
+    enabled: !!userId,
   });
   
   const publicPhotos = photos.filter(p => p.isPublic);
@@ -379,7 +366,8 @@ export default function UserProfilePage() {
             </Card>
           )}
 
-          {isPremium && photos.length > 0 && (
+          {/* Show photos to all users - public photos are always visible, private only with access */}
+          {(publicPhotos.length > 0 || (hasPrivatePhotoAccess && privatePhotos.length > 0)) && (
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg font-serif">
@@ -395,7 +383,8 @@ export default function UserProfilePage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {photos.slice(0, 6).map((photo) => (
+                  {/* Show public photos to everyone, private photos only to those with access */}
+                  {[...publicPhotos, ...(hasPrivatePhotoAccess ? privatePhotos : [])].slice(0, 6).map((photo) => (
                     <div 
                       key={photo.id} 
                       className="relative aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer group no-screenshot"
@@ -421,80 +410,15 @@ export default function UserProfilePage() {
                     </div>
                   ))}
                 </div>
-                {photos.length > 6 && (
+                {(publicPhotos.length + (hasPrivatePhotoAccess ? privatePhotos.length : 0)) > 6 && (
                   <p className="text-sm text-muted-foreground text-center mt-4">
-                    +{photos.length - 6} more photos
+                    +{(publicPhotos.length + (hasPrivatePhotoAccess ? privatePhotos.length : 0)) - 6} more photos
                   </p>
                 )}
               </CardContent>
             </Card>
           )}
 
-          {!isPremium && (
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg font-serif">
-                  <Camera className="h-5 w-5 text-accent" />
-                  Photos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <Lock className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground mb-4">
-                    Upgrade to Premium or Platinum to view member photos
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setLocation("/subscription")}
-                    data-testid="button-upgrade-photos"
-                  >
-                    View Membership Options
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {hasWardrobeAccess && wardrobe.length > 0 && (
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg font-serif">
-                  <Shirt className="h-5 w-5 text-accent" />
-                  Wardrobe
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {wardrobe.slice(0, 6).map((item) => (
-                    <div 
-                      key={item.id} 
-                      className="bg-background rounded-lg border border-border p-3 no-screenshot"
-                      data-testid={`wardrobe-item-${item.id}`}
-                    >
-                      {item.imageUrl && (
-                        <img 
-                          src={item.imageUrl} 
-                          alt={item.name}
-                          className="w-full h-24 object-cover rounded-md mb-2 pointer-events-none"
-                        />
-                      )}
-                      <p className="text-sm font-medium truncate">{item.name}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{item.category.replace(/_/g, ' ')}</p>
-                      {item.brand && (
-                        <p className="text-xs text-accent">{item.brand}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                {wardrobe.length > 6 && (
-                  <p className="text-sm text-muted-foreground text-center mt-4">
-                    +{wardrobe.length - 6} more items
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         <Dialog open={!!selectedPhoto} onOpenChange={(open) => !open && setSelectedPhoto(null)}>
