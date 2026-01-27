@@ -552,6 +552,7 @@ export async function registerRoutes(
     const hasPrivateAccess = viewerId === targetUserId || await storage.hasPhotoAccess(targetUserId, viewerId);
     
     const photos = await storage.getPhotos(targetUserId, hasPrivateAccess);
+    console.log(`[Photos API] Fetching photos for user ${targetUserId}, viewer: ${viewerId}, hasPrivateAccess: ${hasPrivateAccess}, photos found: ${photos.length}`);
     res.json(photos);
   });
 
