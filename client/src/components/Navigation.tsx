@@ -5,6 +5,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { usePremiumFeature } from "@/hooks/use-subscription";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
 
 export function Navigation() {
   const [location] = useLocation();
@@ -15,6 +17,14 @@ export function Navigation() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const isActive = (path: string) => location === path;
+
+  // Fetch unread message count with React Query, polling every 30 seconds
+  const { data: unreadData } = useQuery<{ count: number }>({
+    queryKey: ["/api/messages/unread-count"],
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
+  const unreadCount = unreadData?.count || 0;
 
   // Primary nav items shown in mobile bottom bar
   const primaryNavItems = [
@@ -95,7 +105,12 @@ export function Navigation() {
               data-testid={`link-nav-${item.label.toLowerCase()}`}
             >
               <item.icon size={20} />
-              <span className="font-medium">{item.label}</span>
+              <span className="font-medium flex-1">{item.label}</span>
+              {item.label === "Messages" && unreadCount > 0 && (
+                <Badge variant="destructive" className="text-xs px-1.5 py-0.5 min-w-[20px] text-center" data-testid="badge-unread-messages">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </Badge>
+              )}
             </Link>
           ))}
         </div>
@@ -153,12 +168,19 @@ export function Navigation() {
               key={item.href} 
               href={item.href} 
               className={`
-                flex flex-col items-center justify-center flex-1 h-full space-y-1
+                flex flex-col items-center justify-center flex-1 h-full space-y-1 relative
                 ${isActive(item.href) ? "text-accent" : "text-muted-foreground"}
               `}
               data-testid={`link-mobile-nav-${item.label.toLowerCase()}`}
             >
-              <item.icon size={20} />
+              <div className="relative">
+                <item.icon size={20} />
+                {item.label === "Messages" && unreadCount > 0 && (
+                  <span className="absolute -top-1.5 -right-2.5 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1" data-testid="badge-mobile-unread">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </div>
               <span className="text-[10px] uppercase tracking-wider">{item.label}</span>
             </Link>
           ))}
