@@ -6,10 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, DollarSign, UserCheck, Crown, TrendingUp, Shield, ShieldX } from "lucide-react";
+import { Users, DollarSign, UserCheck, Crown, TrendingUp, Shield, ShieldX, LogOut } from "lucide-react";
 import { Link } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 interface AdminStats {
   totalUsers: number;
@@ -36,6 +37,7 @@ interface Member {
 
 export default function AdminPage() {
   const { toast } = useToast();
+  const { logout } = useAuth();
   
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
@@ -130,14 +132,25 @@ export default function AdminPage() {
     <Layout backgroundVariant="double-breasted">
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto p-6 md:p-12 space-y-8">
-          <div className="flex items-center gap-3 border-b border-border pb-6">
-            <Shield className="h-8 w-8 text-accent" />
-            <div>
-              <h1 className="text-3xl font-serif font-bold text-foreground">Admin Dashboard</h1>
-              <p className="text-muted-foreground mt-1">
-                View member activity and revenue statistics
-              </p>
+          <div className="flex items-center justify-between border-b border-border pb-6">
+            <div className="flex items-center gap-3">
+              <Shield className="h-8 w-8 text-accent" />
+              <div>
+                <h1 className="text-3xl font-serif font-bold text-foreground">Admin Dashboard</h1>
+                <p className="text-muted-foreground mt-1">
+                  View member activity and revenue statistics
+                </p>
+              </div>
             </div>
+            <Button 
+              variant="outline" 
+              onClick={() => logout()}
+              className="text-muted-foreground hover:text-red-400 hover:border-red-400"
+              data-testid="button-admin-logout"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
