@@ -47,9 +47,14 @@ export default function SuitSoireePage() {
       const res = await apiRequest("POST", `/api/conversations/direct/${userId}`);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
-      setLocation("/messages");
+      // Navigate directly to the specific conversation
+      if (data?.id) {
+        setLocation(`/messages/${data.id}`);
+      } else {
+        setLocation("/messages");
+      }
     },
   });
 
