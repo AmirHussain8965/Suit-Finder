@@ -164,6 +164,29 @@ export const wardrobeAccessRelations = relations(wardrobeAccess, ({ one }) => ({
 
 export type WardrobeAccess = typeof wardrobeAccess.$inferSelect;
 
+// Photo access permissions - tracks who can view each user's private photos
+export const photoAccess = pgTable("photo_access", {
+  id: serial("id").primaryKey(),
+  ownerId: text("owner_id").notNull().references(() => authUsers.id), // The photo owner
+  grantedUserId: text("granted_user_id").notNull().references(() => authUsers.id), // User who can view
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const photoAccessRelations = relations(photoAccess, ({ one }) => ({
+  owner: one(authUsers, {
+    fields: [photoAccess.ownerId],
+    references: [authUsers.id],
+    relationName: "photo_owner",
+  }),
+  grantedUser: one(authUsers, {
+    fields: [photoAccess.grantedUserId],
+    references: [authUsers.id],
+    relationName: "photo_viewer",
+  }),
+}));
+
+export type PhotoAccess = typeof photoAccess.$inferSelect;
+
 // Combined User + Profile for the frontend
 export type UserWithProfile = {
   user: typeof authUsers.$inferSelect;

@@ -10,6 +10,7 @@ import {
   eventAttendees,
   wardrobeItems,
   wardrobeAccess,
+  photoAccess,
   auctions,
   bids,
   reports,
@@ -33,6 +34,7 @@ import {
   type WardrobeItem,
   type InsertWardrobeItem,
   type WardrobeAccess,
+  type PhotoAccess,
   type Auction,
   type InsertAuction,
   type Bid,
@@ -137,6 +139,12 @@ export interface IStorage {
   grantWardrobeAccess(ownerId: string, grantedUserId: string): Promise<WardrobeAccess>;
   revokeWardrobeAccess(ownerId: string, grantedUserId: string): Promise<void>;
   hasWardrobeAccess(ownerId: string, viewerId: string): Promise<boolean>;
+  
+  // Photo Access
+  getPhotoAccessList(ownerId: string): Promise<PhotoAccess[]>;
+  grantPhotoAccess(ownerId: string, grantedUserId: string): Promise<PhotoAccess>;
+  revokePhotoAccess(ownerId: string, grantedUserId: string): Promise<void>;
+  hasPhotoAccess(ownerId: string, viewerId: string): Promise<boolean>;
   
   // Auctions
   getAuctions(userId?: string): Promise<AuctionWithDetails[]>;
@@ -996,6 +1004,55 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(wardrobeAccess.ownerId, ownerId),
         eq(wardrobeAccess.grantedUserId, viewerId)
+      ));
+    return access.length > 0;
+  }
+
+  // Photo Access methods
+  async getPhotoAccessList(ownerId: string): Promise<PhotoAccess[]> {
+    return db
+      .select()
+      .from(photoAccess)
+      .where(eq(photoAccess.ownerId, ownerId));
+  }
+
+  async grantPhotoAccess(ownerId: string, grantedUserId: string): Promise<PhotoAccess> {
+    // Check if access already exists
+    const existing = await db
+      .select()
+      .from(photoAccess)
+      .where(and(
+        eq(photoAccess.ownerId, ownerId),
+        eq(photoAccess.grantedUserId, grantedUserId)
+      ));
+    
+    if (existing.length > 0) {
+      return existing[0];
+    }
+    
+    const [access] = await db
+      .insert(photoAccess)
+      .values({ ownerId, grantedUserId })
+      .returning();
+    return access;
+  }
+
+  async revokePhotoAccess(ownerId: string, grantedUserId: string): Promise<void> {
+    await db
+      .delete(photoAccess)
+      .where(and(
+        eq(photoAccess.ownerId, ownerId),
+        eq(photoAccess.grantedUserId, grantedUserId)
+      ));
+  }
+
+  async hasPhotoAccess(ownerId: string, viewerId: string): Promise<boolean> {
+    const access = await db
+      .select()
+      .from(photoAccess)
+      .where(and(
+        eq(photoAccess.ownerId, ownerId),
+        eq(photoAccess.grantedUserId, viewerId)
       ));
     return access.length > 0;
   }
