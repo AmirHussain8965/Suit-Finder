@@ -1602,6 +1602,65 @@ export async function registerRoutes(
     }
   });
 
+  // === Suit Soiree (Public Chat) ===
+  
+  // Get soiree messages
+  app.get("/api/soiree/messages", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const limit = Math.min(parseInt(req.query.limit as string) || 100, 200);
+      const offset = parseInt(req.query.offset as string) || 0;
+      const messages = await storage.getSoireeMessages(limit, offset);
+      res.json(messages);
+    } catch (err: any) {
+      console.error("Error fetching soiree messages:", err);
+      res.status(500).json({ message: "Failed to fetch messages" });
+    }
+  });
+
+  // Send soiree message
+  app.post("/api/soiree/messages", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
+    try {
+      const { content } = req.body;
+      if (!content || typeof content !== "string" || content.trim().length === 0) {
+        return res.status(400).json({ message: "Message content is required" });
+      }
+      if (content.length > 1000) {
+        return res.status(400).json({ message: "Message too long (max 1000 characters)" });
+      }
+      const message = await storage.sendSoireeMessage(userId, content.trim());
+      res.json(message);
+    } catch (err: any) {
+      console.error("Error sending soiree message:", err);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  // Delete soiree message (own messages only)
+  app.delete("/api/soiree/messages/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
+    try {
+      const messageId = parseInt(req.params.id);
+      if (isNaN(messageId)) {
+        return res.status(400).json({ message: "Invalid message ID" });
+      }
+      await storage.deleteSoireeMessage(messageId, userId);
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("Error deleting soiree message:", err);
+      res.status(500).json({ message: "Failed to delete message" });
+    }
+  });
+
   // ========== ADMIN ROUTES ==========
   
   // Helper to check if user is owner

@@ -15,6 +15,7 @@ import {
   bids,
   reports,
   users,
+  soireeMessages,
   type Profile,
   type InsertProfile,
   type UpdateProfileRequest,
@@ -41,6 +42,8 @@ import {
   type InsertBid,
   type Report,
   type InsertReport,
+  type SoireeMessage,
+  type SoireeMessageWithSender,
 } from "@shared/schema";
 import { eq, sql, and, desc, asc, inArray, gte, or } from "drizzle-orm";
 
@@ -169,6 +172,11 @@ export interface IStorage {
   
   // Account Management
   deleteUserData(userId: string): Promise<void>;
+  
+  // Suit Soiree (Public Chat)
+  getSoireeMessages(limit?: number, offset?: number): Promise<SoireeMessageWithSender[]>;
+  sendSoireeMessage(senderId: string, content: string): Promise<SoireeMessage>;
+  deleteSoireeMessage(messageId: number, senderId: string): Promise<void>;
 }
 
 export interface AuctionWithDetails extends Auction {
@@ -1358,6 +1366,67 @@ export class DatabaseStorage implements IStorage {
     
     // Finally, delete profile
     await db.delete(profiles).where(eq(profiles.userId, userId));
+  }
+
+  // Suit Soiree (Public Chat) Methods
+  async getSoireeMessages(limit: number = 100, offset: number = 0): Promise<SoireeMessageWithSender[]> {
+    const messagesData = await db
+      .select({
+        id: soireeMessages.id,
+        senderId: soireeMessages.senderId,
+        content: soireeMessages.content,
+        createdAt: soireeMessages.createdAt,
+      })
+      .from(soireeMessages)
+      .orderBy(desc(soireeMessages.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    // Get sender info for each message
+    const result: SoireeMessageWithSender[] = [];
+    for (const msg of messagesData) {
+      const [profile] = await db
+        .select({
+          displayName: profiles.displayName,
+        })
+        .from(profiles)
+        .where(eq(profiles.userId, msg.senderId));
+      
+      // Get profile photo
+      const [photo] = await db
+        .select({ url: photos.url })
+        .from(photos)
+        .where(and(
+          eq(photos.userId, msg.senderId),
+          eq(photos.isProfilePhoto, true)
+        ));
+      
+      result.push({
+        ...msg,
+        senderName: profile?.displayName || null,
+        senderProfileImageUrl: photo?.url || null,
+      });
+    }
+    
+    // Reverse to get oldest first for display
+    return result.reverse();
+  }
+
+  async sendSoireeMessage(senderId: string, content: string): Promise<SoireeMessage> {
+    const [message] = await db
+      .insert(soireeMessages)
+      .values({ senderId, content })
+      .returning();
+    return message;
+  }
+
+  async deleteSoireeMessage(messageId: number, senderId: string): Promise<void> {
+    await db.delete(soireeMessages).where(
+      and(
+        eq(soireeMessages.id, messageId),
+        eq(soireeMessages.senderId, senderId)
+      )
+    );
   }
 }
 
