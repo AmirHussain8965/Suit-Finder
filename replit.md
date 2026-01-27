@@ -63,6 +63,20 @@ Preferred communication style: Simple, everyday language.
   - Users can add members from their favorites list
   - Only explicitly granted users can view another user's wardrobe
 
+### Photo Gallery System
+- **Public Photos**: Visible to all Premium/Platinum members when viewing a profile
+- **Private Photos**: Only visible to members who have been granted access
+- **Access Control**: Users can grant/revoke private photo access to specific members (via `photo_access` table)
+  - Access is managed from the Profile page through a dialog (similar to wardrobe access)
+  - Users can add members from their favorites list
+  - Private photos display a "Private" badge on the user's profile
+  - When access is granted, a "Private Access" badge appears on the Photos section header
+- **API Endpoints**:
+  - GET /api/photo-access - Get list of users who have access to your private photos
+  - POST /api/photo-access/:userId - Grant private photo access to a user
+  - DELETE /api/photo-access/:userId - Revoke private photo access from a user
+  - GET /api/photo-access/check/:userId - Check if viewer has access to a user's private photos
+
 ### Events System
 - **Event Creation**: Users can create events with title, description, date/time, location, category
 - **Categories**: drinks_only, dinner_cocktails, side_enjoyment, tying_more_than_tie, black_tie_meetup, sock_enjoyment, suit_as_rag, one_suit_for_all, group_meeting
