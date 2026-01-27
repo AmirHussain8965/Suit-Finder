@@ -151,7 +151,7 @@ export default function GalleryPage() {
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
       setCroppedPreviewUrl(null);
-      setShowCropper(true);
+      setShowCropper(false);
       setCrop({ x: 0, y: 0 });
       setZoom(1);
     }
@@ -522,7 +522,7 @@ export default function GalleryPage() {
                         <img 
                           src={croppedPreviewUrl || previewUrl || undefined} 
                           alt="Preview" 
-                          className="w-full h-48 object-cover rounded-lg border border-border"
+                          className="w-full h-48 object-contain rounded-lg border border-border bg-black/20"
                         />
                         <div className="absolute top-2 right-2 flex gap-1">
                           <Button
@@ -536,7 +536,7 @@ export default function GalleryPage() {
                             data-testid="button-edit-crop"
                           >
                             <Crop className="h-3 w-3 mr-1" />
-                            Edit
+                            Crop (Optional)
                           </Button>
                           <Button
                             size="sm"
