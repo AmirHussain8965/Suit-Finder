@@ -85,6 +85,7 @@ function fuzzLocation(lat: number, lng: number): { lat: number; lng: number } {
 export interface IStorage {
   // Profiles
   getProfile(userId: string): Promise<Profile | undefined>;
+  getAllProfiles(): Promise<Profile[]>;
   createProfile(profile: InsertProfile): Promise<Profile>;
   updateProfile(userId: string, updates: UpdateProfileRequest): Promise<Profile>;
   updateLocation(userId: string, lat: number, lng: number): Promise<Profile>;
@@ -201,6 +202,10 @@ export class DatabaseStorage implements IStorage {
       .from(profiles)
       .where(eq(profiles.userId, userId));
     return profile;
+  }
+
+  async getAllProfiles(): Promise<Profile[]> {
+    return db.select().from(profiles);
   }
 
   async createProfile(profile: InsertProfile): Promise<Profile> {

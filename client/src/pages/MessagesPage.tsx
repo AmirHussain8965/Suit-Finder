@@ -7,25 +7,30 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Loader2, Send, Users, Plus, ArrowLeft, MessageSquare } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Send, Users, Plus, ArrowLeft, MessageSquare, Megaphone } from "lucide-react";
 import type { ConversationWithParticipants, MessageWithSender } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useNearbyProfiles } from "@/hooks/use-profiles";
 import { usePremiumFeature } from "@/hooks/use-subscription";
 import { PremiumGate } from "@/components/PremiumGate";
 import { Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 
 export default function MessagesPage() {
   const { user } = useAuth();
   const currentUserId = user?.id;
-  const { isPremium, isLoading: isPremiumLoading, tier, messagesRemaining, messageLimit, refetch: refetchSubscription } = usePremiumFeature();
+  const { isPremium, isAdmin, isLoading: isPremiumLoading, tier, messagesRemaining, messageLimit, refetch: refetchSubscription } = usePremiumFeature();
+  const { toast } = useToast();
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [messageLimitError, setMessageLimitError] = useState<string | null>(null);
+  const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
+  const [broadcastMessage, setBroadcastMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: conversations, isLoading: isLoadingConversations } = useQuery<ConversationWithParticipants[]>({
@@ -97,6 +102,29 @@ export default function MessagesPage() {
     },
   });
 
+  const broadcastMutation = useMutation({
+    mutationFn: async (content: string) => {
+      const response = await apiRequest("POST", "/api/admin/broadcast", { content });
+      return response.json();
+    },
+    onSuccess: (data: { message: string; sentCount: number }) => {
+      setIsBroadcastOpen(false);
+      setBroadcastMessage("");
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      toast({
+        title: "Broadcast Sent",
+        description: `Message sent to ${data.sentCount} members`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Broadcast Failed",
+        description: error?.message || "Failed to send broadcast",
+        variant: "destructive",
+      });
+    },
+  });
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -153,14 +181,65 @@ export default function MessagesPage() {
       <div className="flex h-full w-full no-screenshot">
         {/* Conversation List - hide on mobile when conversation selected */}
         <div className={`w-full md:w-80 border-r border-border flex flex-col bg-card ${selectedConversationId ? 'hidden md:flex' : 'flex'}`}>
-          <div className="p-4 border-b border-border flex items-center justify-between">
+          <div className="p-4 border-b border-border flex items-center justify-between gap-2">
             <h2 className="text-lg font-serif font-semibold text-accent">Messages</h2>
-            <Dialog open={isCreatingGroup} onOpenChange={setIsCreatingGroup}>
-              <DialogTrigger asChild>
-                <Button size="icon" variant="ghost" data-testid="button-new-group">
-                  <Plus className="h-5 w-5" />
-                </Button>
-              </DialogTrigger>
+            <div className="flex items-center gap-1">
+              {isAdmin && (
+                <Dialog open={isBroadcastOpen} onOpenChange={setIsBroadcastOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="text-xs bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20"
+                      data-testid="button-broadcast-all"
+                    >
+                      <Megaphone className="h-4 w-4 mr-1" />
+                      ALL
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="no-screenshot">
+                    <DialogHeader>
+                      <DialogTitle>Broadcast to All Members</DialogTitle>
+                      <DialogDescription>
+                        Send a message to everyone on the site. This will create individual conversations with each member.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <Textarea
+                        placeholder="Type your broadcast message..."
+                        value={broadcastMessage}
+                        onChange={(e) => setBroadcastMessage(e.target.value)}
+                        className="min-h-[120px]"
+                        data-testid="input-broadcast-message"
+                      />
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsBroadcastOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={() => broadcastMutation.mutate(broadcastMessage)}
+                        disabled={!broadcastMessage.trim() || broadcastMutation.isPending}
+                        className="bg-red-500 hover:bg-red-600 text-white"
+                        data-testid="button-send-broadcast"
+                      >
+                        {broadcastMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <Send className="h-4 w-4 mr-2" />
+                        )}
+                        Send to All
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
+              <Dialog open={isCreatingGroup} onOpenChange={setIsCreatingGroup}>
+                <DialogTrigger asChild>
+                  <Button size="icon" variant="ghost" data-testid="button-new-group">
+                    <Plus className="h-5 w-5" />
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="no-screenshot">
                 <DialogHeader>
                   <DialogTitle>Create Group Chat</DialogTitle>
@@ -214,6 +293,7 @@ export default function MessagesPage() {
                 </div>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
 
           <ScrollArea className="flex-1">

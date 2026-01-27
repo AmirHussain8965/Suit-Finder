@@ -873,6 +873,59 @@ export async function registerRoutes(
     res.json({ message: "Marked as read" });
   });
 
+  // Admin broadcast message to all users
+  app.post("/api/admin/broadcast", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
+    const user = await authStorage.getUser(userId);
+    
+    // Check if user is admin
+    const ownerEmail = process.env.OWNER_EMAIL;
+    if (!ownerEmail || user?.email !== ownerEmail) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+    
+    const { content } = req.body;
+    if (!content || typeof content !== 'string' || content.trim().length === 0) {
+      return res.status(400).json({ message: "Message content is required" });
+    }
+    
+    try {
+      // Get all users with profiles (except the admin)
+      const allProfiles = await storage.getAllProfiles();
+      const otherUsers = allProfiles.filter(p => p.userId !== userId);
+      
+      let sentCount = 0;
+      let errorCount = 0;
+      
+      for (const profile of otherUsers) {
+        try {
+          // Find or create a direct conversation with this user
+          const conversation = await storage.getOrCreateDirectConversation(userId, profile.userId);
+          
+          // Send the message
+          await storage.sendMessage(conversation.id, userId, content.trim());
+          sentCount++;
+        } catch (err) {
+          console.error(`Failed to send broadcast to ${profile.userId}:`, err);
+          errorCount++;
+        }
+      }
+      
+      res.json({ 
+        message: `Broadcast sent to ${sentCount} users`,
+        sentCount,
+        errorCount,
+        totalUsers: otherUsers.length
+      });
+    } catch (err) {
+      console.error("Broadcast error:", err);
+      res.status(500).json({ message: "Failed to send broadcast" });
+    }
+  });
+
   // === Events ===
 
   // Get all upcoming events
