@@ -1198,6 +1198,69 @@ export async function registerRoutes(
     }
   });
 
+  // Upgrade subscription to a different tier
+  app.post("/api/subscription/upgrade", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
+    const { priceId } = req.body;
+
+    if (!priceId) {
+      return res.status(400).json({ error: "Price ID required" });
+    }
+
+    try {
+      const user = await authStorage.getUser(userId);
+      if (!user?.stripeCustomerId) {
+        return res.status(400).json({ error: "No billing account found. Please subscribe first." });
+      }
+
+      const stripe = await getUncachableStripeClient();
+
+      // Get the customer's active subscriptions
+      const subscriptions = await stripe.subscriptions.list({
+        customer: user.stripeCustomerId,
+        status: 'active',
+        limit: 1,
+      });
+
+      if (subscriptions.data.length === 0) {
+        // No active subscription - redirect to checkout instead
+        return res.status(400).json({ 
+          error: "No active subscription found. Please subscribe first.",
+          needsCheckout: true 
+        });
+      }
+
+      const subscription = subscriptions.data[0];
+      const subscriptionItemId = subscription.items.data[0].id;
+
+      // Update the subscription to the new price
+      const updatedSubscription = await stripe.subscriptions.update(subscription.id, {
+        items: [{
+          id: subscriptionItemId,
+          price: priceId,
+        }],
+        proration_behavior: 'create_prorations', // Pro-rate the change
+      });
+
+      console.log(`[Upgrade] User ${userId} upgraded subscription to price ${priceId}`);
+
+      res.json({ 
+        success: true, 
+        message: "Subscription upgraded successfully",
+        subscription: {
+          id: updatedSubscription.id,
+          status: updatedSubscription.status,
+        }
+      });
+    } catch (err: any) {
+      console.error("Error upgrading subscription:", err);
+      res.status(500).json({ error: err.message || "Could not upgrade subscription" });
+    }
+  });
+
   // === Wardrobe (Platinum-only) ===
 
   // List wardrobe items

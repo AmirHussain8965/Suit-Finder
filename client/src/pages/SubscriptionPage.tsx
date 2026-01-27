@@ -100,6 +100,37 @@ export default function SubscriptionPage() {
     }
   };
 
+  const handleUpgrade = async (priceId: string, productId: string) => {
+    setIsCheckingOut(productId);
+    try {
+      const res = await apiRequest("POST", "/api/subscription/upgrade", { priceId });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        if (data.needsCheckout) {
+          // No active subscription, fall back to checkout
+          return handleSubscribe(priceId, productId);
+        }
+        throw new Error(data.error || data.message || "Failed to upgrade subscription");
+      }
+      
+      toast({
+        title: "Success",
+        description: "Your subscription has been upgraded!",
+      });
+      
+      // Refresh subscription data
+      window.location.reload();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsCheckingOut(null);
+    }
+  };
+
   const handleManageSubscription = async () => {
     setIsOpeningPortal(true);
     try {
@@ -316,7 +347,7 @@ export default function SubscriptionPage() {
                   className="w-full bg-accent text-accent-foreground border-accent-border"
                   onClick={() => {
                     const monthlyPrice = platinumProduct?.prices.find(p => p.interval === 'month' && p.amount === 1299);
-                    if (monthlyPrice && platinumProduct) handleSubscribe(monthlyPrice.id, platinumProduct.id);
+                    if (monthlyPrice && platinumProduct) handleUpgrade(monthlyPrice.id, platinumProduct.id);
                   }}
                   disabled={isCheckingOut !== null || !platinumProduct?.prices.find(p => p.interval === 'month' && p.amount === 1299)}
                   data-testid="button-upgrade-platinum"
