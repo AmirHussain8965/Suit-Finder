@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { Navigation } from "@/components/Navigation";
@@ -6,9 +7,11 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Heart, MessageCircle, Loader2, ArrowLeft, User, Palette, Ruler, Activity, Shirt, DoorOpen } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Heart, MessageCircle, Loader2, ArrowLeft, User, Palette, Ruler, Activity, Shirt, DoorOpen, Camera, X, ZoomIn, Lock } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { ReportDialog } from "@/components/ReportDialog";
+import { usePremiumFeature } from "@/hooks/use-subscription";
 
 interface UserProfile {
   userId: string;
@@ -41,11 +44,21 @@ interface WardrobeItem {
   imageUrl: string | null;
 }
 
+interface Photo {
+  id: number;
+  imageUrl: string;
+  caption: string | null;
+  isPublic: boolean;
+  isProfilePhoto: boolean;
+}
+
 export default function UserProfilePage() {
   const [, params] = useRoute("/profile/:userId");
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const userId = params?.userId;
+  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const { isPremium } = usePremiumFeature();
 
   const { data: profile, isLoading, error } = useQuery<UserProfile>({
     queryKey: [`/api/profiles/${userId}`],
@@ -66,6 +79,11 @@ export default function UserProfilePage() {
   const { data: wardrobe = [] } = useQuery<WardrobeItem[]>({
     queryKey: [`/api/profiles/${userId}/wardrobe`],
     enabled: !!userId && hasWardrobeAccess,
+  });
+
+  const { data: photos = [] } = useQuery<Photo[]>({
+    queryKey: [`/api/photos/user/${userId}`],
+    enabled: !!userId && isPremium,
   });
 
   const isFavorited = favorites.some((f) => f.userId === userId);
@@ -351,6 +369,69 @@ export default function UserProfilePage() {
             </Card>
           )}
 
+          {isPremium && photos.length > 0 && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg font-serif">
+                  <Camera className="h-5 w-5 text-accent" />
+                  Photos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {photos.slice(0, 6).map((photo) => (
+                    <div 
+                      key={photo.id} 
+                      className="relative aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer group no-screenshot"
+                      onClick={() => setSelectedPhoto(photo)}
+                      data-testid={`photo-${photo.id}`}
+                    >
+                      <img 
+                        src={photo.imageUrl} 
+                        alt={photo.caption || "Photo"}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                        <ZoomIn className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {photos.length > 6 && (
+                  <p className="text-sm text-muted-foreground text-center mt-4">
+                    +{photos.length - 6} more photos
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {!isPremium && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg font-serif">
+                  <Camera className="h-5 w-5 text-accent" />
+                  Photos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Lock className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground mb-4">
+                    Upgrade to Premium or Platinum to view member photos
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setLocation("/subscription")}
+                    data-testid="button-upgrade-photos"
+                  >
+                    View Membership Options
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {hasWardrobeAccess && wardrobe.length > 0 && (
             <Card className="mb-6">
               <CardHeader>
@@ -391,6 +472,38 @@ export default function UserProfilePage() {
             </Card>
           )}
         </div>
+
+        <Dialog open={!!selectedPhoto} onOpenChange={(open) => !open && setSelectedPhoto(null)}>
+          <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black/95 border-border">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4 z-10 text-white hover:bg-white/20"
+              onClick={() => setSelectedPhoto(null)}
+              data-testid="button-close-photo"
+            >
+              <X className="h-6 w-6" />
+            </Button>
+            {selectedPhoto && (
+              <div className="flex flex-col">
+                <div className="relative max-h-[80vh] flex items-center justify-center p-4">
+                  <img
+                    src={selectedPhoto.imageUrl}
+                    alt={selectedPhoto.caption || "Photo"}
+                    className="max-w-full max-h-[75vh] object-contain rounded-md no-screenshot"
+                  />
+                </div>
+                {selectedPhoto.caption && (
+                  <div className="p-4 bg-card border-t border-border">
+                    <p className="text-muted-foreground text-sm text-center">
+                      {selectedPhoto.caption}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
