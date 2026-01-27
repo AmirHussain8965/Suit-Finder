@@ -38,6 +38,14 @@ type WardrobeAccessUser = {
   createdAt: string;
 };
 
+type PhotoAccessUser = {
+  id: number;
+  grantedUserId: string;
+  displayName: string;
+  profileImageUrl: string | null;
+  createdAt: string;
+};
+
 type FavoriteUser = {
   userId: string;
   displayName: string;
@@ -50,6 +58,7 @@ export default function ProfilePage() {
   const { mutate: updateProfile, isPending: isSaving } = useUpdateProfile();
   const { toast } = useToast();
   const [wardrobeDialogOpen, setWardrobeDialogOpen] = useState(false);
+  const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
 
   // Wardrobe access queries
   const { data: wardrobeAccessList = [] } = useQuery<WardrobeAccessUser[]>({
@@ -79,6 +88,36 @@ export default function ProfilePage() {
       toast({ title: "Access revoked" });
     },
   });
+
+  // Photo access queries
+  const { data: photoAccessList = [] } = useQuery<PhotoAccessUser[]>({
+    queryKey: ["/api/photo-access"],
+  });
+
+  const grantPhotoAccessMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return apiRequest("POST", `/api/photo-access/${userId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/photo-access"] });
+      toast({ title: "Photo access granted" });
+    },
+  });
+
+  const revokePhotoAccessMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return apiRequest("DELETE", `/api/photo-access/${userId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/photo-access"] });
+      toast({ title: "Photo access revoked" });
+    },
+  });
+
+  // Get favorites that don't already have photo access
+  const availableToGrantPhoto = favorites.filter(
+    (fav) => !photoAccessList.some((access) => access.grantedUserId === fav.userId)
+  );
 
   // Get favorites that don't already have access
   const availableToGrant = favorites.filter(
@@ -394,6 +433,111 @@ export default function ProfilePage() {
                         {wardrobeAccessList.length === 0 && availableToGrant.length === 0 && (
                           <p className="text-sm text-muted-foreground text-center py-4">
                             Add members to your favorites first to grant them wardrobe access.
+                          </p>
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                {/* Private Photo Access Section */}
+                <div className="flex items-center justify-between pt-4 border-t border-border">
+                  <div>
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Lock className="w-4 h-4" />
+                      Private Photos
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {photoAccessList.length === 0 
+                        ? "No one has access to your private photos"
+                        : `${photoAccessList.length} member${photoAccessList.length !== 1 ? 's' : ''} can view`}
+                    </p>
+                  </div>
+                  <Dialog open={photoDialogOpen} onOpenChange={setPhotoDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" data-testid="button-manage-photo-access">
+                        <Users className="w-4 h-4 mr-1" />
+                        Manage
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="font-serif text-accent">Private Photo Access</DialogTitle>
+                        <DialogDescription>
+                          Choose who can view your private photos. Only selected members will have access.
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      <div className="space-y-4">
+                        {photoAccessList.length > 0 && (
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">Members with Access</Label>
+                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                              {photoAccessList.map((access) => (
+                                <div 
+                                  key={access.id}
+                                  className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Avatar className="h-8 w-8">
+                                      <AvatarImage src={access.profileImageUrl || undefined} />
+                                      <AvatarFallback className="bg-accent/20 text-accent text-xs">
+                                        {access.displayName?.charAt(0)?.toUpperCase() || "?"}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span className="text-sm">{access.displayName}</span>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => revokePhotoAccessMutation.mutate(access.grantedUserId)}
+                                    disabled={revokePhotoAccessMutation.isPending}
+                                    data-testid={`button-revoke-photo-access-${access.grantedUserId}`}
+                                  >
+                                    <X className="w-4 h-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {availableToGrantPhoto.length > 0 && (
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">Add from Favorites</Label>
+                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                              {availableToGrantPhoto.map((fav) => (
+                                <div 
+                                  key={fav.userId}
+                                  className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Avatar className="h-8 w-8">
+                                      <AvatarImage src={fav.profileImageUrl || undefined} />
+                                      <AvatarFallback className="bg-accent/20 text-accent text-xs">
+                                        {fav.displayName?.charAt(0)?.toUpperCase() || "?"}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span className="text-sm">{fav.displayName}</span>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => grantPhotoAccessMutation.mutate(fav.userId)}
+                                    disabled={grantPhotoAccessMutation.isPending}
+                                    data-testid={`button-grant-photo-access-${fav.userId}`}
+                                  >
+                                    <Plus className="w-4 h-4 text-accent" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {photoAccessList.length === 0 && availableToGrantPhoto.length === 0 && (
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            Add members to your favorites first to grant them private photo access.
                           </p>
                         )}
                       </div>
