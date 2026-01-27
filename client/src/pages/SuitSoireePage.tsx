@@ -79,8 +79,8 @@ export default function SuitSoireePage() {
           <CardHeader className="border-b border-border pb-4 flex flex-row items-center gap-3">
             <Wine className="h-6 w-6 text-accent" />
             <div>
-              <CardTitle className="font-serif text-xl text-foreground">Suit Soiree</CardTitle>
-              <p className="text-sm text-muted-foreground">A public lounge for gentlemen</p>
+              <CardTitle className="font-serif text-xl text-foreground">The Lounge</CardTitle>
+              <p className="text-sm text-muted-foreground">A public gathering for gentlemen</p>
             </div>
           </CardHeader>
           

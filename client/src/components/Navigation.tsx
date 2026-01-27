@@ -28,7 +28,7 @@ export function Navigation() {
   const allNavItems = [
     { href: "/map", icon: Map, label: "Explore" },
     { href: "/whos-on", icon: Users, label: "Who's On" },
-    { href: "/soiree", icon: Wine, label: "Suit Soiree" },
+    { href: "/soiree", icon: Wine, label: "The Lounge" },
     { href: "/favorites", icon: Heart, label: "Favorites" },
     { href: "/messages", icon: MessageSquare, label: "Messages" },
     { href: "/events", icon: Calendar, label: "Events" },
@@ -41,7 +41,7 @@ export function Navigation() {
   // Secondary items shown in "More" menu on mobile
   const moreMenuItems = [
     { href: "/whos-on", icon: Users, label: "Who's On" },
-    { href: "/soiree", icon: Wine, label: "Suit Soiree" },
+    { href: "/soiree", icon: Wine, label: "The Lounge" },
     { href: "/events", icon: Calendar, label: "Events" },
     { href: "/wardrobe", icon: Shirt, label: "Wardrobe" },
     { href: "/auctions", icon: Gavel, label: "Auctions" },
