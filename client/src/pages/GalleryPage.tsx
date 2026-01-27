@@ -305,8 +305,7 @@ export default function GalleryPage() {
       <img 
         src={photo.url} 
         alt={photo.caption || "Gallery photo"} 
-        className="w-full h-full object-cover pointer-events-none"
-        style={{ objectPosition: `${photo.positionX ?? 50}% ${photo.positionY ?? 50}%` }}
+        className="w-full h-full object-contain pointer-events-none bg-black/20"
         onError={(e) => {
           (e.target as HTMLImageElement).src = "https://api.dicebear.com/7.x/shapes/svg?seed=" + photo.id;
         }}

@@ -394,7 +394,7 @@ export default function UserProfilePage() {
                       <img 
                         src={photo.imageUrl} 
                         alt={photo.caption || "Photo"}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-black/20"
                       />
                       {!photo.isPublic && (
                         <div className="absolute top-2 left-2">
