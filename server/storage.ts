@@ -168,7 +168,7 @@ export interface IStorage {
   // Online Status
   updateLastActive(userId: string): Promise<void>;
   setUnderDressed(userId: string, isUnderDressed: boolean): Promise<Profile>;
-  getOnlineUsers(minutesThreshold?: number): Promise<Profile[]>;
+  getOnlineUsers(minutesThreshold?: number): Promise<(Profile & { profileImageUrl: string | null })[]>;
   
   // Account Management
   deleteUserData(userId: string): Promise<void>;
@@ -1316,10 +1316,10 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async getOnlineUsers(minutesThreshold: number = 15): Promise<Profile[]> {
+  async getOnlineUsers(minutesThreshold: number = 15): Promise<(Profile & { profileImageUrl: string | null })[]> {
     const thresholdTime = new Date(Date.now() - minutesThreshold * 60 * 1000);
     
-    return await db
+    const onlineProfiles = await db
       .select()
       .from(profiles)
       .where(
@@ -1330,6 +1330,20 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(desc(profiles.lastActiveAt));
+    
+    // Fetch profile photos for these users
+    const userIds = onlineProfiles.map(p => p.userId);
+    const profilePhotos = userIds.length > 0
+      ? await db.select().from(photos).where(and(inArray(photos.userId, userIds), eq(photos.isProfilePhoto, true)))
+      : [];
+    
+    return onlineProfiles.map(profile => {
+      const photo = profilePhotos.find(p => p.userId === profile.userId);
+      return {
+        ...profile,
+        profileImageUrl: photo?.url || null,
+      };
+    });
   }
   
   async deleteUserData(userId: string): Promise<void> {

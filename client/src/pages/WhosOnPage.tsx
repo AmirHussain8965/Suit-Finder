@@ -18,7 +18,7 @@ export default function WhosOnPage() {
   const queryClient = useQueryClient();
   const { data: myProfile } = useProfile();
 
-  const { data: onlineUsers = [], isLoading } = useQuery<Profile[]>({
+  const { data: onlineUsers = [], isLoading } = useQuery<(Profile & { profileImageUrl: string | null })[]>({
     queryKey: ["/api/whos-on"],
     refetchInterval: 30000,
   });
@@ -144,6 +144,9 @@ export default function WhosOnPage() {
                       onClick={() => setLocation(`/profile/${user.userId}`)}
                     >
                       <Avatar className="h-14 w-14">
+                        {user.profileImageUrl ? (
+                          <AvatarImage src={user.profileImageUrl} alt={user.displayName || "Member"} className="object-cover" />
+                        ) : null}
                         <AvatarFallback className="bg-accent/20 text-accent">
                           <User className="h-6 w-6" />
                         </AvatarFallback>
