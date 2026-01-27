@@ -115,3 +115,15 @@
 .pr-safe {
   padding-right: env(safe-area-inset-right, 0px);
 }
+
+/* Security Blur for Free Tier Users */
+.security-blur {
+  filter: blur(8px);
+  user-select: none;
+  pointer-events: none;
+}
+
+.security-blur-light {
+  filter: blur(4px);
+  user-select: none;
+}
