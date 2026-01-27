@@ -144,8 +144,8 @@ export function Navigation() {
       </nav>
 
       {/* Mobile Bottom Bar - Simplified with More menu */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-card/95 backdrop-blur-lg border-t border-border z-50 pb-safe">
-        <div className="flex justify-around items-center h-16">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-card/95 backdrop-blur-lg border-t border-border z-50">
+        <div className="flex justify-around items-center h-16 pb-safe">
           {primaryNavItems.map((item) => (
             <Link 
               key={item.href} 
