@@ -76,7 +76,7 @@ export default function UserProfilePage() {
 
   // Fetch public photos for all users, private photos only for those with access
   const { data: photos = [] } = useQuery<Photo[]>({
-    queryKey: [`/api/photos/user/${userId}`],
+    queryKey: [`/api/photos/${userId}`],
     enabled: !!userId,
   });
   
