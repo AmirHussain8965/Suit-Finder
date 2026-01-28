@@ -609,34 +609,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getOrCreateDirectConversation(userId: string, otherUserId: string): Promise<Conversation> {
-    // Find existing 1-on-1 conversation between these two users
-    const userConvos = await db
-      .select({ conversationId: conversationParticipants.conversationId })
-      .from(conversationParticipants)
-      .where(eq(conversationParticipants.userId, userId));
+    // Use a single optimized query to find existing 1-on-1 conversation
+    // Join conversation_participants twice to find conversations where both users are participants
+    
+    const existingConvo = await db
+      .select({ conversation: conversations })
+      .from(conversations)
+      .innerJoin(
+        conversationParticipants,
+        and(
+          eq(conversationParticipants.conversationId, conversations.id),
+          eq(conversationParticipants.userId, userId)
+        )
+      )
+      .where(
+        and(
+          eq(conversations.isGroup, false),
+          inArray(
+            conversations.id,
+            db
+              .select({ id: conversationParticipants.conversationId })
+              .from(conversationParticipants)
+              .where(eq(conversationParticipants.userId, otherUserId))
+          )
+        )
+      )
+      .limit(1);
 
-    for (const uc of userConvos) {
-      const [convo] = await db
-        .select()
-        .from(conversations)
-        .where(and(eq(conversations.id, uc.conversationId), eq(conversations.isGroup, false)));
-
-      if (convo) {
-        // Check if other user is also in this conversation
-        const [otherParticipant] = await db
-          .select()
-          .from(conversationParticipants)
-          .where(
-            and(
-              eq(conversationParticipants.conversationId, convo.id),
-              eq(conversationParticipants.userId, otherUserId)
-            )
-          );
-
-        if (otherParticipant) {
-          return convo;
-        }
-      }
+    if (existingConvo.length > 0) {
+      return existingConvo[0].conversation;
     }
 
     // No existing conversation found, create one
