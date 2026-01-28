@@ -159,16 +159,24 @@ export function registerAuthRoutes(app: Express): void {
         console.log("[Auth Debug] Login successful - Session ID:", req.sessionID);
         console.log("[Auth Debug] Login successful - Session user set:", JSON.stringify(sessionUser));
         
-        const { password, ...safeUser } = user;
-        
-        // Owner always gets platinum tier
-        const ownerEmail = process.env.OWNER_EMAIL;
-        if (ownerEmail && user.email === ownerEmail) {
-          safeUser.subscriptionTier = 'platinum';
-          safeUser.subscriptionStatus = 'active';
-        }
-        
-        res.json(safeUser);
+        // Explicitly save the session before responding
+        req.session.save((saveErr: any) => {
+          if (saveErr) {
+            console.error("[Auth Debug] Session save error:", saveErr);
+          }
+          console.log("[Auth Debug] Session saved successfully");
+          
+          const { password, ...safeUser } = user;
+          
+          // Owner always gets platinum tier
+          const ownerEmail = process.env.OWNER_EMAIL;
+          if (ownerEmail && user.email === ownerEmail) {
+            safeUser.subscriptionTier = 'platinum';
+            safeUser.subscriptionStatus = 'active';
+          }
+          
+          res.json(safeUser);
+        });
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
