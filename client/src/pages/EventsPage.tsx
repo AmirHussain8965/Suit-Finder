@@ -59,8 +59,20 @@ export default function EventsPage() {
 
   const createEventMutation = useMutation({
     mutationFn: async (data: any) => {
-      const res = await apiRequest("POST", "/api/events", data);
-      return res.json();
+      try {
+        console.log("[Events] Creating event with data:", JSON.stringify(data));
+        const res = await apiRequest("POST", "/api/events", data);
+        const result = await res.json();
+        console.log("[Events] Event created successfully:", result);
+        return result;
+      } catch (error: any) {
+        console.error("[Events] Event creation failed:", error);
+        // Handle network errors specifically
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          throw new Error("Network error - please check your connection and try again");
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       setIsCreating(false);
