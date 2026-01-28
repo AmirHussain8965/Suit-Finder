@@ -723,6 +723,17 @@ export class DatabaseStorage implements IStorage {
       .set({ updatedAt: new Date() })
       .where(eq(conversations.id, conversationId));
 
+    // Mark conversation as read for the sender so they don't see red dot for their own message
+    await db
+      .update(conversationParticipants)
+      .set({ lastReadAt: new Date() })
+      .where(
+        and(
+          eq(conversationParticipants.conversationId, conversationId),
+          eq(conversationParticipants.userId, senderId)
+        )
+      );
+
     return msg;
   }
 
