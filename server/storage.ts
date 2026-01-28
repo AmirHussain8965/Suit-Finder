@@ -502,7 +502,7 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(messages.createdAt))
         .limit(1);
 
-      // Count unread messages for this user
+      // Count unread messages for this user (excluding messages they sent)
       const userParticipation = userParticipations.find(p => p.conversationId === convo.id);
       let unreadCount = 0;
       if (userParticipation?.lastReadAt) {
@@ -512,16 +512,22 @@ export class DatabaseStorage implements IStorage {
           .where(
             and(
               eq(messages.conversationId, convo.id),
-              sql`${messages.createdAt} > ${userParticipation.lastReadAt}`
+              sql`${messages.createdAt} > ${userParticipation.lastReadAt}`,
+              sql`${messages.senderId} != ${userId}`
             )
           );
         unreadCount = Number(unread[0]?.count || 0);
       } else {
-        // If never read, all messages are unread
+        // If never read, all messages from others are unread
         const unread = await db
           .select({ count: sql<number>`count(*)` })
           .from(messages)
-          .where(eq(messages.conversationId, convo.id));
+          .where(
+            and(
+              eq(messages.conversationId, convo.id),
+              sql`${messages.senderId} != ${userId}`
+            )
+          );
         unreadCount = Number(unread[0]?.count || 0);
       }
 
