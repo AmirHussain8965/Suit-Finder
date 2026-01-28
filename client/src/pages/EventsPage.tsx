@@ -61,45 +61,38 @@ export default function EventsPage() {
     mutationFn: async (data: any) => {
       console.log("[Events] Mutation starting with data:", JSON.stringify(data));
       
-      try {
-        const res = await fetch("/api/events", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-          credentials: "include",
-        });
+      const res = await fetch("/api/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      
+      console.log("[Events] Response status:", res.status);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("[Events] Server error response:", errorText);
         
-        console.log("[Events] Response status:", res.status);
-        
-        if (!res.ok) {
-          const errorText = await res.text();
-          console.error("[Events] Server error response:", errorText);
-          
-          if (res.status === 401) {
-            throw new Error("Your session has expired. Please log out and log back in.");
-          }
-          
-          try {
-            const errorJson = JSON.parse(errorText);
-            throw new Error(errorJson.message || `Server error: ${res.status}`);
-          } catch {
-            throw new Error(`Server error: ${res.status}`);
-          }
+        if (res.status === 401) {
+          throw new Error("Your session has expired. Please log out and log back in.");
         }
         
-        const result = await res.json();
-        console.log("[Events] Event created successfully:", result);
-        return result;
-      } catch (error: any) {
-        console.error("[Events] Event creation error:", error.name, error.message);
-        
-        // Handle network errors
-        if (error.name === 'TypeError' || error.message?.includes('fetch') || error.message?.includes('network')) {
-          throw new Error("Network error - please check your connection and try again");
+        let errorMessage = `Server error: ${res.status}`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.message) {
+            errorMessage = errorJson.message;
+          }
+        } catch {
+          // Keep default error message
         }
-        
-        throw error;
+        throw new Error(errorMessage);
       }
+      
+      const result = await res.json();
+      console.log("[Events] Event created successfully:", result);
+      return result;
     },
     onSuccess: () => {
       console.log("[Events] Mutation success - resetting form");
