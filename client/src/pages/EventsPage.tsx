@@ -562,6 +562,7 @@ export default function EventsPage() {
 
               <DialogFooter>
                 <Button 
+                  type="button"
                   variant="outline" 
                   onClick={() => setIsCreating(false)}
                   data-testid="button-cancel-create"
@@ -569,6 +570,7 @@ export default function EventsPage() {
                   Cancel
                 </Button>
                 <Button 
+                  type="button"
                   onClick={handleCreateEvent}
                   disabled={createEventMutation.isPending || !newEvent.title || !newEvent.eventDate || !newEvent.eventTime}
                   data-testid="button-submit-event"
