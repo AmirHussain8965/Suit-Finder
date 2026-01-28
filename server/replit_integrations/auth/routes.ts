@@ -22,6 +22,11 @@ const resetPasswordSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(6, "New password must be at least 6 characters"),
+});
+
 // Register auth-specific routes
 export function registerAuthRoutes(app: Express): void {
   // Get current authenticated user
@@ -274,6 +279,58 @@ export function registerAuthRoutes(app: Express): void {
       }
       console.error("Reset password error:", error);
       res.status(500).json({ message: "Failed to reset password" });
+    }
+  });
+
+  // Change password (for logged-in users)
+  app.post("/api/auth/change-password", async (req: any, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const userId = req.user.claims?.sub || req.user.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const input = changePasswordSchema.parse(req.body);
+      
+      const result = await authStorage.changePassword(userId, input.currentPassword, input.newPassword);
+      if (!result.user) {
+        return res.status(400).json({ message: result.error || "Failed to change password" });
+      }
+      
+      // Regenerate session for security after password change
+      req.session.regenerate((err: any) => {
+        if (err) {
+          console.error("Session regeneration error:", err);
+          // Still return success since password was changed
+          return res.json({ message: "Password changed successfully. Please log in again." });
+        }
+        
+        // Re-establish the user in the new session
+        const sessionUser = {
+          userId: result.user!.id,
+          email: result.user!.email,
+          claims: { sub: result.user!.id },
+          expires_at: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60),
+        };
+        
+        req.login(sessionUser, (loginErr: any) => {
+          if (loginErr) {
+            console.error("Re-login error:", loginErr);
+            return res.json({ message: "Password changed successfully. Please log in again." });
+          }
+          res.json({ message: "Password changed successfully" });
+        });
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
+      console.error("Change password error:", error);
+      res.status(500).json({ message: "Failed to change password" });
     }
   });
 }

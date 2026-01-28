@@ -37,6 +37,8 @@ export interface IAuthStorage {
   resetPasswordWithToken(token: string, newPassword: string): Promise<User | undefined>;
   // Account deletion
   deleteUser(userId: string): Promise<void>;
+  // Change password (requires current password)
+  changePassword(userId: string, currentPassword: string, newPassword: string): Promise<{ user: User | null; error?: string }>;
 }
 
 class AuthStorage implements IAuthStorage {
@@ -213,6 +215,29 @@ class AuthStorage implements IAuthStorage {
     await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, userId));
     // Delete the user record
     await db.delete(users).where(eq(users.id, userId));
+  }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<{ user: User | null; error?: string }> {
+    // Get user
+    const user = await this.getUser(userId);
+    if (!user) {
+      return { user: null, error: "User not found" };
+    }
+    
+    // If user has no password set (e.g., Replit Auth account), they can't use this flow
+    if (!user.password) {
+      return { user: null, error: "No password set for this account. Please use the 'Set Password' option." };
+    }
+    
+    // Validate current password
+    const isValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isValid) {
+      return { user: null, error: "Current password is incorrect" };
+    }
+    
+    // Set new password
+    const updatedUser = await this.setPassword(userId, newPassword);
+    return { user: updatedUser || null };
   }
 }
 

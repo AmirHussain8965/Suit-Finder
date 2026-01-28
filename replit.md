@@ -124,10 +124,15 @@ Preferred communication style: Simple, everyday language.
   - POST /api/auth/forgot-password - Request password reset (email required)
   - GET /api/auth/validate-reset-token - Validate a reset token
   - POST /api/auth/reset-password - Reset password with token
+  - POST /api/auth/change-password - Change password (requires current password, for logged-in users)
 - **Password Reset**: 
   - Tokens are SHA-256 hashed before storage (security best practice)
   - Tokens expire after 1 hour
   - Single-use tokens (deleted after successful reset)
+- **Password Change** (for logged-in users):
+  - Validates current password before allowing change
+  - Session is regenerated after successful password change (security best practice)
+  - Accessible via "Change Password" button on Profile page
 - **Implementation**: Express sessions with Passport.js in `server/replit_integrations/auth/`
 
 ### Payment Processing (Stripe)
