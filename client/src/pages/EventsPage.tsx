@@ -53,8 +53,10 @@ export default function EventsPage() {
     category: "drinks_only" as EventCategory,
   });
 
-  const { data: events, isLoading } = useQuery<EventWithDetails[]>({
+  const { data: events, isLoading, isError, error, refetch } = useQuery<EventWithDetails[]>({
     queryKey: ["/api/events"],
+    staleTime: 1000 * 60 * 5, // 5 minutes - don't cache forever
+    retry: 1, // Retry once on failure
   });
 
   const createEventMutation = useMutation({
@@ -238,6 +240,25 @@ export default function EventsPage() {
         <PremiumGate featureName="events">
           <div />
         </PremiumGate>
+      </Layout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Layout backgroundVariant="events">
+        <div className="max-w-4xl mx-auto p-4 space-y-6">
+          <Card className="p-8 text-center">
+            <Calendar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+            <h2 className="text-xl font-serif mb-2">Unable to load events</h2>
+            <p className="text-muted-foreground mb-4">
+              {(error as Error)?.message || "There was an issue loading the events. Please try again."}
+            </p>
+            <Button onClick={() => refetch()} data-testid="button-retry-events">
+              Try Again
+            </Button>
+          </Card>
+        </div>
       </Layout>
     );
   }

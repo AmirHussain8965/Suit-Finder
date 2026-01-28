@@ -55,6 +55,7 @@ export default function MessagesPage() {
       setMessageLimitError(null);
       queryClient.invalidateQueries({ queryKey: ["/api/conversations", selectedConversationId, "messages"] });
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/messages/unread-count"] });
       // Refetch subscription to update remaining message count
       if (tier === 'free') {
         refetchSubscription();
@@ -102,6 +103,7 @@ export default function MessagesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/messages/unread-count"] });
     },
   });
 
