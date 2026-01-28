@@ -86,16 +86,75 @@
   pointer-events: none;
 }
 
+/* Enhanced photo protection with subtle watermark overlay */
+.protected-photo {
+  position: relative;
+}
+
+.protected-photo::after {
+  content: "FORMAL FINDINGS";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-25deg);
+  font-size: 2rem;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5rem;
+  z-index: 10;
+}
+
+/* Prevent context menu on protected content */
+.no-screenshot {
+  -webkit-touch-callout: none;
+}
+
+.no-screenshot img,
+.no-screenshot video {
+  -webkit-user-drag: none;
+  user-drag: none;
+  pointer-events: none;
+}
+
+/* Block developer tools inspection hint */
+.no-screenshot::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  pointer-events: none;
+  z-index: 1;
+}
+
 /* Hide content during print/screenshot attempts */
 @media print {
-  .no-screenshot {
+  .no-screenshot,
+  .protected-photo {
     visibility: hidden !important;
     display: none !important;
   }
   
-  .no-screenshot * {
+  .no-screenshot *,
+  .protected-photo * {
     visibility: hidden !important;
     display: none !important;
+  }
+  
+  body::after {
+    content: "Content protected - printing disabled";
+    display: block;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    color: #333;
   }
 }
 
