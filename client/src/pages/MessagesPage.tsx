@@ -466,9 +466,9 @@ export default function MessagesPage() {
                 {tier === 'free' && messagesRemaining !== null && messagesRemaining !== undefined && (
                   <div className={`mb-2 text-xs p-2 rounded ${messagesRemaining === 0 ? 'bg-destructive/10 text-destructive' : 'bg-accent/10 text-muted-foreground'}`}>
                     {messagesRemaining === 0 ? (
-                      <span>Daily limit reached. <Link href="/membership" className="underline text-accent">Upgrade</Link> for unlimited messaging.</span>
+                      <span>Message limit reached. <Link href="/membership" className="underline text-accent">Upgrade</Link> for unlimited messaging.</span>
                     ) : (
-                      <span>{messagesRemaining} of {messageLimit} free messages remaining today</span>
+                      <span>{messagesRemaining} of {messageLimit} free messages remaining (resets every 2 days)</span>
                     )}
                   </div>
                 )}

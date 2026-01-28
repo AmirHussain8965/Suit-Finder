@@ -13,11 +13,12 @@ export default function AboutPage() {
     { icon: Eye, text: "Browse member profiles" },
     { icon: MapPin, text: "View the map" },
     { icon: Users, text: "Create your profile" },
-    { icon: Heart, text: "Add members to favorites" },
+    { icon: MessageSquare, text: "5 messages every 2 days" },
   ];
 
   const tailoredCircleFeatures = [
     { icon: MessageSquare, text: "Unlimited private messaging" },
+    { icon: Heart, text: "Add members to favorites" },
     { icon: Users, text: "Create and join group chats" },
     { icon: Calendar, text: "Access events and meetups" },
     { icon: Shield, text: "Enhanced location privacy" },
@@ -185,13 +186,13 @@ export default function AboutPage() {
                     <td className="text-center py-3 px-2"><Check className="h-4 w-4 text-accent mx-auto" /></td>
                   </tr>
                   <tr className="border-b border-border/50">
-                    <td className="py-3 px-2">Favorites list</td>
-                    <td className="text-center py-3 px-2"><Check className="h-4 w-4 text-accent mx-auto" /></td>
+                    <td className="py-3 px-2">Private messaging</td>
+                    <td className="text-center py-3 px-2 text-muted-foreground text-xs">5 / 2 days</td>
                     <td className="text-center py-3 px-2"><Check className="h-4 w-4 text-accent mx-auto" /></td>
                     <td className="text-center py-3 px-2"><Check className="h-4 w-4 text-accent mx-auto" /></td>
                   </tr>
                   <tr className="border-b border-border/50">
-                    <td className="py-3 px-2">Private messaging</td>
+                    <td className="py-3 px-2">Favorites list</td>
                     <td className="text-center py-3 px-2 text-muted-foreground/50">-</td>
                     <td className="text-center py-3 px-2"><Check className="h-4 w-4 text-accent mx-auto" /></td>
                     <td className="text-center py-3 px-2"><Check className="h-4 w-4 text-accent mx-auto" /></td>

@@ -491,6 +491,13 @@ export async function registerRoutes(
       return res.status(401).json({ message: "Unauthorized" });
     }
     const userId = (req.user as any).claims?.sub || (req.user as any).userId;
+    
+    // Favorites require premium or platinum tier
+    const isPremium = await checkPremiumTier(userId);
+    if (!isPremium) {
+      return res.status(403).json({ message: "Favorites require a premium membership" });
+    }
+    
     const userFavorites = await storage.getFavorites(userId);
     
     const enrichedFavorites = await Promise.all(userFavorites.map(async (f) => {
@@ -511,6 +518,13 @@ export async function registerRoutes(
       return res.status(401).json({ message: "Unauthorized" });
     }
     const userId = (req.user as any).claims?.sub || (req.user as any).userId;
+    
+    // Favorites require premium or platinum tier
+    const isPremium = await checkPremiumTier(userId);
+    if (!isPremium) {
+      return res.status(403).json({ message: "Favorites require a premium membership" });
+    }
+    
     const targetUserId = req.params.targetUserId;
     
     await storage.addFavorite(userId, targetUserId);
@@ -804,8 +818,9 @@ export async function registerRoutes(
       return res.status(403).json({ message: "You are not a member of this conversation" });
     }
     
-    // Check free tier message limit (5 messages per day)
-    const FREE_DAILY_MESSAGE_LIMIT = 5;
+    // Check free tier message limit (5 messages per 2 days)
+    const FREE_MESSAGE_LIMIT = 5;
+    const FREE_MESSAGE_PERIOD_HOURS = 48; // 2 days
     const user = await authStorage.getUser(userId);
     
     // Determine user tier using centralized platinum email check
@@ -814,23 +829,22 @@ export async function registerRoutes(
     const tier = hasPlatinumEmail ? 'platinum' : (hasActiveSubscription ? (user?.subscriptionTier || 'premium') : 'free');
     
     if (tier === 'free') {
-      // Count messages sent today by this user
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
+      // Count messages sent in the last 48 hours by this user
+      const periodStart = new Date(Date.now() - FREE_MESSAGE_PERIOD_HOURS * 60 * 60 * 1000);
       
       const messageCountResult = await db.execute(sql`
         SELECT COUNT(*) as count FROM messages 
         WHERE sender_id = ${userId} 
-        AND created_at >= ${todayStart}
+        AND created_at >= ${periodStart}
       `);
-      const messagesSentToday = parseInt(messageCountResult.rows[0]?.count as string || '0');
+      const messagesSentInPeriod = parseInt(messageCountResult.rows[0]?.count as string || '0');
       
-      if (messagesSentToday >= FREE_DAILY_MESSAGE_LIMIT) {
+      if (messagesSentInPeriod >= FREE_MESSAGE_LIMIT) {
         return res.status(403).json({ 
-          message: `Free members can send ${FREE_DAILY_MESSAGE_LIMIT} messages per day. Upgrade to send unlimited messages.`,
+          message: `Free members can send ${FREE_MESSAGE_LIMIT} messages every 2 days. Upgrade to send unlimited messages.`,
           code: 'MESSAGE_LIMIT_REACHED',
-          limit: FREE_DAILY_MESSAGE_LIMIT,
-          used: messagesSentToday
+          limit: FREE_MESSAGE_LIMIT,
+          used: messagesSentInPeriod
         });
       }
     }
@@ -1094,23 +1108,23 @@ export async function registerRoutes(
 
     console.log(`[Subscription Check] User: ${user.email}, Status: ${user.subscriptionStatus}, Tier: ${user.subscriptionTier}, isPlatinum: ${isPlatinum}, isAdmin: ${isAdmin}`);
 
-    // Calculate message limits for free tier
-    const FREE_DAILY_MESSAGE_LIMIT = 5;
+    // Calculate message limits for free tier (5 messages per 2 days)
+    const FREE_MESSAGE_LIMIT = 5;
+    const FREE_MESSAGE_PERIOD_HOURS = 48; // 2 days
     let messagesRemaining = null;
     let messageLimit = null;
     
     if (tier === 'free') {
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
+      const periodStart = new Date(Date.now() - FREE_MESSAGE_PERIOD_HOURS * 60 * 60 * 1000);
       
       const messageCountResult = await db.execute(sql`
         SELECT COUNT(*) as count FROM messages 
         WHERE sender_id = ${userId} 
-        AND created_at >= ${todayStart}
+        AND created_at >= ${periodStart}
       `);
-      const messagesSentToday = parseInt(messageCountResult.rows[0]?.count as string || '0');
-      messagesRemaining = Math.max(0, FREE_DAILY_MESSAGE_LIMIT - messagesSentToday);
-      messageLimit = FREE_DAILY_MESSAGE_LIMIT;
+      const messagesSentInPeriod = parseInt(messageCountResult.rows[0]?.count as string || '0');
+      messagesRemaining = Math.max(0, FREE_MESSAGE_LIMIT - messagesSentInPeriod);
+      messageLimit = FREE_MESSAGE_LIMIT;
     }
 
     res.json({
