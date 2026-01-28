@@ -100,6 +100,9 @@ export default function MessagesPage() {
     mutationFn: async (conversationId: number) => {
       return apiRequest("POST", `/api/conversations/${conversationId}/read`);
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+    },
   });
 
   const broadcastMutation = useMutation({
