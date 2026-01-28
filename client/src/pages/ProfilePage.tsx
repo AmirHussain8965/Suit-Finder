@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertProfileSchema } from "@shared/schema";
 import { z } from "zod";
+import { useLocation } from "wouter";
 import { Layout } from "@/components/Layout";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profiles";
 import { useAuth } from "@/hooks/use-auth";
@@ -12,7 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Save, Users, X, Plus, Lock } from "lucide-react";
+import { Loader2, Save, Users, X, Plus, Lock, Camera, Check } from "lucide-react";
+import { useMyPhotos, useSetProfilePhoto } from "@/hooks/use-photos";
+import type { Photo } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -57,8 +60,15 @@ export default function ProfilePage() {
   const { data: profile, isLoading: isProfileLoading } = useProfile();
   const { mutate: updateProfile, isPending: isSaving } = useUpdateProfile();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [wardrobeDialogOpen, setWardrobeDialogOpen] = useState(false);
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
+  const [profilePicDialogOpen, setProfilePicDialogOpen] = useState(false);
+  const [settingPhotoId, setSettingPhotoId] = useState<number | null>(null);
+
+  // Photo gallery for profile picture selection
+  const { data: myPhotos = [], isLoading: isPhotosLoading, isError: isPhotosError, refetch: refetchPhotos } = useMyPhotos();
+  const { mutate: setProfilePhoto, isPending: isSettingProfilePhoto } = useSetProfilePhoto();
 
   // Wardrobe access queries
   const { data: wardrobeAccessList = [] } = useQuery<WardrobeAccessUser[]>({
@@ -205,12 +215,25 @@ export default function ProfilePage() {
         
         {/* Header */}
         <div className="flex flex-col md:flex-row gap-6 items-center md:items-start border-b border-border pb-8">
-          <Avatar className="h-32 w-32 border-4 border-card shadow-xl ring-2 ring-accent/50">
-            <AvatarImage src={user?.profileImageUrl || undefined} />
-            <AvatarFallback className="text-4xl bg-primary text-accent">
-              {profile?.displayName?.[0] || user?.firstName?.[0] || "?"}
-            </AvatarFallback>
-          </Avatar>
+          <button
+            type="button"
+            onClick={() => setProfilePicDialogOpen(true)}
+            className="relative group cursor-pointer"
+            data-testid="button-change-profile-pic"
+          >
+            <Avatar className="h-32 w-32 border-4 border-card shadow-xl ring-2 ring-accent/50 transition-all group-hover:ring-accent">
+              <AvatarImage src={user?.profileImageUrl || undefined} />
+              <AvatarFallback className="text-4xl bg-primary text-accent">
+                {profile?.displayName?.[0] || user?.firstName?.[0] || "?"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+              <Camera className="h-8 w-8 text-white" />
+            </div>
+            <div className="absolute -bottom-1 -right-1 bg-accent text-accent-foreground rounded-full p-1.5 shadow-lg">
+              <Camera className="h-4 w-4" />
+            </div>
+          </button>
           
           <div className="text-center md:text-left space-y-2">
             <h1 className="text-4xl font-serif font-bold text-foreground">
@@ -218,6 +241,9 @@ export default function ProfilePage() {
             </h1>
             <p className="text-muted-foreground max-w-lg">
               Manage your public appearance and preferences within the network.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Click your photo to change it
             </p>
           </div>
         </div>
@@ -686,6 +712,142 @@ export default function ProfilePage() {
         </form>
         </div>
       </div>
+
+      {/* Profile Picture Selection Dialog */}
+      <Dialog open={profilePicDialogOpen} onOpenChange={setProfilePicDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-xl">Change Profile Picture</DialogTitle>
+            <DialogDescription>
+              Select a photo from your gallery to use as your profile picture
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            {isPhotosLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-accent" />
+              </div>
+            ) : isPhotosError ? (
+              <div className="text-center py-12 space-y-4">
+                <div className="text-muted-foreground">
+                  Failed to load your photos.
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => refetchPhotos()}
+                  data-testid="button-retry-photos"
+                >
+                  Try Again
+                </Button>
+              </div>
+            ) : (myPhotos as Photo[]).length === 0 ? (
+              <div className="text-center py-12 space-y-4">
+                <div className="text-muted-foreground">
+                  You haven't uploaded any photos yet.
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setProfilePicDialogOpen(false);
+                    navigate("/gallery");
+                  }}
+                  data-testid="button-go-to-gallery"
+                >
+                  Go to Gallery to Upload Photos
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                {(myPhotos as Photo[]).map((photo) => {
+                  const isCurrentProfilePic = user?.profileImageUrl === photo.url;
+                  const isThisPhotoSetting = settingPhotoId === photo.id;
+                  return (
+                    <button
+                      key={photo.id}
+                      type="button"
+                      onClick={() => {
+                        if (!isCurrentProfilePic && !isSettingProfilePhoto) {
+                          setSettingPhotoId(photo.id);
+                          setProfilePhoto(photo.id, {
+                            onSuccess: () => {
+                              setSettingPhotoId(null);
+                              toast({
+                                title: "Profile picture updated",
+                                description: "Your new profile picture is now visible to others.",
+                              });
+                              setProfilePicDialogOpen(false);
+                            },
+                            onError: () => {
+                              setSettingPhotoId(null);
+                              toast({
+                                title: "Error",
+                                description: "Failed to update profile picture. Please try again.",
+                                variant: "destructive",
+                              });
+                            },
+                          });
+                        }
+                      }}
+                      disabled={isSettingProfilePhoto}
+                      className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover-elevate ${
+                        isCurrentProfilePic
+                          ? "border-accent ring-2 ring-accent/50"
+                          : "border-transparent hover:border-accent/50"
+                      } ${isSettingProfilePhoto && !isThisPhotoSetting ? "opacity-50" : ""}`}
+                      data-testid={`button-select-photo-${photo.id}`}
+                    >
+                      <img
+                        src={photo.url}
+                        alt="Gallery photo"
+                        className="w-full h-full object-cover"
+                      />
+                      {isCurrentProfilePic && !isThisPhotoSetting && (
+                        <div className="absolute inset-0 bg-accent/20 flex items-center justify-center">
+                          <div className="bg-accent text-accent-foreground rounded-full p-2">
+                            <Check className="h-4 w-4" />
+                          </div>
+                        </div>
+                      )}
+                      {isThisPhotoSetting && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <Loader2 className="h-6 w-6 animate-spin text-white" />
+                        </div>
+                      )}
+                      {photo.isPublic === false && (
+                        <div className="absolute top-1 right-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
+                          Private
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-between items-center pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setProfilePicDialogOpen(false);
+                navigate("/gallery");
+              }}
+              data-testid="button-upload-new"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Upload New Photo
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => setProfilePicDialogOpen(false)}
+              data-testid="button-close-profile-pic-dialog"
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
