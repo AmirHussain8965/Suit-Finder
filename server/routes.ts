@@ -987,20 +987,24 @@ export async function registerRoutes(
     const userId = (req.user as any).claims?.sub || (req.user as any).userId;
     
     try {
+      console.log("Creating event with body:", JSON.stringify(req.body));
       const input = api.events.create.input.parse(req.body);
+      console.log("Parsed input:", JSON.stringify(input));
       const event = await storage.createEvent(userId, {
         ...input,
         eventDate: new Date(input.eventDate as any),
       });
+      console.log("Event created:", event.id);
       res.json(event);
     } catch (err) {
+      console.error("Error creating event:", err);
       if (err instanceof z.ZodError) {
         return res.status(400).json({
           message: err.errors[0].message,
           field: err.errors[0].path.join('.'),
         });
       }
-      throw err;
+      return res.status(500).json({ message: (err as Error).message || "Failed to create event" });
     }
   });
 
