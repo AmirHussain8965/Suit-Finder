@@ -59,22 +59,50 @@ export default function EventsPage() {
 
   const createEventMutation = useMutation({
     mutationFn: async (data: any) => {
+      console.log("[Events] Mutation starting with data:", JSON.stringify(data));
+      
       try {
-        console.log("[Events] Creating event with data:", JSON.stringify(data));
-        const res = await apiRequest("POST", "/api/events", data);
+        const res = await fetch("/api/events", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+          credentials: "include",
+        });
+        
+        console.log("[Events] Response status:", res.status);
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error("[Events] Server error response:", errorText);
+          
+          if (res.status === 401) {
+            throw new Error("Your session has expired. Please log out and log back in.");
+          }
+          
+          try {
+            const errorJson = JSON.parse(errorText);
+            throw new Error(errorJson.message || `Server error: ${res.status}`);
+          } catch {
+            throw new Error(`Server error: ${res.status}`);
+          }
+        }
+        
         const result = await res.json();
         console.log("[Events] Event created successfully:", result);
         return result;
       } catch (error: any) {
-        console.error("[Events] Event creation failed:", error);
-        // Handle network errors specifically
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.error("[Events] Event creation error:", error.name, error.message);
+        
+        // Handle network errors
+        if (error.name === 'TypeError' || error.message?.includes('fetch') || error.message?.includes('network')) {
           throw new Error("Network error - please check your connection and try again");
         }
+        
         throw error;
       }
     },
     onSuccess: () => {
+      console.log("[Events] Mutation success - resetting form");
       setIsCreating(false);
       setNewEvent({
         title: "",
@@ -90,7 +118,7 @@ export default function EventsPage() {
       toast({ title: "Event Created", description: "Your event has been created successfully." });
     },
     onError: (err: Error) => {
-      console.error("Failed to create event:", err);
+      console.error("[Events] Mutation error:", err.message);
       toast({ title: "Error", description: err.message || "Failed to create event", variant: "destructive" });
     },
   });
@@ -150,19 +178,53 @@ export default function EventsPage() {
   };
 
   const handleCreateEvent = () => {
-    if (!newEvent.title || !newEvent.eventDate || !newEvent.eventTime) return;
+    console.log("[Events] handleCreateEvent called");
+    console.log("[Events] Form state:", JSON.stringify(newEvent));
     
-    const dateTime = new Date(`${newEvent.eventDate}T${newEvent.eventTime}`);
+    if (!newEvent.title || !newEvent.eventDate || !newEvent.eventTime) {
+      console.log("[Events] Validation failed - missing required fields");
+      toast({ 
+        title: "Missing Information", 
+        description: "Please fill in the title, date, and time", 
+        variant: "destructive" 
+      });
+      return;
+    }
     
-    createEventMutation.mutate({
-      title: newEvent.title,
-      description: newEvent.description || null,
-      category: newEvent.category,
-      eventDate: dateTime.toISOString(),
-      location: newEvent.location || null,
-      maxAttendees: newEvent.maxAttendees ? parseInt(newEvent.maxAttendees) : null,
-      isPublic: newEvent.isPublic,
-    });
+    try {
+      const dateTime = new Date(`${newEvent.eventDate}T${newEvent.eventTime}`);
+      console.log("[Events] Parsed dateTime:", dateTime.toISOString());
+      
+      if (isNaN(dateTime.getTime())) {
+        console.log("[Events] Invalid date/time");
+        toast({ 
+          title: "Invalid Date", 
+          description: "Please enter a valid date and time", 
+          variant: "destructive" 
+        });
+        return;
+      }
+      
+      const eventData = {
+        title: newEvent.title,
+        description: newEvent.description || null,
+        category: newEvent.category,
+        eventDate: dateTime.toISOString(),
+        location: newEvent.location || null,
+        maxAttendees: newEvent.maxAttendees ? parseInt(newEvent.maxAttendees) : null,
+        isPublic: newEvent.isPublic,
+      };
+      
+      console.log("[Events] Submitting event data:", JSON.stringify(eventData));
+      createEventMutation.mutate(eventData);
+    } catch (err: any) {
+      console.error("[Events] Error in handleCreateEvent:", err);
+      toast({ 
+        title: "Error", 
+        description: "Failed to process event data: " + (err.message || "Unknown error"), 
+        variant: "destructive" 
+      });
+    }
   };
 
   const isHost = (event: EventWithDetails) => event.hostId === currentUserId;
