@@ -32,6 +32,11 @@ export function registerAuthRoutes(app: Express): void {
   // Get current authenticated user
   app.get("/api/auth/user", async (req: any, res) => {
     try {
+      console.log("[Auth Debug] /api/auth/user - Session ID:", req.sessionID);
+      console.log("[Auth Debug] /api/auth/user - Is authenticated:", req.isAuthenticated());
+      console.log("[Auth Debug] /api/auth/user - Session user:", req.user ? JSON.stringify(req.user) : "none");
+      console.log("[Auth Debug] /api/auth/user - Cookies:", req.headers.cookie || "none");
+      
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Unauthorized" });
       }
@@ -150,6 +155,9 @@ export function registerAuthRoutes(app: Express): void {
           console.error("Session error:", err);
           return res.status(500).json({ message: "Failed to create session" });
         }
+        
+        console.log("[Auth Debug] Login successful - Session ID:", req.sessionID);
+        console.log("[Auth Debug] Login successful - Session user set:", JSON.stringify(sessionUser));
         
         const { password, ...safeUser } = user;
         
