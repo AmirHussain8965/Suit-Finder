@@ -261,16 +261,6 @@ export default function MessagesPage() {
   
   return (
     <Layout backgroundVariant="tuxedo">
-      {/* Temporary Debug Panel - remove after fixing */}
-      {isAdmin && (
-        <div className="bg-yellow-500/20 border border-yellow-500 p-2 text-xs text-yellow-200">
-          <strong>DEBUG:</strong> 
-          Loading: {isLoadingConversations ? 'YES' : 'NO'} | 
-          Conversations: {conversations ? conversations.length : 'null'} | 
-          Error: {conversationsError ? String(conversationsError) : 'none'} |
-          User ID: {currentUserId || 'none'}
-        </div>
-      )}
       <div className="flex h-full w-full no-screenshot">
         {/* Conversation List - hide on mobile when conversation selected */}
         <div className={`w-full md:w-80 border-r border-border flex flex-col bg-card ${selectedConversationId ? 'hidden md:flex' : 'flex'}`}>
