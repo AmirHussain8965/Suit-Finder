@@ -9,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Send, Users, Plus, ArrowLeft, MessageSquare, Megaphone } from "lucide-react";
+import { Loader2, Send, Users, Plus, ArrowLeft, MessageSquare, Megaphone, ImagePlus, X } from "lucide-react";
 import type { ConversationWithParticipants, MessageWithSender } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useNearbyProfiles } from "@/hooks/use-profiles";
@@ -17,6 +17,7 @@ import { usePremiumFeature } from "@/hooks/use-subscription";
 import { PremiumGate } from "@/components/PremiumGate";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { useUpload } from "@/hooks/use-upload";
 
 export default function MessagesPage() {
   const { user } = useAuth();
@@ -31,7 +32,10 @@ export default function MessagesPage() {
   const [messageLimitError, setMessageLimitError] = useState<string | null>(null);
   const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
   const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [pendingImage, setPendingImage] = useState<{ file: File; preview: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { uploadFile, isUploading: isUploadingImage } = useUpload();
 
   const { data: conversations, isLoading: isLoadingConversations } = useQuery<ConversationWithParticipants[]>({
     queryKey: ["/api/conversations"],
@@ -46,12 +50,17 @@ export default function MessagesPage() {
   const { data: nearbyUsers } = useNearbyProfiles(0, 0, 1000);
 
   const sendMessageMutation = useMutation({
-    mutationFn: async (content: string) => {
-      const response = await apiRequest("POST", `/api/conversations/${selectedConversationId}/messages`, { content });
+    mutationFn: async ({ content, imageUrl }: { content?: string; imageUrl?: string }) => {
+      const response = await apiRequest("POST", `/api/conversations/${selectedConversationId}/messages`, { content, imageUrl });
       return response;
     },
     onSuccess: () => {
       setNewMessage("");
+      // Clean up preview URL to prevent memory leak
+      if (pendingImage) {
+        URL.revokeObjectURL(pendingImage.preview);
+      }
+      setPendingImage(null);
       setMessageLimitError(null);
       queryClient.invalidateQueries({ queryKey: ["/api/conversations", selectedConversationId, "messages"] });
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
@@ -140,9 +149,71 @@ export default function MessagesPage() {
     }
   }, [selectedConversationId]);
 
-  const handleSendMessage = () => {
-    if (newMessage.trim() && selectedConversationId) {
-      sendMessageMutation.mutate(newMessage.trim());
+  const handleSendMessage = async () => {
+    if (!selectedConversationId) return;
+    
+    // Check if there's content or an image to send
+    if (!newMessage.trim() && !pendingImage) return;
+    
+    let imageUrl: string | undefined;
+    
+    // If there's a pending image, upload it first
+    if (pendingImage) {
+      const uploadResult = await uploadFile(pendingImage.file);
+      if (!uploadResult) {
+        toast({
+          title: "Upload Failed",
+          description: "Failed to upload image. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      imageUrl = uploadResult.objectPath;
+    }
+    
+    sendMessageMutation.mutate({
+      content: newMessage.trim() || undefined,
+      imageUrl,
+    });
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid File",
+          description: "Please select an image file.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "File Too Large",
+          description: "Please select an image under 10MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Create preview URL
+      const preview = URL.createObjectURL(file);
+      setPendingImage({ file, preview });
+    }
+    // Reset input value so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const clearPendingImage = () => {
+    if (pendingImage) {
+      URL.revokeObjectURL(pendingImage.preview);
+      setPendingImage(null);
     }
   };
 
@@ -480,7 +551,47 @@ export default function MessagesPage() {
                     {messageLimitError} <Link href="/membership" className="underline text-accent">Upgrade now</Link>
                   </div>
                 )}
+                {/* Pending image preview */}
+                {pendingImage && (
+                  <div className="mb-2 relative inline-block no-screenshot">
+                    <img 
+                      src={pendingImage.preview} 
+                      alt="Pending upload" 
+                      className="max-h-32 rounded-lg border border-border"
+                      style={{ pointerEvents: "none" }}
+                    />
+                    <Button
+                      size="icon"
+                      variant="destructive"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                      onClick={clearPendingImage}
+                      data-testid="button-remove-image"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
                 <div className="flex gap-2">
+                  {/* Hidden file input */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    data-testid="input-image-file"
+                  />
+                  {/* Image upload button */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingImage || sendMessageMutation.isPending || (tier === 'free' && messagesRemaining === 0)}
+                    data-testid="button-attach-image"
+                    title="Attach image"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                  </Button>
                   <Input
                     placeholder={tier === 'free' && messagesRemaining === 0 ? "Upgrade to send more messages..." : "Type a message..."}
                     value={newMessage}
@@ -491,16 +602,16 @@ export default function MessagesPage() {
                         handleSendMessage();
                       }
                     }}
-                    disabled={sendMessageMutation.isPending || (tier === 'free' && messagesRemaining === 0)}
+                    disabled={sendMessageMutation.isPending || isUploadingImage || (tier === 'free' && messagesRemaining === 0)}
                     data-testid="input-message"
                   />
                   <Button
                     size="icon"
                     onClick={handleSendMessage}
-                    disabled={!newMessage.trim() || sendMessageMutation.isPending || (tier === 'free' && messagesRemaining === 0)}
+                    disabled={(!newMessage.trim() && !pendingImage) || sendMessageMutation.isPending || isUploadingImage || (tier === 'free' && messagesRemaining === 0)}
                     data-testid="button-send"
                   >
-                    {sendMessageMutation.isPending ? (
+                    {sendMessageMutation.isPending || isUploadingImage ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Send className="h-4 w-4" />
