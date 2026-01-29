@@ -300,6 +300,7 @@ export const api = {
       path: '/api/internal/events',
       input: insertEventSchema.extend({
         category: z.enum(eventCategories),
+        eventDate: z.string().or(z.date()).transform((val) => typeof val === 'string' ? new Date(val) : val),
       }),
       responses: {
         200: z.custom<typeof events.$inferSelect>(),
