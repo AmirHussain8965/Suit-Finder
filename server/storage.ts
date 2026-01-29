@@ -509,10 +509,12 @@ export class DatabaseStorage implements IStorage {
 
     // Batch fetch: last message for each conversation using window function
     // Use a single query with DISTINCT ON to get the latest message per conversation
+    // Convert JS array to PostgreSQL array format
+    const pgArrayIds = `{${conversationIds.join(',')}}`;
     const allLastMessages = await db.execute(sql`
       SELECT DISTINCT ON (conversation_id) *
       FROM messages
-      WHERE conversation_id = ANY(${conversationIds})
+      WHERE conversation_id = ANY(${pgArrayIds}::int[])
       ORDER BY conversation_id, created_at DESC
     `);
     const lastMessageMap = new Map<number, typeof messages.$inferSelect>();
@@ -535,7 +537,7 @@ export class DatabaseStorage implements IStorage {
         COUNT(*) as unread_count
       FROM messages m
       JOIN conversation_participants cp ON cp.conversation_id = m.conversation_id AND cp.user_id = ${userId}
-      WHERE m.conversation_id = ANY(${conversationIds})
+      WHERE m.conversation_id = ANY(${pgArrayIds}::int[])
         AND m.sender_id != ${userId}
         AND (cp.last_read_at IS NULL OR m.created_at > cp.last_read_at)
       GROUP BY m.conversation_id
