@@ -116,7 +116,7 @@ export default function AdminEventsPage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: EventFormData) => {
-      const res = await fetch(`/api/events?key=${adminKey}`, {
+      const res = await fetch(`/api/admin/events`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -159,7 +159,7 @@ export default function AdminEventsPage() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ slug, data }: { slug: string; data: EventFormData }) => {
-      const res = await fetch(`/api/events/${slug}?key=${adminKey}`, {
+      const res = await fetch(`/api/admin/events/${slug}`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",
