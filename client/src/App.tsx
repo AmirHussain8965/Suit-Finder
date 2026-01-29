@@ -29,6 +29,7 @@ import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
 import WhosOnPage from "@/pages/WhosOnPage";
 import SuitSoireePage from "@/pages/SuitSoireePage";
 import AdminPage from "@/pages/AdminPage";
+import AdminEventsPage from "@/pages/AdminEventsPage";
 import { AgeVerification } from "@/components/AgeVerification";
 import { ProfileCompletion } from "@/components/ProfileCompletion";
 import { useActivityTracking } from "@/hooks/use-activity";
@@ -188,6 +189,10 @@ function Router() {
 
       <Route path="/subscription/cancel">
         <ProtectedRoute component={SubscriptionPage} />
+      </Route>
+
+      <Route path="/admin/events">
+        <AdminEventsPage />
       </Route>
 
       <Route path="/admin">

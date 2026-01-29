@@ -7,7 +7,8 @@ import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 import { authStorage } from "./replit_integrations/auth/storage";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
-import { sql } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
+import { events } from "@shared/schema";
 import { db } from "./db";
 import { insertAuctionSchema, insertBidSchema } from "@shared/schema";
 
@@ -1255,6 +1256,60 @@ export async function registerRoutes(
       }
       console.error("Error updating event:", err);
       res.status(500).json({ message: "Failed to update event" });
+    }
+  });
+
+  // === Admin Events API ===
+  
+  // Middleware to check admin key
+  const checkAdminKey = (req: Request, res: Response, next: NextFunction) => {
+    const adminKey = process.env.ADMIN_KEY;
+    const providedKey = req.query.key || req.headers["x-admin-key"];
+    
+    if (!adminKey || providedKey !== adminKey) {
+      return res.status(403).json({ message: "Forbidden: Invalid admin key" });
+    }
+    next();
+  };
+
+  // GET /api/admin/verify - verify admin key
+  app.get("/api/admin/verify", (req, res) => {
+    const adminKey = process.env.ADMIN_KEY;
+    const providedKey = req.query.key || req.headers["x-admin-key"];
+    
+    if (!adminKey || providedKey !== adminKey) {
+      return res.status(403).json({ valid: false, message: "Invalid admin key" });
+    }
+    res.json({ valid: true });
+  });
+
+  // GET /api/admin/events - get all events (admin view)
+  app.get("/api/admin/events", checkAdminKey, async (req, res) => {
+    try {
+      const events = await storage.getEventsPublic({ publishedOnly: false, includePast: true });
+      res.json(events);
+    } catch (err) {
+      console.error("Error fetching admin events:", err);
+      res.status(500).json({ message: "Failed to fetch events" });
+    }
+  });
+
+  // DELETE /api/admin/events/:slug - delete event
+  app.delete("/api/admin/events/:slug", checkAdminKey, async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const event = await storage.getEventBySlug(slug);
+      
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      
+      // Delete event by id
+      await db.delete(events).where(eq(events.id, event.id));
+      res.json({ success: true, message: "Event deleted" });
+    } catch (err) {
+      console.error("Error deleting event:", err);
+      res.status(500).json({ message: "Failed to delete event" });
     }
   });
 

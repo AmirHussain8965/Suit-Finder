@@ -47,6 +47,7 @@ integrations = ["javascript_log_in_with_replit:2.0.0", "javascript_object_storag
 OWNER_EMAIL = "djkiokio88@gmail.com"
 VITE_OWNER_EMAIL = "djkiokio88@gmail.com"
 PLATINUM_EMAILS = "srsnp@hotmail.com"
+ADMIN_KEY = "ff-admin-2026"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-c9b7953f-d243-423a-9ea1-853cb20f5e87"
