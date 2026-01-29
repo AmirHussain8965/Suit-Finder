@@ -73,19 +73,29 @@ export async function getStripeSecretKey() {
 }
 
 let stripeSync: any = null;
+let stripeSyncInitFailed = false;
 
 export async function getStripeSync() {
+  if (stripeSyncInitFailed) {
+    throw new Error('Stripe sync initialization previously failed');
+  }
+  
   if (!stripeSync) {
-    const { StripeSync } = await import('stripe-replit-sync');
-    const secretKey = await getStripeSecretKey();
+    try {
+      const { StripeSync } = await import('stripe-replit-sync');
+      const secretKey = await getStripeSecretKey();
 
-    stripeSync = new StripeSync({
-      poolConfig: {
-        connectionString: process.env.DATABASE_URL!,
-        max: 2,
-      },
-      stripeSecretKey: secretKey,
-    });
+      stripeSync = new StripeSync({
+        poolConfig: {
+          connectionString: process.env.DATABASE_URL!,
+          max: 2,
+        },
+        stripeSecretKey: secretKey,
+      });
+    } catch (error) {
+      stripeSyncInitFailed = true;
+      throw error;
+    }
   }
   return stripeSync;
 }

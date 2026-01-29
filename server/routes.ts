@@ -9,6 +9,7 @@ import { registerObjectStorageRoutes } from "./replit_integrations/object_storag
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { sql, eq } from "drizzle-orm";
 import { events } from "@shared/schema";
+import { users } from "@shared/models/auth";
 import { db } from "./db";
 import { insertAuctionSchema, insertBidSchema } from "@shared/schema";
 
@@ -1295,6 +1296,105 @@ export async function registerRoutes(
     } catch (err) {
       console.error("Error fetching admin events:", err);
       res.status(500).json({ message: "Failed to fetch events" });
+    }
+  });
+
+  // POST /api/admin/events - create new event
+  app.post("/api/admin/events", checkAdminKey, async (req, res) => {
+    try {
+      const { title, slug, description, startAt, endAt, timezone, locationName, locationAddress, 
+              coverImageUrl, rsvpUrl, priceCents, currency, isPublished } = req.body;
+      
+      if (!title || !slug || !startAt) {
+        return res.status(400).json({ message: "Title, slug, and start time are required" });
+      }
+      
+      // Check if slug already exists
+      const existingEvent = await storage.getEventBySlug(slug);
+      if (existingEvent) {
+        return res.status(400).json({ message: "An event with this slug already exists" });
+      }
+      
+      // For admin-created events, use the first available user as host
+      // or create an admin system user if needed
+      const allUsers = await db.select({ id: users.id }).from(users).limit(1);
+      if (allUsers.length === 0) {
+        return res.status(400).json({ message: "No users exist to host the event. Create a user first." });
+      }
+      const hostId = allUsers[0].id;
+      
+      const [newEvent] = await db.insert(events).values({
+        hostId,
+        title,
+        slug,
+        description: description || null,
+        startAt: new Date(startAt),
+        eventDate: new Date(startAt),
+        endAt: endAt ? new Date(endAt) : null,
+        timezone: timezone || "America/New_York",
+        locationName: locationName || "",
+        locationAddress: locationAddress || null,
+        coverImageUrl: coverImageUrl || null,
+        rsvpUrl: rsvpUrl || null,
+        priceCents: priceCents ? parseInt(priceCents, 10) : null,
+        currency: currency || "USD",
+        isPublic: true,
+        isPublished: isPublished ?? false,
+        category: "black_tie_meetup",
+      }).returning();
+      
+      res.status(201).json(newEvent);
+    } catch (err) {
+      console.error("Error creating event:", err);
+      res.status(500).json({ message: "Failed to create event" });
+    }
+  });
+
+  // PUT /api/admin/events/:slug - update event
+  app.put("/api/admin/events/:slug", checkAdminKey, async (req, res) => {
+    try {
+      const { slug: oldSlug } = req.params;
+      const { title, slug, description, startAt, endAt, timezone, locationName, locationAddress,
+              coverImageUrl, rsvpUrl, priceCents, currency, isPublished } = req.body;
+      
+      const existingEvent = await storage.getEventBySlug(oldSlug);
+      if (!existingEvent) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      
+      // If slug is being changed, check for conflicts
+      if (slug && slug !== oldSlug) {
+        const slugConflict = await storage.getEventBySlug(slug);
+        if (slugConflict) {
+          return res.status(400).json({ message: "An event with this slug already exists" });
+        }
+      }
+      
+      const [updatedEvent] = await db.update(events)
+        .set({
+          title: title || existingEvent.title,
+          slug: slug || existingEvent.slug,
+          description: description !== undefined ? description : existingEvent.description,
+          startAt: startAt ? new Date(startAt) : existingEvent.startAt,
+          eventDate: startAt ? new Date(startAt) : existingEvent.eventDate,
+          endAt: endAt ? new Date(endAt) : existingEvent.endAt,
+          timezone: timezone || existingEvent.timezone,
+          locationName: locationName !== undefined ? locationName : existingEvent.locationName,
+          locationAddress: locationAddress !== undefined ? locationAddress : existingEvent.locationAddress,
+          coverImageUrl: coverImageUrl !== undefined ? coverImageUrl : existingEvent.coverImageUrl,
+          rsvpUrl: rsvpUrl !== undefined ? rsvpUrl : existingEvent.rsvpUrl,
+          priceCents: priceCents !== undefined ? (priceCents ? parseInt(priceCents, 10) : null) : existingEvent.priceCents,
+          currency: currency || existingEvent.currency,
+          isPublished: isPublished !== undefined ? isPublished : existingEvent.isPublished,
+          updatedAt: new Date(),
+        })
+        .where(eq(events.id, existingEvent.id))
+        .returning();
+      
+      res.json(updatedEvent);
+    } catch (err) {
+      console.error("Error updating event:", err);
+      res.status(500).json({ message: "Failed to update event" });
     }
   });
 

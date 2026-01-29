@@ -44,8 +44,9 @@ async function initStripe() {
     stripeSync.syncBackfill()
       .then(() => console.log('Stripe data synced'))
       .catch((err: Error) => console.error('Error syncing Stripe data:', err));
-  } catch (error) {
-    console.error('Failed to initialize Stripe:', error);
+  } catch (error: any) {
+    // Log the error but don't crash - the app should work without Stripe
+    console.error('Failed to initialize Stripe (app will continue without payment features):', error?.message || error);
   }
 }
 
