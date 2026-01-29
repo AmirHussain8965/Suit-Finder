@@ -37,9 +37,16 @@ export default function MessagesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, isUploading: isUploadingImage } = useUpload();
 
-  const { data: conversations, isLoading: isLoadingConversations } = useQuery<ConversationWithParticipants[]>({
+  const { data: conversations, isLoading: isLoadingConversations, error: conversationsError } = useQuery<ConversationWithParticipants[]>({
     queryKey: ["/api/conversations"],
   });
+  
+  // Debug logging
+  useEffect(() => {
+    console.log("[Messages Debug] conversations:", conversations);
+    console.log("[Messages Debug] isLoading:", isLoadingConversations);
+    console.log("[Messages Debug] error:", conversationsError);
+  }, [conversations, isLoadingConversations, conversationsError]);
 
   const { data: messages, isLoading: isLoadingMessages } = useQuery<MessageWithSender[]>({
     queryKey: [`/api/conversations/${selectedConversationId}/messages`],
@@ -415,6 +422,12 @@ export default function MessagesPage() {
                   </div>
                 </div>
               ))
+            ) : conversationsError ? (
+              <div className="p-8 text-center text-destructive">
+                <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-sm">Error loading conversations</p>
+                <p className="text-xs mt-2">{String(conversationsError)}</p>
+              </div>
             ) : (
               <div className="p-8 text-center text-muted-foreground">
                 <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
