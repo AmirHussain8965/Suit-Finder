@@ -97,8 +97,14 @@ export function registerAuthRoutes(app: Express): void {
               console.error("Session error:", err);
               return res.status(500).json({ message: "Failed to create session" });
             }
-            const { password, ...safeUser } = user;
-            res.json(safeUser);
+            // Explicitly save the session before responding
+            req.session.save((saveErr: any) => {
+              if (saveErr) {
+                console.error("[Auth Debug] Session save error:", saveErr);
+              }
+              const { password, ...safeUser } = user;
+              res.json(safeUser);
+            });
           });
         }
         return res.status(400).json({ message: "Email already registered" });
@@ -120,8 +126,16 @@ export function registerAuthRoutes(app: Express): void {
           return res.status(500).json({ message: "Failed to create session" });
         }
         
-        const { password, ...safeUser } = user;
-        res.json(safeUser);
+        // Explicitly save the session before responding
+        req.session.save((saveErr: any) => {
+          if (saveErr) {
+            console.error("[Auth Debug] Registration session save error:", saveErr);
+          }
+          console.log("[Auth Debug] Registration session saved successfully");
+          
+          const { password, ...safeUser } = user;
+          res.json(safeUser);
+        });
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -198,7 +212,8 @@ export function registerAuthRoutes(app: Express): void {
         if (sessionErr) {
           console.error("Session destroy error:", sessionErr);
         }
-        res.clearCookie("connect.sid");
+        // Clear the correct session cookie
+        res.clearCookie("ff.sid");
         res.json({ message: "Logged out successfully" });
       });
     });
@@ -338,7 +353,13 @@ export function registerAuthRoutes(app: Express): void {
             console.error("Re-login error:", loginErr);
             return res.json({ message: "Password changed successfully. Please log in again." });
           }
-          res.json({ message: "Password changed successfully" });
+          // Explicitly save the session
+          req.session.save((saveErr: any) => {
+            if (saveErr) {
+              console.error("[Auth Debug] Password change session save error:", saveErr);
+            }
+            res.json({ message: "Password changed successfully" });
+          });
         });
       });
     } catch (error) {
