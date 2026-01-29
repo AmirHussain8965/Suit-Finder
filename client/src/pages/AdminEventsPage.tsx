@@ -381,9 +381,6 @@ export default function AdminEventsPage() {
                     <p className="text-sm text-muted-foreground">
                       {event.startAt && format(new Date(event.startAt), "MMM d, yyyy h:mm a")} | {event.locationName || "No location"}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Slug: {event.slug}
-                    </p>
                   </div>
                   <div className="flex items-center gap-1">
                     <Button
@@ -418,31 +415,15 @@ export default function AdminEventsPage() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="title">Title *</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => handleTitleChange(e.target.value)}
-                  placeholder="Event title"
-                  data-testid="input-title"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="slug">Slug *</Label>
-                <Input
-                  id="slug"
-                  value={formData.slug}
-                  onChange={(e) => {
-                    setAutoSlug(false);
-                    setFormData(prev => ({ ...prev, slug: e.target.value }));
-                  }}
-                  placeholder="event-slug"
-                  disabled={!!editingEvent}
-                  data-testid="input-slug"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => handleTitleChange(e.target.value)}
+                placeholder="Event title"
+                data-testid="input-title"
+              />
             </div>
 
             <div className="space-y-2">
