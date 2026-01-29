@@ -371,6 +371,8 @@ export const insertEventSchema = createInsertSchema(events).omit({
   createdAt: true,
   updatedAt: true,
   hostId: true,
+  slug: true, // Auto-generated from title on server
+  startAt: true, // Derived from eventDate on server
 });
 
 export const insertEventAttendeeSchema = createInsertSchema(eventAttendees).omit({

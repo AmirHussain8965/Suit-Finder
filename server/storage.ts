@@ -793,11 +793,24 @@ export class DatabaseStorage implements IStorage {
 
   // Event methods
   async createEvent(hostId: string, data: InsertEvent): Promise<Event> {
+    // Generate slug from title
+    const baseSlug = data.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    const uniqueSlug = `${baseSlug}-${Date.now()}`;
+    
+    // Use eventDate for startAt if not provided
+    const eventDate = data.eventDate instanceof Date ? data.eventDate : new Date(data.eventDate as any);
+    
     const [event] = await db
       .insert(events)
       .values({
         ...data,
         hostId,
+        slug: uniqueSlug,
+        startAt: eventDate,
+        eventDate: eventDate,
       })
       .returning();
     
