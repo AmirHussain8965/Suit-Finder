@@ -1053,6 +1053,31 @@ export async function registerRoutes(
     }
   });
 
+  // Update an event (host only)
+  app.patch(api.events.update.path, async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
+    const eventId = parseInt(req.params.eventId);
+    
+    try {
+      const input = api.events.update.input.parse(req.body);
+      const updated = await storage.updateEvent(eventId, userId, input);
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof Error) {
+        if (err.message === "Event not found") {
+          return res.status(404).json({ message: "Event not found" });
+        }
+        if (err.message === "Not authorized") {
+          return res.status(403).json({ message: "Not authorized" });
+        }
+      }
+      throw err;
+    }
+  });
+
   // Delete an event (host only)
   app.delete(api.events.delete.path, async (req, res) => {
     if (!req.isAuthenticated()) {

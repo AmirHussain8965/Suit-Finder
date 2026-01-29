@@ -127,6 +127,7 @@ export interface IStorage {
   joinEvent(eventId: number, userId: string): Promise<EventAttendee>;
   leaveEvent(eventId: number, userId: string): Promise<void>;
   updateAttendeeStatus(eventId: number, hostId: string, userId: string, status: string): Promise<EventAttendee>;
+  updateEvent(eventId: number, hostId: string, data: Partial<InsertEvent>): Promise<Event>;
   deleteEvent(eventId: number, hostId: string): Promise<void>;
   isEventParticipant(eventId: number, userId: string): Promise<boolean>;
   
@@ -949,6 +950,32 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return attendee;
+  }
+
+  async updateEvent(eventId: number, hostId: string, data: Partial<InsertEvent>): Promise<Event> {
+    // Verify requester is the host
+    const [event] = await db
+      .select()
+      .from(events)
+      .where(eq(events.id, eventId));
+    
+    if (!event) {
+      throw new Error("Event not found");
+    }
+    if (event.hostId !== hostId) {
+      throw new Error("Not authorized");
+    }
+
+    const [updated] = await db
+      .update(events)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(events.id, eventId))
+      .returning();
+    
+    return updated;
   }
 
   async deleteEvent(eventId: number, hostId: string): Promise<void> {

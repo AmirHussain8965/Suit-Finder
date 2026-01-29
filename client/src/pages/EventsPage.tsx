@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Calendar, MapPin, Users, Clock, Check, X, Eye, EyeOff, Trash2, ArrowLeft } from "lucide-react";
+import { Loader2, Plus, Calendar, MapPin, Users, Clock, Check, X, Eye, EyeOff, Trash2, ArrowLeft, Pencil } from "lucide-react";
 import type { EventWithDetails, EventCategory } from "@shared/schema";
 import { eventCategories } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
@@ -43,6 +43,18 @@ export default function EventsPage() {
   const [isCreating, setIsCreating] = useState(false);
   
   const [newEvent, setNewEvent] = useState({
+    title: "",
+    description: "",
+    eventDate: "",
+    eventTime: "",
+    location: "",
+    maxAttendees: "",
+    isPublic: true,
+    category: "drinks_only" as EventCategory,
+  });
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [editEvent, setEditEvent] = useState({
     title: "",
     description: "",
     eventDate: "",
@@ -164,6 +176,23 @@ export default function EventsPage() {
     },
   });
 
+  const updateEventMutation = useMutation({
+    mutationFn: async ({ eventId, data }: { eventId: number; data: any }) => {
+      return apiRequest("PATCH", buildUrl("/api/events/:eventId", { eventId }), data);
+    },
+    onSuccess: () => {
+      setIsEditing(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      if (selectedEvent) {
+        refetchEvent(selectedEvent.id);
+      }
+      toast({ title: "Event Updated", description: "Your event has been updated successfully." });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message || "Failed to update event", variant: "destructive" });
+    },
+  });
+
   const refetchEvent = async (eventId: number) => {
     const res = await fetch(buildUrl("/api/events/:eventId", { eventId }), { credentials: "include" });
     if (res.ok) {
@@ -223,6 +252,48 @@ export default function EventsPage() {
   };
 
   const isHost = (event: EventWithDetails) => event.hostId === currentUserId;
+
+  const openEditDialog = (event: EventWithDetails) => {
+    const eventDate = new Date(event.eventDate);
+    setEditEvent({
+      title: event.title,
+      description: event.description || "",
+      eventDate: eventDate.toISOString().split('T')[0],
+      eventTime: eventDate.toTimeString().slice(0, 5),
+      location: event.location || "",
+      maxAttendees: event.maxAttendees?.toString() || "",
+      isPublic: event.isPublic ?? true,
+      category: event.category as EventCategory,
+    });
+    setIsEditing(true);
+  };
+
+  const handleUpdateEvent = () => {
+    if (!selectedEvent) return;
+    if (!editEvent.title || !editEvent.eventDate || !editEvent.eventTime) {
+      toast({ title: "Missing Information", description: "Please fill in the title, date, and time", variant: "destructive" });
+      return;
+    }
+    
+    const dateTime = new Date(`${editEvent.eventDate}T${editEvent.eventTime}`);
+    if (isNaN(dateTime.getTime())) {
+      toast({ title: "Invalid Date", description: "Please enter a valid date and time", variant: "destructive" });
+      return;
+    }
+    
+    updateEventMutation.mutate({
+      eventId: selectedEvent.id,
+      data: {
+        title: editEvent.title,
+        description: editEvent.description || null,
+        category: editEvent.category,
+        eventDate: dateTime.toISOString(),
+        location: editEvent.location || null,
+        maxAttendees: editEvent.maxAttendees ? parseInt(editEvent.maxAttendees) : null,
+        isPublic: editEvent.isPublic,
+      },
+    });
+  };
 
   if (isLoading || isPremiumLoading) {
     return (
@@ -294,18 +365,28 @@ export default function EventsPage() {
                 </div>
                 
                 {isHost(selectedEvent) && (
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => {
-                      if (confirm("Are you sure you want to delete this event?")) {
-                        deleteEventMutation.mutate(selectedEvent.id);
-                      }
-                    }}
-                    data-testid="button-delete-event"
-                  >
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => openEditDialog(selectedEvent)}
+                      data-testid="button-edit-event"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => {
+                        if (confirm("Are you sure you want to delete this event?")) {
+                          deleteEventMutation.mutate(selectedEvent.id);
+                        }
+                      }}
+                      data-testid="button-delete-event"
+                    >
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
                 )}
               </div>
             </CardHeader>
@@ -593,6 +674,139 @@ export default function EventsPage() {
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   ) : null}
                   Create Event
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isEditing} onOpenChange={setIsEditing}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Edit Event</DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-title">Event Title</Label>
+                  <Input
+                    id="edit-title"
+                    placeholder="e.g., Gentlemen's Evening"
+                    value={editEvent.title}
+                    onChange={(e) => setEditEvent({ ...editEvent, title: e.target.value })}
+                    data-testid="input-edit-event-title"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-category">Event Type</Label>
+                  <Select 
+                    value={editEvent.category} 
+                    onValueChange={(v) => setEditEvent({ ...editEvent, category: v as EventCategory })}
+                  >
+                    <SelectTrigger data-testid="select-edit-event-category">
+                      <SelectValue placeholder="Select event type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {eventCategories.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {categoryLabels[cat]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-date">Date</Label>
+                    <Input
+                      id="edit-date"
+                      type="date"
+                      value={editEvent.eventDate}
+                      onChange={(e) => setEditEvent({ ...editEvent, eventDate: e.target.value })}
+                      data-testid="input-edit-event-date"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-time">Time</Label>
+                    <Input
+                      id="edit-time"
+                      type="time"
+                      value={editEvent.eventTime}
+                      onChange={(e) => setEditEvent({ ...editEvent, eventTime: e.target.value })}
+                      data-testid="input-edit-event-time"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-location">Location (visible to attendees only)</Label>
+                  <Input
+                    id="edit-location"
+                    placeholder="e.g., The Grand Hotel, Room 212"
+                    value={editEvent.location}
+                    onChange={(e) => setEditEvent({ ...editEvent, location: e.target.value })}
+                    data-testid="input-edit-event-location"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Textarea
+                    id="edit-description"
+                    placeholder="Describe your event..."
+                    value={editEvent.description}
+                    onChange={(e) => setEditEvent({ ...editEvent, description: e.target.value })}
+                    rows={3}
+                    data-testid="input-edit-event-description"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-maxAttendees">Max Attendees (optional)</Label>
+                  <Input
+                    id="edit-maxAttendees"
+                    type="number"
+                    placeholder="Leave empty for unlimited"
+                    value={editEvent.maxAttendees}
+                    onChange={(e) => setEditEvent({ ...editEvent, maxAttendees: e.target.value })}
+                    data-testid="input-edit-event-max-attendees"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="edit-isPublic" className="flex items-center gap-2">
+                    {editEvent.isPublic ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    {editEvent.isPublic ? "Public Event" : "Invite Only"}
+                  </Label>
+                  <Switch
+                    id="edit-isPublic"
+                    checked={editEvent.isPublic}
+                    onCheckedChange={(v) => setEditEvent({ ...editEvent, isPublic: v })}
+                    data-testid="switch-edit-event-public"
+                  />
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  onClick={() => setIsEditing(false)}
+                  data-testid="button-cancel-edit"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="button"
+                  onClick={handleUpdateEvent}
+                  disabled={updateEventMutation.isPending || !editEvent.title || !editEvent.eventDate || !editEvent.eventTime}
+                  data-testid="button-submit-edit"
+                >
+                  {updateEventMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : null}
+                  Save Changes
                 </Button>
               </DialogFooter>
             </DialogContent>

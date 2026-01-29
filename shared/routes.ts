@@ -331,6 +331,18 @@ export const api = {
         403: errorSchemas.unauthorized,
       },
     },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/events/:eventId',
+      input: insertEventSchema.partial().extend({
+        category: z.enum(eventCategories).optional(),
+      }),
+      responses: {
+        200: z.custom<typeof events.$inferSelect>(),
+        403: errorSchemas.unauthorized,
+        404: errorSchemas.notFound,
+      },
+    },
     delete: {
       method: 'DELETE' as const,
       path: '/api/events/:eventId',
