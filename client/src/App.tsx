@@ -13,6 +13,8 @@ import ProfilePage from "@/pages/ProfilePage";
 import GalleryPage from "@/pages/GalleryPage";
 import MessagesPage from "@/pages/MessagesPage";
 import EventsPage from "@/pages/EventsPage";
+import PublicEventsPage from "@/pages/PublicEventsPage";
+import PublicEventDetailPage from "@/pages/PublicEventDetailPage";
 import WardrobePage from "@/pages/WardrobePage";
 import AuctionPage from "@/pages/AuctionPage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
