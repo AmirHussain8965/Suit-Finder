@@ -1109,7 +1109,9 @@ export async function registerRoutes(
       const includePast = req.query.includePast === "true";
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
 
+      console.log("[Events API] Fetching events:", { publishedOnly, includePast, limit, now: new Date().toISOString() });
       const events = await storage.getEventsPublic({ publishedOnly, includePast, limit });
+      console.log("[Events API] Found", events.length, "events");
       
       // Return only specified fields
       const result = events.map(e => ({
