@@ -66,7 +66,7 @@ export default function EventsPage() {
   });
 
   const { data: events, isLoading, isError, error, refetch } = useQuery<EventWithDetails[]>({
-    queryKey: ["/api/events"],
+    queryKey: ["/api/internal/events"],
     staleTime: 1000 * 60 * 5, // 5 minutes - don't cache forever
     retry: 1, // Retry once on failure
   });
@@ -75,7 +75,7 @@ export default function EventsPage() {
     mutationFn: async (data: any) => {
       console.log("[Events] Mutation starting with data:", JSON.stringify(data));
       
-      const res = await fetch("/api/events", {
+      const res = await fetch("/api/internal/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -121,7 +121,7 @@ export default function EventsPage() {
         isPublic: true,
         category: "drinks_only",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/internal/events"] });
       toast({ title: "Event Created", description: "Your event has been created successfully." });
     },
     onError: (err: Error) => {
@@ -132,10 +132,10 @@ export default function EventsPage() {
 
   const joinEventMutation = useMutation({
     mutationFn: async (eventId: number) => {
-      return apiRequest("POST", buildUrl("/api/events/:eventId/join", { eventId }));
+      return apiRequest("POST", buildUrl("/api/internal/events/:eventId/join", { eventId }));
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/internal/events"] });
       if (selectedEvent) {
         refetchEvent(selectedEvent.id);
       }
@@ -144,10 +144,10 @@ export default function EventsPage() {
 
   const leaveEventMutation = useMutation({
     mutationFn: async (eventId: number) => {
-      return apiRequest("DELETE", buildUrl("/api/events/:eventId/leave", { eventId }));
+      return apiRequest("DELETE", buildUrl("/api/internal/events/:eventId/leave", { eventId }));
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/internal/events"] });
       if (selectedEvent) {
         refetchEvent(selectedEvent.id);
       }
@@ -156,10 +156,10 @@ export default function EventsPage() {
 
   const updateAttendeeMutation = useMutation({
     mutationFn: async ({ eventId, userId, status }: { eventId: number; userId: string; status: string }) => {
-      return apiRequest("PATCH", `/api/events/${eventId}/attendees/${userId}`, { status });
+      return apiRequest("PATCH", `/api/internal/events/${eventId}/attendees/${userId}`, { status });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/internal/events"] });
       if (selectedEvent) {
         refetchEvent(selectedEvent.id);
       }
@@ -168,21 +168,21 @@ export default function EventsPage() {
 
   const deleteEventMutation = useMutation({
     mutationFn: async (eventId: number) => {
-      return apiRequest("DELETE", buildUrl("/api/events/:eventId", { eventId }));
+      return apiRequest("DELETE", buildUrl("/api/internal/events/:eventId", { eventId }));
     },
     onSuccess: () => {
       setSelectedEvent(null);
-      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/internal/events"] });
     },
   });
 
   const updateEventMutation = useMutation({
     mutationFn: async ({ eventId, data }: { eventId: number; data: any }) => {
-      return apiRequest("PATCH", buildUrl("/api/events/:eventId", { eventId }), data);
+      return apiRequest("PATCH", buildUrl("/api/internal/events/:eventId", { eventId }), data);
     },
     onSuccess: () => {
       setIsEditing(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/internal/events"] });
       if (selectedEvent) {
         refetchEvent(selectedEvent.id);
       }
@@ -194,7 +194,7 @@ export default function EventsPage() {
   });
 
   const refetchEvent = async (eventId: number) => {
-    const res = await fetch(buildUrl("/api/events/:eventId", { eventId }), { credentials: "include" });
+    const res = await fetch(buildUrl("/api/internal/events/:eventId", { eventId }), { credentials: "include" });
     if (res.ok) {
       const event = await res.json();
       setSelectedEvent(event);

@@ -130,6 +130,11 @@ export interface IStorage {
   updateEvent(eventId: number, hostId: string, data: Partial<InsertEvent>): Promise<Event>;
   deleteEvent(eventId: number, hostId: string): Promise<void>;
   isEventParticipant(eventId: number, userId: string): Promise<boolean>;
+  // New public API methods
+  getEventsPublic(options: { publishedOnly?: boolean; includePast?: boolean; limit?: number }): Promise<Event[]>;
+  getEventBySlug(slug: string): Promise<Event | undefined>;
+  createEventBySlug(hostId: string, data: Partial<InsertEvent>): Promise<Event>;
+  updateEventBySlug(slug: string, data: Partial<InsertEvent>): Promise<Event>;
   
   // Wardrobe
   getWardrobeItems(userId: string, category?: string): Promise<WardrobeItem[]>;
@@ -1009,6 +1014,89 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(eventAttendees.eventId, eventId), eq(eventAttendees.userId, userId)));
     
     return !!attendee;
+  }
+
+  // New public API methods for events
+  async getEventsPublic(options: { publishedOnly?: boolean; includePast?: boolean; limit?: number }): Promise<Event[]> {
+    const { publishedOnly = true, includePast = false, limit } = options;
+    const now = new Date();
+    
+    const conditions: any[] = [];
+    
+    if (publishedOnly) {
+      conditions.push(eq(events.isPublished, true));
+    }
+    
+    if (!includePast) {
+      conditions.push(gte(events.startAt, now));
+    }
+    
+    let query = db
+      .select()
+      .from(events)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(asc(events.startAt));
+    
+    if (limit) {
+      query = query.limit(limit) as typeof query;
+    }
+    
+    return await query;
+  }
+
+  async getEventBySlug(slug: string): Promise<Event | undefined> {
+    const [event] = await db
+      .select()
+      .from(events)
+      .where(eq(events.slug, slug));
+    return event;
+  }
+
+  async createEventBySlug(hostId: string, data: Partial<InsertEvent>): Promise<Event> {
+    const [event] = await db
+      .insert(events)
+      .values({
+        hostId,
+        title: data.title!,
+        slug: data.slug!,
+        description: data.description,
+        category: data.category || "drinks_only",
+        eventDate: data.startAt || new Date(),
+        startAt: data.startAt || new Date(),
+        endAt: data.endAt,
+        timezone: data.timezone || "America/Chicago",
+        locationName: data.locationName,
+        locationAddress: data.locationAddress,
+        coverImageUrl: data.coverImageUrl,
+        rsvpUrl: data.rsvpUrl,
+        priceCents: data.priceCents,
+        currency: data.currency || "USD",
+        isPublished: data.isPublished ?? false,
+      })
+      .returning();
+    return event;
+  }
+
+  async updateEventBySlug(slug: string, data: Partial<InsertEvent>): Promise<Event> {
+    const [event] = await db
+      .select()
+      .from(events)
+      .where(eq(events.slug, slug));
+    
+    if (!event) {
+      throw new Error("Event not found");
+    }
+
+    const [updated] = await db
+      .update(events)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(events.slug, slug))
+      .returning();
+    
+    return updated;
   }
 
   // Wardrobe methods

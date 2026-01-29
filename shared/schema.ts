@@ -315,14 +315,25 @@ export const events = pgTable("events", {
   id: serial("id").primaryKey(),
   hostId: text("host_id").notNull().references(() => authUsers.id),
   title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
   description: text("description"),
   category: text("category").notNull(), // One of eventCategories
-  eventDate: timestamp("event_date").notNull(),
-  location: text("location"), // General location description (not exact)
+  eventDate: timestamp("event_date").notNull(), // Legacy field, use startAt for new API
+  startAt: timestamp("start_at").notNull(),
+  endAt: timestamp("end_at"),
+  timezone: text("timezone").default("America/Chicago"),
+  location: text("location"), // Legacy field, use locationName for new API
+  locationName: text("location_name"),
+  locationAddress: text("location_address"),
   latitude: doublePrecision("latitude"),
   longitude: doublePrecision("longitude"),
+  coverImageUrl: text("cover_image_url"),
+  rsvpUrl: text("rsvp_url"),
+  priceCents: integer("price_cents"),
+  currency: text("currency").default("USD"),
   maxAttendees: integer("max_attendees"),
   isPublic: boolean("is_public").default(true), // If false, invite-only
+  isPublished: boolean("is_published").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

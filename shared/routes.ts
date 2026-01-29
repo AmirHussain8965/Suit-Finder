@@ -275,14 +275,14 @@ export const api = {
   events: {
     list: {
       method: 'GET' as const,
-      path: '/api/events',
+      path: '/api/internal/events',
       responses: {
         200: z.array(z.any()),
       },
     },
     get: {
       method: 'GET' as const,
-      path: '/api/events/:eventId',
+      path: '/api/internal/events/:eventId',
       responses: {
         200: z.any(),
         404: errorSchemas.notFound,
@@ -297,7 +297,7 @@ export const api = {
     },
     create: {
       method: 'POST' as const,
-      path: '/api/events',
+      path: '/api/internal/events',
       input: insertEventSchema.extend({
         category: z.enum(eventCategories),
       }),
@@ -308,21 +308,21 @@ export const api = {
     },
     join: {
       method: 'POST' as const,
-      path: '/api/events/:eventId/join',
+      path: '/api/internal/events/:eventId/join',
       responses: {
         200: z.any(),
       },
     },
     leave: {
       method: 'DELETE' as const,
-      path: '/api/events/:eventId/leave',
+      path: '/api/internal/events/:eventId/leave',
       responses: {
         200: z.object({ message: z.string() }),
       },
     },
     updateAttendee: {
       method: 'PATCH' as const,
-      path: '/api/events/:eventId/attendees/:userId',
+      path: '/api/internal/events/:eventId/attendees/:userId',
       input: z.object({
         status: z.enum(['pending', 'approved', 'declined']),
       }),
@@ -333,7 +333,7 @@ export const api = {
     },
     update: {
       method: 'PATCH' as const,
-      path: '/api/events/:eventId',
+      path: '/api/internal/events/:eventId',
       input: insertEventSchema.partial().extend({
         category: z.enum(eventCategories).optional(),
       }),
@@ -345,7 +345,7 @@ export const api = {
     },
     delete: {
       method: 'DELETE' as const,
-      path: '/api/events/:eventId',
+      path: '/api/internal/events/:eventId',
       responses: {
         200: z.object({ message: z.string() }),
         403: errorSchemas.unauthorized,

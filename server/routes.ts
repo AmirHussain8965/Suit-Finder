@@ -1097,6 +1097,167 @@ export async function registerRoutes(
     }
   });
 
+  // === Public Events API (new JSON contract) ===
+
+  // GET /api/events - list events with query params
+  app.get("/api/events", async (req, res) => {
+    try {
+      const publishedOnly = req.query.publishedOnly !== "false";
+      const includePast = req.query.includePast === "true";
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+
+      const events = await storage.getEventsPublic({ publishedOnly, includePast, limit });
+      
+      // Return only specified fields
+      const result = events.map(e => ({
+        id: e.id,
+        title: e.title,
+        slug: e.slug,
+        startAt: e.startAt,
+        endAt: e.endAt,
+        timezone: e.timezone,
+        locationName: e.locationName,
+        coverImageUrl: e.coverImageUrl,
+        isPublished: e.isPublished,
+      }));
+      
+      res.json(result);
+    } catch (err) {
+      console.error("Error fetching events:", err);
+      res.status(500).json({ message: "Failed to fetch events" });
+    }
+  });
+
+  // GET /api/events/:slug - get full event by slug
+  app.get("/api/events/:slug", async (req, res) => {
+    try {
+      const { slug } = req.params;
+      
+      if (!slug || slug.length === 0) {
+        return res.status(400).json({ message: "Slug is required" });
+      }
+      
+      const event = await storage.getEventBySlug(slug);
+      
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      
+      // Return full event object
+      res.json({
+        id: event.id,
+        title: event.title,
+        slug: event.slug,
+        description: event.description,
+        startAt: event.startAt,
+        endAt: event.endAt,
+        timezone: event.timezone,
+        locationName: event.locationName,
+        locationAddress: event.locationAddress,
+        coverImageUrl: event.coverImageUrl,
+        rsvpUrl: event.rsvpUrl,
+        priceCents: event.priceCents,
+        currency: event.currency,
+        isPublished: event.isPublished,
+        createdAt: event.createdAt,
+        updatedAt: event.updatedAt,
+      });
+    } catch (err) {
+      console.error("Error fetching event:", err);
+      res.status(500).json({ message: "Failed to fetch event" });
+    }
+  });
+
+  // POST /api/events - create event (admin placeholder)
+  app.post("/api/events", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userId = (req.user as any).claims?.sub || (req.user as any).userId;
+    
+    try {
+      const { title, slug, description, startAt, endAt, timezone, locationName, locationAddress, coverImageUrl, rsvpUrl, priceCents, currency, isPublished } = req.body;
+      
+      // Basic validation
+      if (!title || typeof title !== "string" || title.trim().length === 0) {
+        return res.status(400).json({ message: "Title is required" });
+      }
+      if (!slug || typeof slug !== "string" || slug.trim().length === 0) {
+        return res.status(400).json({ message: "Slug is required" });
+      }
+      if (!startAt) {
+        return res.status(400).json({ message: "Start time is required" });
+      }
+      
+      // Check slug uniqueness
+      const existing = await storage.getEventBySlug(slug);
+      if (existing) {
+        return res.status(409).json({ message: "Slug already exists" });
+      }
+      
+      const event = await storage.createEventBySlug(userId, {
+        title: title.trim(),
+        slug: slug.trim(),
+        description: description || null,
+        startAt: new Date(startAt),
+        endAt: endAt ? new Date(endAt) : null,
+        timezone: timezone || "America/Chicago",
+        locationName: locationName || null,
+        locationAddress: locationAddress || null,
+        coverImageUrl: coverImageUrl || null,
+        rsvpUrl: rsvpUrl || null,
+        priceCents: priceCents ? parseInt(priceCents) : null,
+        currency: currency || "USD",
+        isPublished: isPublished ?? false,
+      });
+      
+      res.status(201).json(event);
+    } catch (err) {
+      console.error("Error creating event:", err);
+      res.status(500).json({ message: "Failed to create event" });
+    }
+  });
+
+  // PUT /api/events/:slug - update event
+  app.put("/api/events/:slug", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    try {
+      const { slug } = req.params;
+      const { title, description, startAt, endAt, timezone, locationName, locationAddress, coverImageUrl, rsvpUrl, priceCents, currency, isPublished } = req.body;
+      
+      // Basic validation
+      if (title !== undefined && (typeof title !== "string" || title.trim().length === 0)) {
+        return res.status(400).json({ message: "Title cannot be empty" });
+      }
+      
+      const updates: any = {};
+      if (title !== undefined) updates.title = title.trim();
+      if (description !== undefined) updates.description = description;
+      if (startAt !== undefined) updates.startAt = new Date(startAt);
+      if (endAt !== undefined) updates.endAt = endAt ? new Date(endAt) : null;
+      if (timezone !== undefined) updates.timezone = timezone;
+      if (locationName !== undefined) updates.locationName = locationName;
+      if (locationAddress !== undefined) updates.locationAddress = locationAddress;
+      if (coverImageUrl !== undefined) updates.coverImageUrl = coverImageUrl;
+      if (rsvpUrl !== undefined) updates.rsvpUrl = rsvpUrl;
+      if (priceCents !== undefined) updates.priceCents = priceCents ? parseInt(priceCents) : null;
+      if (currency !== undefined) updates.currency = currency;
+      if (isPublished !== undefined) updates.isPublished = isPublished;
+      
+      const event = await storage.updateEventBySlug(slug, updates);
+      res.json(event);
+    } catch (err) {
+      if (err instanceof Error && err.message === "Event not found") {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      console.error("Error updating event:", err);
+      res.status(500).json({ message: "Failed to update event" });
+    }
+  });
+
   // === Subscription/Payment Routes (Stripe) ===
 
   // Get Stripe publishable key for frontend
