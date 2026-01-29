@@ -158,7 +158,15 @@ function Router() {
         <ProtectedRoute component={SuitSoireePage} />
       </Route>
 
+      <Route path="/events/:slug">
+        <PublicEventDetailPage />
+      </Route>
+
       <Route path="/events">
+        <PublicEventsPage />
+      </Route>
+
+      <Route path="/my-events">
         <ProtectedRoute component={EventsPage} />
       </Route>
 
