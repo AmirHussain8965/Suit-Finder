@@ -680,7 +680,9 @@ export async function registerRoutes(
       return res.status(401).json({ message: "Unauthorized" });
     }
     const userId = (req.user as any).claims?.sub || (req.user as any).userId;
+    console.log("[Conversations Debug] Fetching conversations for userId:", userId);
     const conversations = await storage.getConversations(userId);
+    console.log("[Conversations Debug] Found", conversations.length, "conversations");
     res.json(conversations);
   });
 
