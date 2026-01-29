@@ -462,82 +462,100 @@ export class DatabaseStorage implements IStorage {
 
     const conversationIds = userParticipations.map(p => p.conversationId);
     
+    // Batch fetch: conversations
     const convos = await db
       .select()
       .from(conversations)
       .where(inArray(conversations.id, conversationIds))
       .orderBy(desc(conversations.updatedAt));
 
-    // For each conversation, get participants and last message
-    const result: ConversationWithParticipants[] = [];
-    
-    for (const convo of convos) {
-      const participants = await db
-        .select({
-          conversationId: conversationParticipants.conversationId,
-          userId: conversationParticipants.userId,
-          lastReadAt: conversationParticipants.lastReadAt,
-        })
-        .from(conversationParticipants)
-        .where(eq(conversationParticipants.conversationId, convo.id));
+    if (convos.length === 0) return [];
 
-      // Get display names and profile images for participants
-      const participantDetails = await Promise.all(
-        participants.map(async (p) => {
-          const profile = await this.getProfile(p.userId);
-          const profilePhoto = await this.getProfilePhoto(p.userId);
-          return {
-            userId: p.userId,
-            displayName: profile?.displayName || null,
-            profileImageUrl: profilePhoto?.url || null,
-          };
-        })
-      );
+    // Batch fetch: all participants for all conversations at once
+    const allParticipants = await db
+      .select({
+        conversationId: conversationParticipants.conversationId,
+        odId: conversationParticipants.userId,
+        lastReadAt: conversationParticipants.lastReadAt,
+      })
+      .from(conversationParticipants)
+      .where(inArray(conversationParticipants.conversationId, conversationIds));
 
-      // Get last message
-      const [lastMsg] = await db
-        .select()
-        .from(messages)
-        .where(eq(messages.conversationId, convo.id))
-        .orderBy(desc(messages.createdAt))
-        .limit(1);
+    // Collect all unique user IDs from participants
+    const allUserIds = Array.from(new Set(allParticipants.map(p => p.odId)));
 
-      // Count unread messages for this user (excluding messages they sent)
-      const userParticipation = userParticipations.find(p => p.conversationId === convo.id);
-      let unreadCount = 0;
-      if (userParticipation?.lastReadAt) {
-        const unread = await db
-          .select({ count: sql<number>`count(*)` })
-          .from(messages)
-          .where(
-            and(
-              eq(messages.conversationId, convo.id),
-              sql`${messages.createdAt} > ${userParticipation.lastReadAt}`,
-              sql`${messages.senderId} != ${userId}`
-            )
-          );
-        unreadCount = Number(unread[0]?.count || 0);
-      } else {
-        // If never read, all messages from others are unread
-        const unread = await db
-          .select({ count: sql<number>`count(*)` })
-          .from(messages)
-          .where(
-            and(
-              eq(messages.conversationId, convo.id),
-              sql`${messages.senderId} != ${userId}`
-            )
-          );
-        unreadCount = Number(unread[0]?.count || 0);
-      }
+    // Batch fetch: all profiles for all participants at once
+    const allProfiles = allUserIds.length > 0 ? await db
+      .select()
+      .from(profiles)
+      .where(inArray(profiles.userId, allUserIds)) : [];
+    const profileMap = new Map(allProfiles.map(p => [p.userId, p]));
 
-      result.push({
-        ...convo,
-        participants: participantDetails,
-        lastMessage: lastMsg || null,
-        unreadCount,
+    // Batch fetch: all profile photos at once (photos marked as profile photos)
+    const allPhotos = allUserIds.length > 0 ? await db
+      .select()
+      .from(photos)
+      .where(and(
+        inArray(photos.userId, allUserIds),
+        eq(photos.isProfilePhoto, true)
+      )) : [];
+    const photoMap = new Map(allPhotos.map(p => [p.userId, p]));
+
+    // Batch fetch: last message for each conversation using window function
+    // Use a single query with DISTINCT ON to get the latest message per conversation
+    const allLastMessages = await db.execute(sql`
+      SELECT DISTINCT ON (conversation_id) *
+      FROM messages
+      WHERE conversation_id = ANY(${conversationIds})
+      ORDER BY conversation_id, created_at DESC
+    `);
+    const lastMessageMap = new Map<number, typeof messages.$inferSelect>();
+    for (const row of allLastMessages.rows as any[]) {
+      lastMessageMap.set(row.conversation_id, {
+        id: row.id,
+        conversationId: row.conversation_id,
+        senderId: row.sender_id,
+        content: row.content,
+        imageUrl: row.image_url,
+        createdAt: row.created_at ? new Date(row.created_at) : null,
       });
     }
+
+    // Batch fetch: unread counts for all conversations in a single query
+    // Join with conversation_participants to get lastReadAt per user, then count messages
+    const unreadCountsResult = await db.execute(sql`
+      SELECT 
+        m.conversation_id,
+        COUNT(*) as unread_count
+      FROM messages m
+      JOIN conversation_participants cp ON cp.conversation_id = m.conversation_id AND cp.user_id = ${userId}
+      WHERE m.conversation_id = ANY(${conversationIds})
+        AND m.sender_id != ${userId}
+        AND (cp.last_read_at IS NULL OR m.created_at > cp.last_read_at)
+      GROUP BY m.conversation_id
+    `);
+    const unreadCountMap = new Map<number, number>();
+    for (const row of unreadCountsResult.rows as any[]) {
+      unreadCountMap.set(row.conversation_id, Number(row.unread_count || 0));
+    }
+
+    // Build result
+    const result: ConversationWithParticipants[] = convos.map(convo => {
+      const participants = allParticipants
+        .filter(p => p.conversationId === convo.id)
+        .map(p => ({
+          userId: p.odId,
+          displayName: profileMap.get(p.odId)?.displayName || null,
+          profileImageUrl: photoMap.get(p.odId)?.url || null,
+        }));
+
+      return {
+        ...convo,
+        participants,
+        lastMessage: lastMessageMap.get(convo.id) || null,
+        unreadCount: unreadCountMap.get(convo.id) || 0,
+      };
+    });
 
     return result;
   }
@@ -688,20 +706,36 @@ export class DatabaseStorage implements IStorage {
       .limit(limit)
       .offset(offset);
 
-    // Get sender info for each message
-    const result: MessageWithSender[] = await Promise.all(
-      msgs.map(async (msg) => {
-        const profile = await this.getProfile(msg.senderId);
-        const profilePhoto = await this.getProfilePhoto(msg.senderId);
-        return {
-          ...msg,
-          sender: {
-            displayName: profile?.displayName || null,
-            profileImageUrl: profilePhoto?.url || null,
-          },
-        };
-      })
-    );
+    if (msgs.length === 0) return [];
+
+    // Batch fetch: collect all unique sender IDs
+    const senderIds = Array.from(new Set(msgs.map(m => m.senderId))) as string[];
+
+    // Batch fetch: all sender profiles at once
+    const senderProfiles = senderIds.length > 0 ? await db
+      .select()
+      .from(profiles)
+      .where(inArray(profiles.userId, senderIds)) : [];
+    const profileMap = new Map(senderProfiles.map(p => [p.userId, p]));
+
+    // Batch fetch: all sender profile photos at once
+    const senderPhotos = senderIds.length > 0 ? await db
+      .select()
+      .from(photos)
+      .where(and(
+        inArray(photos.userId, senderIds),
+        eq(photos.isProfilePhoto, true)
+      )) : [];
+    const photoMap = new Map(senderPhotos.map(p => [p.userId, p]));
+
+    // Build result with sender info
+    const result: MessageWithSender[] = msgs.map(msg => ({
+      ...msg,
+      sender: {
+        displayName: profileMap.get(msg.senderId)?.displayName || null,
+        profileImageUrl: photoMap.get(msg.senderId)?.url || null,
+      },
+    }));
 
     return result.reverse(); // Return in chronological order
   }
