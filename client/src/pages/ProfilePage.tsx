@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Save, Users, X, Plus, Lock, Camera, Check } from "lucide-react";
+import { Loader2, Save, Users, X, Plus, Lock, Camera, Check, MapPin } from "lucide-react";
 import { useMyPhotos, useSetProfilePhoto } from "@/hooks/use-photos";
 import type { Photo } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -181,6 +181,7 @@ export default function ProfilePage() {
     defaultValues: {
       displayName: "",
       bio: "",
+      locationName: "",
       styleInterests: "",
       role: "",
       interestType: "",
@@ -203,6 +204,7 @@ export default function ProfilePage() {
       form.reset({
         displayName: profile.displayName || user?.firstName || "",
         bio: profile.bio || "",
+        locationName: profile.locationName || "",
         styleInterests: profile.styleInterests || "",
         role: profile.role || "",
         interestType: profile.interestType || "",
@@ -288,6 +290,12 @@ export default function ProfilePage() {
             <h1 className="text-4xl font-serif font-bold text-foreground">
               {profile?.displayName || user?.firstName || "Member"}
             </h1>
+            {profile?.locationName && (
+              <p className="text-accent flex items-center justify-center md:justify-start gap-1">
+                <MapPin className="h-4 w-4" />
+                {profile.locationName}
+              </p>
+            )}
             <p className="text-muted-foreground max-w-lg">
               Manage your public appearance and preferences within the network.
             </p>
@@ -324,6 +332,17 @@ export default function ProfilePage() {
                     {...form.register("bio")} 
                     className="bg-background border-input focus:border-accent min-h-[100px]"
                     placeholder="E.g. Vintage tuxedo collector, black tie enthusiast..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="locationName">Location</Label>
+                  <Input 
+                    id="locationName" 
+                    {...form.register("locationName")} 
+                    className="bg-background border-input focus:border-accent"
+                    placeholder="Houston, TX"
+                    data-testid="input-location"
                   />
                 </div>
 

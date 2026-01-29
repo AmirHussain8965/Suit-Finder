@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Heart, MessageCircle, Loader2, ArrowLeft, User, Palette, Ruler, Activity, DoorOpen, Camera, X, ZoomIn, Lock } from "lucide-react";
+import { Heart, MessageCircle, Loader2, ArrowLeft, User, Palette, Ruler, Activity, DoorOpen, Camera, X, ZoomIn, Lock, MapPin } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { ReportDialog } from "@/components/ReportDialog";
 import { usePremiumFeature } from "@/hooks/use-subscription";
@@ -17,6 +17,7 @@ interface UserProfile {
   userId: string;
   displayName: string | null;
   bio: string | null;
+  locationName: string | null;
   profileImageUrl: string | null;
   styleInterests: string | null;
   role: string | null;
@@ -185,6 +186,13 @@ export default function UserProfilePage() {
                 <h1 className="text-2xl font-serif font-bold text-foreground mb-2">
                   {profile.displayName || "Unknown"}
                 </h1>
+                
+                {profile.locationName && (
+                  <p className="text-accent flex items-center justify-center gap-1 mb-2">
+                    <MapPin className="h-4 w-4" />
+                    {profile.locationName}
+                  </p>
+                )}
                 
                 {profile.bio && (
                   <p className="text-muted-foreground mb-4 max-w-md">

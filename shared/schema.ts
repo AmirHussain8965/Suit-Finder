@@ -30,6 +30,7 @@ export const profiles = pgTable("profiles", {
   physicalLatitude: doublePrecision("physical_latitude"),
   physicalLongitude: doublePrecision("physical_longitude"),
   locationUpdatedAt: timestamp("location_updated_at"),
+  locationName: text("location_name"), // Human-readable location like "Houston, TX"
   isVisible: boolean("is_visible").default(true),
   isTraveling: boolean("is_traveling").default(false),
   // Style preferences
