@@ -30,15 +30,6 @@ export default function PublicEventsPage() {
 
   const { data: events, isLoading, isError, refetch } = useQuery<PublicEvent[]>({
     queryKey: ["/api/events", { publishedOnly: true, includePast: showPastEvents }],
-    queryFn: async () => {
-      const params = new URLSearchParams({
-        publishedOnly: "true",
-        includePast: showPastEvents.toString(),
-      });
-      const res = await fetch(`/api/events?${params}`);
-      if (!res.ok) throw new Error("Failed to fetch events");
-      return res.json();
-    },
   });
 
   const handleTogglePastEvents = (checked: boolean) => {

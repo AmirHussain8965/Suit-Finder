@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Layout } from "@/components/Layout";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { buildUrl } from "@shared/routes";
+import { buildUrl } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,8 +14,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Plus, Calendar, MapPin, Users, Clock, Check, X, Eye, EyeOff, Trash2, ArrowLeft, Pencil } from "lucide-react";
-import type { EventWithDetails, EventCategory } from "@shared/schema";
-import { eventCategories } from "@shared/schema";
+import type { EventWithDetails, EventCategory } from "@/types";
+import { eventCategories } from "@/types";
 import { useAuth } from "@/hooks/use-auth";
 import { format } from "date-fns";
 import { usePremiumFeature } from "@/hooks/use-subscription";
@@ -73,40 +73,8 @@ export default function EventsPage() {
 
   const createEventMutation = useMutation({
     mutationFn: async (data: any) => {
-      console.log("[Events] Mutation starting with data:", JSON.stringify(data));
-      
-      const res = await fetch("/api/internal/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      
-      console.log("[Events] Response status:", res.status);
-      
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error("[Events] Server error response:", errorText);
-        
-        if (res.status === 401) {
-          throw new Error("Your session has expired. Please log out and log back in.");
-        }
-        
-        let errorMessage = `Server error: ${res.status}`;
-        try {
-          const errorJson = JSON.parse(errorText);
-          if (errorJson.message) {
-            errorMessage = errorJson.message;
-          }
-        } catch {
-          // Keep default error message
-        }
-        throw new Error(errorMessage);
-      }
-      
-      const result = await res.json();
-      console.log("[Events] Event created successfully:", result);
-      return result;
+      const res = await apiRequest("POST", "/api/internal/events", data);
+      return res.json();
     },
     onSuccess: () => {
       console.log("[Events] Mutation success - resetting form");
@@ -194,11 +162,10 @@ export default function EventsPage() {
   });
 
   const refetchEvent = async (eventId: number) => {
-    const res = await fetch(buildUrl("/api/internal/events/:eventId", { eventId }), { credentials: "include" });
-    if (res.ok) {
-      const event = await res.json();
-      setSelectedEvent(event);
-    }
+    const event = await queryClient.fetchQuery({
+      queryKey: ["/api/internal/events", String(eventId)],
+    });
+    if (event) setSelectedEvent(event as EventWithDetails);
   };
 
   const handleCreateEvent = () => {

@@ -11,7 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Loader2, Plus, Trash2, Star, Lock, Globe, Image as ImageIcon, Upload, Camera, GripVertical, Move, UserX, Crop, ZoomIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Photo } from "@shared/schema";
+import type { Photo } from "@/types";
 import { useUpload } from "@/hooks/use-upload";
 import { useAuth } from "@/hooks/use-auth";
 import Cropper from 'react-easy-crop';
