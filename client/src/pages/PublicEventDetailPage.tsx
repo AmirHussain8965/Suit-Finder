@@ -30,13 +30,8 @@ export default function PublicEventDetailPage() {
   const [, params] = useRoute("/events/:slug");
   const slug = params?.slug;
 
-  const { data: event, isLoading, isError } = useQuery<EventDetail>({
-    queryKey: ["/api/events", slug],
-    queryFn: async () => {
-      const res = await fetch(`/api/events/${slug}`);
-      if (!res.ok) throw new Error("Failed to fetch event");
-      return res.json();
-    },
+  const { data: event, isLoading, isError } = useQuery<EventDetail | null>({
+    queryKey: ["/api/events", slug ?? ""],
     enabled: !!slug,
   });
 
@@ -163,7 +158,8 @@ export default function PublicEventDetailPage() {
                 <Clock className="w-5 h-5 text-accent flex-shrink-0" />
                 <div>
                   <p className="font-medium" data-testid="text-event-time">
-                    {formatEventTime(event.startAt)} - {formatEventTime(event.endAt)}
+                    {formatEventTime(event.startAt)}
+                    {event.endAt ? ` - ${formatEventTime(event.endAt)}` : ""}
                   </p>
                   <p className="text-sm text-muted-foreground">{event.timezone}</p>
                 </div>

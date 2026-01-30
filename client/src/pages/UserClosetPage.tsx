@@ -8,8 +8,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Loader2, ArrowLeft, Shirt, Briefcase, Watch, Gem, Package, Star, Lock, X, ZoomIn } from "lucide-react";
-import type { WardrobeItem } from "@shared/schema";
-import { wardrobeCategories } from "@shared/schema";
+import type { WardrobeItem } from "@/types";
+import { wardrobeCategories } from "@/types";
 import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 

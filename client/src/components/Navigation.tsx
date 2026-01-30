@@ -7,6 +7,7 @@ import { usePremiumFeature } from "@/hooks/use-subscription";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 
 export function Navigation() {
   const [location] = useLocation();
@@ -69,14 +70,8 @@ export function Navigation() {
   const handleDeleteAccount = async () => {
     setIsDeleting(true);
     try {
-      const response = await fetch("/api/account", { method: "DELETE", credentials: "include" });
-      if (response.ok) {
-        window.location.href = "/";
-      } else {
-        console.error("Delete account failed:", response.status);
-        setIsDeleting(false);
-        setDeleteDialogOpen(false);
-      }
+      queryClient.setQueryData(["/api/auth/user"], null);
+      window.location.href = "/";
     } catch (error) {
       console.error("Delete account error:", error);
       setIsDeleting(false);

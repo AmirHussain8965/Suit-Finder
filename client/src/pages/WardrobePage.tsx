@@ -12,8 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Plus, Heart, Trash2, Pencil, Shirt, X, Upload, Briefcase, Watch, Gem, Package, Star } from "lucide-react";
-import type { WardrobeItem } from "@shared/schema";
-import { wardrobeCategories } from "@shared/schema";
+import type { WardrobeItem } from "@/types";
+import { wardrobeCategories } from "@/types";
 import { useAuth } from "@/hooks/use-auth";
 import { usePlatinumFeature } from "@/hooks/use-subscription";
 import { PlatinumGate } from "@/components/PremiumGate";
@@ -81,39 +81,11 @@ export default function WardrobePage() {
 
   const { data: items, isLoading } = useQuery<WardrobeItem[]>({
     queryKey,
-    queryFn: async () => {
-      const url = selectedCategory 
-        ? `/api/wardrobe?category=${selectedCategory}`
-        : "/api/wardrobe";
-      const res = await fetch(url, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch wardrobe");
-      return res.json();
-    },
   });
 
   const uploadImageMutation = useMutation({
     mutationFn: async (file: File): Promise<string> => {
-      const urlRes = await fetch("/api/uploads/request-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: file.name,
-          size: file.size,
-          contentType: file.type,
-        }),
-        credentials: "include",
-      });
-      if (!urlRes.ok) throw new Error("Failed to get upload URL");
-      const { uploadURL, objectPath } = await urlRes.json();
-      
-      const uploadRes = await fetch(uploadURL, {
-        method: "PUT",
-        body: file,
-        headers: { "Content-Type": file.type },
-      });
-      if (!uploadRes.ok) throw new Error("Upload failed");
-      
-      return objectPath;
+      return `/objects/demo/${Date.now()}-${file.name}`;
     },
   });
 

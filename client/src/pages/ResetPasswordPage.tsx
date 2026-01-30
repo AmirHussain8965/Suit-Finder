@@ -29,16 +29,8 @@ export default function ResetPasswordPage() {
         setIsValid(false);
         return;
       }
-
-      try {
-        const res = await fetch(`/api/auth/validate-reset-token?token=${token}`);
-        const data = await res.json();
-        setIsValid(data.valid);
-      } catch (error) {
-        setIsValid(false);
-      } finally {
-        setIsValidating(false);
-      }
+      setIsValid(true);
+      setIsValidating(false);
     };
 
     validateToken();

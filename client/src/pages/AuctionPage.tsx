@@ -15,7 +15,7 @@ import { Loader2, Plus, Gavel, Clock, DollarSign, User, Trophy, Hammer, Trash2, 
 import { useAuth } from "@/hooks/use-auth";
 import { usePlatinumFeature } from "@/hooks/use-subscription";
 import { PlatinumGate } from "@/components/PremiumGate";
-import type { Auction, Bid, WardrobeItem } from "@shared/schema";
+import type { Auction, Bid, WardrobeItem } from "@/types";
 
 interface AuctionWithDetails extends Auction {
   seller: { id: string; displayName: string | null } | null;

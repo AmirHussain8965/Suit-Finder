@@ -1,71 +1,46 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { getMockData } from "@/data/mockData";
 
-async function throwIfResNotOk(res: Response) {
-  if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    
-    // Try to extract message from JSON response
-    try {
-      const json = JSON.parse(text);
-      if (json.message) {
-        // Special handling for auth errors
-        if (res.status === 401) {
-          throw new Error("Your session has expired. Please log in again.");
-        }
-        throw new Error(json.message);
-      }
-    } catch (e) {
-      // If not JSON, use raw text
-      if (e instanceof Error && e.message !== text) {
-        throw e;
-      }
-    }
-    
-    if (res.status === 401) {
-      throw new Error("Your session has expired. Please log in again.");
-    }
-    throw new Error(`${res.status}: ${text}`);
+/**
+ * Frontend-only: no real API calls. All data comes from mock.
+ */
+function mockQueryFn<T>({ queryKey }: { queryKey: unknown[] }): T {
+  const data = getMockData(queryKey);
+  if (data === undefined) {
+    return null as T;
   }
+  return data as T;
 }
 
 export async function apiRequest(
-  method: string,
-  url: string,
-  data?: unknown | undefined,
+  _method: string,
+  _url: string,
+  data?: unknown,
 ): Promise<Response> {
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
+  // Frontend-only: log and return success. No backend call.
+  if (import.meta.env.DEV && data !== undefined) {
+    console.log("[mock API]", _method, _url, data);
+  }
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
   });
-
-  await throwIfResNotOk(res);
-  return res;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
+
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
-      credentials: "include",
-    });
-
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
-    }
-
-    await throwIfResNotOk(res);
-    return await res.json();
+  () =>
+  async (context) => {
+    return Promise.resolve(mockQueryFn<T>(context));
   };
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
+      queryFn: getQueryFn({ on401: "returnNull" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
