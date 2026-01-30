@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertProfileSchema } from "@shared/schema";
 import { z } from "zod";
+import { profileFormSchema } from "@/types";
 import { useLocation } from "wouter";
 import { Layout } from "@/components/Layout";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profiles";
@@ -15,7 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Save, Users, X, Plus, Lock, Camera, Check, MapPin } from "lucide-react";
 import { useMyPhotos, useSetProfilePhoto } from "@/hooks/use-photos";
-import type { Photo } from "@shared/schema";
+import type { Photo } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -34,15 +34,6 @@ const changePasswordSchema = z.object({
 });
 type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
 
-// Schema for the form - allow partial updates but require displayName
-const profileFormSchema = insertProfileSchema.partial().extend({
-  displayName: z.string()
-    .min(2, "Display name must be at least 2 characters")
-    .refine(
-      (val) => val.toLowerCase() !== "unknown" && val !== "?",
-      "Please choose a proper display name"
-    ),
-});
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 type WardrobeAccessUser = {

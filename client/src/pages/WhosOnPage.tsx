@@ -9,7 +9,7 @@ import { Users, MessageCircle, Loader2, EyeOff, User } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { useProfile } from "@/hooks/use-profiles";
-import type { Profile } from "@shared/schema";
+import type { Profile } from "@/types";
 import whosOnHero from "@/assets/images/whos-on-hero.png";
 
 export default function WhosOnPage() {
