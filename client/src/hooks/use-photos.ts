@@ -1,29 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl } from "@shared/routes";
-import type { InsertPhoto } from "@shared/schema";
+import type { InsertPhoto } from "@/types";
+import { buildUrl } from "@/types";
 import { apiRequest } from "@/lib/queryClient";
+import { getMockData } from "@/data/mockData";
+
+const PHOTOS_ME_PATH = "/api/photos/me";
+const PHOTOS_USER_PATH = "/api/photos/:userId";
 
 export function useMyPhotos() {
   return useQuery({
-    queryKey: [api.photos.myPhotos.path],
-    queryFn: async () => {
-      const res = await fetch(api.photos.myPhotos.path, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch photos");
-      return res.json();
-    },
+    queryKey: [PHOTOS_ME_PATH],
+    queryFn: async () => getMockData([PHOTOS_ME_PATH]) ?? [],
   });
 }
 
 export function useUserPhotos(userId: string) {
   return useQuery({
-    queryKey: [api.photos.userPhotos.path, userId],
+    queryKey: [PHOTOS_USER_PATH, userId],
     enabled: !!userId,
-    queryFn: async () => {
-      const url = buildUrl(api.photos.userPhotos.path, { userId });
-      const res = await fetch(url, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch photos");
-      return res.json();
-    },
+    queryFn: async () => getMockData([PHOTOS_USER_PATH, userId]) ?? [],
   });
 }
 
@@ -31,11 +26,11 @@ export function useAddPhoto() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: InsertPhoto) => {
-      const res = await apiRequest(api.photos.add.method, api.photos.add.path, data);
+      const res = await apiRequest("POST", "/api/photos", data);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.photos.myPhotos.path] });
+      queryClient.invalidateQueries({ queryKey: [PHOTOS_ME_PATH] });
     },
   });
 }
@@ -44,12 +39,12 @@ export function useUpdatePhoto() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ photoId, updates }: { photoId: number; updates: Partial<InsertPhoto> }) => {
-      const url = buildUrl(api.photos.update.path, { photoId });
-      const res = await apiRequest(api.photos.update.method, url, updates);
+      const url = buildUrl("/api/photos/:photoId", { photoId: photoId.toString() });
+      const res = await apiRequest("PATCH", url, updates);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.photos.myPhotos.path] });
+      queryClient.invalidateQueries({ queryKey: [PHOTOS_ME_PATH] });
     },
   });
 }
@@ -58,12 +53,12 @@ export function useDeletePhoto() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (photoId: number) => {
-      const url = buildUrl(api.photos.delete.path, { photoId });
-      const res = await apiRequest(api.photos.delete.method, url);
+      const url = buildUrl("/api/photos/:photoId", { photoId: photoId.toString() });
+      const res = await apiRequest("DELETE", url);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.photos.myPhotos.path] });
+      queryClient.invalidateQueries({ queryKey: [PHOTOS_ME_PATH] });
     },
   });
 }
@@ -72,13 +67,12 @@ export function useSetProfilePhoto() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (photoId: number) => {
-      const url = buildUrl(api.photos.setProfilePhoto.path, { photoId });
-      const res = await apiRequest(api.photos.setProfilePhoto.method, url);
+      const url = buildUrl("/api/photos/:photoId/set-profile", { photoId: photoId.toString() });
+      const res = await apiRequest("POST", url);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.photos.myPhotos.path] });
-      // Also refresh user data so profile image updates in the avatar
+      queryClient.invalidateQueries({ queryKey: [PHOTOS_ME_PATH] });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
     },
   });
@@ -88,11 +82,11 @@ export function useReorderPhotos() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (photoIds: number[]) => {
-      const res = await apiRequest(api.photos.reorder.method, api.photos.reorder.path, { photoIds });
+      const res = await apiRequest("POST", "/api/photos/reorder", { photoIds });
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.photos.myPhotos.path] });
+      queryClient.invalidateQueries({ queryKey: [PHOTOS_ME_PATH] });
     },
   });
 }

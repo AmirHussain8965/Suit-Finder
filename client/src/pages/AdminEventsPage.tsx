@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { Loader2, Plus, Pencil, Trash2, Calendar, Lock, Check, X } from "lucide-react";
 import { format } from "date-fns";
 
@@ -90,11 +91,6 @@ export default function AdminEventsPage() {
 
   const verifyQuery = useQuery({
     queryKey: ["/api/admin/verify", adminKey],
-    queryFn: async () => {
-      if (!adminKey) return { valid: false };
-      const res = await fetch(`/api/admin/verify?key=${adminKey}`);
-      return res.json();
-    },
     enabled: !!adminKey,
   });
 
@@ -106,43 +102,26 @@ export default function AdminEventsPage() {
 
   const eventsQuery = useQuery<AdminEvent[]>({
     queryKey: ["/api/admin/events", adminKey],
-    queryFn: async () => {
-      const res = await fetch(`/api/admin/events?key=${adminKey}`);
-      if (!res.ok) throw new Error("Failed to fetch events");
-      return res.json();
-    },
     enabled: isVerified,
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: EventFormData) => {
-      const res = await fetch(`/api/admin/events`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "x-admin-key": adminKey,
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          title: data.title,
-          slug: data.slug,
-          description: data.description || null,
-          startAt: data.startAt,
-          endAt: data.endAt || null,
-          timezone: data.timezone,
-          locationName: data.locationName,
-          locationAddress: data.locationAddress || null,
-          coverImageUrl: data.coverImageUrl || null,
-          rsvpUrl: data.rsvpUrl || null,
-          priceCents: data.priceCents ? parseInt(data.priceCents) : null,
-          currency: data.currency,
-          isPublished: data.isPublished,
-        }),
+      const res = await apiRequest("POST", "/api/admin/events", {
+        title: data.title,
+        slug: data.slug,
+        description: data.description || null,
+        startAt: data.startAt,
+        endAt: data.endAt || null,
+        timezone: data.timezone,
+        locationName: data.locationName,
+        locationAddress: data.locationAddress || null,
+        coverImageUrl: data.coverImageUrl || null,
+        rsvpUrl: data.rsvpUrl || null,
+        priceCents: data.priceCents ? parseInt(data.priceCents) : null,
+        currency: data.currency,
+        isPublished: data.isPublished,
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Failed to create event");
-      }
       return res.json();
     },
     onSuccess: () => {
@@ -159,32 +138,20 @@ export default function AdminEventsPage() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ slug, data }: { slug: string; data: EventFormData }) => {
-      const res = await fetch(`/api/admin/events/${slug}`, {
-        method: "PUT",
-        headers: { 
-          "Content-Type": "application/json",
-          "x-admin-key": adminKey,
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          title: data.title,
-          description: data.description || null,
-          startAt: data.startAt,
-          endAt: data.endAt || null,
-          timezone: data.timezone,
-          locationName: data.locationName,
-          locationAddress: data.locationAddress || null,
-          coverImageUrl: data.coverImageUrl || null,
-          rsvpUrl: data.rsvpUrl || null,
-          priceCents: data.priceCents ? parseInt(data.priceCents) : null,
-          currency: data.currency,
-          isPublished: data.isPublished,
-        }),
+      const res = await apiRequest("PUT", `/api/admin/events/${slug}`, {
+        title: data.title,
+        description: data.description || null,
+        startAt: data.startAt,
+        endAt: data.endAt || null,
+        timezone: data.timezone,
+        locationName: data.locationName,
+        locationAddress: data.locationAddress || null,
+        coverImageUrl: data.coverImageUrl || null,
+        rsvpUrl: data.rsvpUrl || null,
+        priceCents: data.priceCents ? parseInt(data.priceCents) : null,
+        currency: data.currency,
+        isPublished: data.isPublished,
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Failed to update event");
-      }
       return res.json();
     },
     onSuccess: () => {
@@ -201,14 +168,7 @@ export default function AdminEventsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (slug: string) => {
-      const res = await fetch(`/api/admin/events/${slug}?key=${adminKey}`, {
-        method: "DELETE",
-        headers: { "x-admin-key": adminKey },
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Failed to delete event");
-      }
+      const res = await apiRequest("DELETE", `/api/admin/events/${slug}?key=${adminKey}`);
       return res.json();
     },
     onSuccess: () => {

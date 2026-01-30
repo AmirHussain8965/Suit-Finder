@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Send, Wine, Users, MessageCircle } from "lucide-react";
-import type { SoireeMessageWithSender, Profile } from "@shared/schema";
+import type { SoireeMessageWithSender, Profile } from "@/types";
 import { useAuth } from "@/hooks/use-auth";
 import { Link, useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
